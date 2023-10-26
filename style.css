@@ -1,0 +1,95 @@
+/* Reset some default styles and set the base font and color */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    color: #333;
+
+}
+
+.section {
+    padding: 10px;
+}
+/* Define the overall layout as a flex column */
+body {
+    display: flex;
+    flex-direction: column;
+    background-image: linear-gradient(to bottom right, #333, #fff);
+}
+
+/* Style for the header element */
+header{
+    background-size: cover;
+    background-position: center;
+    height: 200px;
+    text-align: center;
+    color: #333;
+    padding: 20px;
+    background-image: linear-gradient(to bottom right, #333, #fff);
+}
+
+/* Common styles for various text elements */
+.title, .subtitle {
+    text-align: center;
+    margin: 0;
+    padding: 5px;
+}
+
+/* Styles for the main content area */
+main {
+    background-image: linear-gradient(to bottom right, #fff, #333);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Style for the footer */
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+/* Common styles for elements with class spotify-container and forms */
+.spotify-container, .forms {
+    padding-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Style for buttons (button and elements with class button) */
+button {
+    padding: 5px 10px;
+    font-size: 23px;
+    width: 60%;
+    border-radius: 8px;
+    transition-duration: 0.4s;
+    background-color: transparent;
+    display: block;
+    margin: 0 auto;
+    color: #fff;
+
+}
+
+button:hover {
+    background-color: #333; 
+    color: white;
+  }
+
+/* Leave the .icon class as is */
+.icon {
+    padding-top: 10px;
+    width: 32px;
+    height: 32px;
+}
+
+.aboutContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
