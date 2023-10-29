@@ -47,7 +47,7 @@ main {
 /* Style for the footer */
 footer {
     background-color: #b4f8f1;
-    color: #babcb7e9;
+    color: #804225f9;
     text-align: center;
     padding: 0.5rem;
 }
@@ -71,7 +71,7 @@ button {
     background-color: transparent;
     display: block;
     margin: 0 auto;
-    color: #babcb7e9;
+    color: #804225f9;
 
 }
 
