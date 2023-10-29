@@ -5,7 +5,6 @@ function toggleContainer(button, container) {
             container.style.display = 'block';
         } else {
             container.style.display = 'none';
-            greetingContainer.style.display = 'block';
         }
     });
 }
