@@ -86,7 +86,7 @@ button:hover {
     height: 32px;
 }
 
-.aboutContainer {
+.aboutContainer, .greeting {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -106,3 +106,4 @@ canvas {
     padding: 10px;
     width: 100%;
 }   
+
