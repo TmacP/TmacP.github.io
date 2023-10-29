@@ -77,20 +77,20 @@ function gameLoop() {
 
 
     // Draw the snake (as rectangles)
-    ctx.fillStyle = "#498268";
+    ctx.fillStyle = "#89c3b6fe";
     snake.forEach(segment => {
         ctx.fillRect(segment.x, segment.y, snakeSize, snakeSize);
     });
 
     // Draw the food (as circles)
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "#804225f9";
     ctx.beginPath();
     ctx.arc(food.x + snakeSize / 2, food.y + snakeSize / 2, snakeSize / 2, 0, Math.PI * 2, false);
     ctx.fill();
     ctx.closePath();
 
     // Draw the score
-    ctx.fillStyle = "#498268";
+    ctx.fillStyle = "#804225f9";
     ctx.fillText("wasd to move", canvas.width / 2 - 80, canvas.height / 2 - 20);
     ctx.fillText(`Your score is ${score}`, canvas.width / 2 - 80, canvas.height / 2);
     ctx.fillText(`High score is ${hiscore}`, canvas.width / 2 - 80, canvas.height / 2 + 20);

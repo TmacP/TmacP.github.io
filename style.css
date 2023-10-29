@@ -4,7 +4,7 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    color: #498268;
+    color: #b4f8f1;
 
 }
 
@@ -15,7 +15,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    background-image: linear-gradient(to bottom right, #498268, #fff);
+    background-image: linear-gradient(to bottom right, #b4f8f1, #babcb7e9);
 }
 
 /* Style for the header element */
@@ -24,9 +24,9 @@ header{
     background-position: center;
     height: auto;
     text-align: center;
-    color: #498268;
+    color: #b4f8f1;
     padding: 20px;
-    background-image: linear-gradient(to bottom right, #498268, #fff);
+    background-image: linear-gradient(to bottom right, #b4f8f1, #babcb7e9);
 }
 
 /* Common styles for various text elements */
@@ -38,7 +38,7 @@ header{
 
 /* Styles for the main content area */
 main {
-    background-image: linear-gradient(to bottom right, #fff, #498268);
+    background-image: linear-gradient(to bottom right, #babcb7e9, #b4f8f1);
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -46,8 +46,8 @@ main {
 
 /* Style for the footer */
 footer {
-    background-color: #498268;
-    color: #fff;
+    background-color: #b4f8f1;
+    color: #babcb7e9;
     text-align: center;
     padding: 0.5rem;
 }
@@ -58,7 +58,7 @@ footer {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #498268;
+    color: #b4f8f1;
 }
 
 /* Style for buttons (button and elements with class button) */
@@ -71,12 +71,12 @@ button {
     background-color: transparent;
     display: block;
     margin: 0 auto;
-    color: #fff;
+    color: #babcb7e9;
 
 }
 
 button:hover {
-    background-color: #498268; 
+    background-color: #b4f8f1; 
     color: white;
   }
 
@@ -88,6 +88,7 @@ button:hover {
 }
 
 .aboutContainer, .greeting {
+    color: #804225f9;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -96,7 +97,8 @@ button:hover {
 }
 
 canvas {
-    border: 5px solid #498268; /* 2px wide solid black border */
+    border: 5px solid #b4f8f1; /* 2px wide solid black border */
+    margin: 0 auto; /* Center horizontally */
 }
 
 #gameContainer {
@@ -105,5 +107,5 @@ canvas {
     justify-content: center;
     align-items: center;
     padding: 10px;
-    width: 100%;
+    margin:  0 auto;
 }   
