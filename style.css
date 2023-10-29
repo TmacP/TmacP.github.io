@@ -93,3 +93,7 @@ button:hover {
     align-items: center;
     padding: 10px;
 }
+
+#canvas {
+    border: 2px solid black; /* 2px wide solid black border */
+}

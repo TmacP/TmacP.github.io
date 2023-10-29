@@ -18,7 +18,7 @@ const ctx = canvas.getContext("2d");
 // Snake properties
 const snakeSize = 10;
 let snake = [{ x: 10, y: 10 }];
-let food = { x: 15, y: 15 };
+let food = randomFood();
 let direction = "right";
 
 // Function to generate random coordinates for the food
@@ -66,6 +66,7 @@ function gameLoop() {
 
     // Check for game over
     if (checkCollision()) {
+        alert(`Game over! Your score is ${score}`);
         resetGame();
     }
 
@@ -106,8 +107,6 @@ document.addEventListener("keydown", event => {
     }
 });
 
-// Start the game loop
-gameLoop();
 
 // Game over condition
 function checkCollision() {
@@ -124,3 +123,6 @@ function checkCollision() {
     }
     return false;
 }
+
+// Start the game loop
+gameLoop();
