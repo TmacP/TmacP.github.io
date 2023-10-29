@@ -94,6 +94,15 @@ button:hover {
     padding: 10px;
 }
 
-#canvas {
-    border: 2px solid black; /* 2px wide solid black border */
+canvas {
+    border: 5px solid #333; /* 2px wide solid black border */
 }
+
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    width: 100%;
+}   

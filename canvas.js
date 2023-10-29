@@ -3,6 +3,7 @@
 const gameSpeed = 100; // Delay in milliseconds
 // Score tracking
 let score = 0;
+let hiscore = 0;
 
 // Update and display the score
 function updateScore() {
@@ -34,6 +35,10 @@ function resetGame() {
     snake = [{ x: 10, y: 10 }];
     food = randomFood();
     direction = "right";
+    // Update high score if the current score is higher
+    if (score > hiscore) {
+        hiscore = score;
+    }
     score = 0;
     updateScore();
 }
@@ -66,7 +71,6 @@ function gameLoop() {
 
     // Check for game over
     if (checkCollision()) {
-        alert(`Game over! Your score is ${score}`);
         resetGame();
     }
 
@@ -80,6 +84,13 @@ function gameLoop() {
     // Draw the food
     ctx.fillStyle = "red";
     ctx.fillRect(food.x, food.y, snakeSize, snakeSize);
+
+    // Draw the score
+    ctx.fillStyle = "black";
+    ctx.fillText("wasd to move", canvas.width / 2 - 80, canvas.height / 2 - 20);
+    ctx.fillText(`Your score is ${score}`, canvas.width / 2 - 80, canvas.height / 2);
+    ctx.fillText(`High score is ${hiscore}`, canvas.width / 2 - 80, canvas.height / 2 + 20);
+
 
     // Repeat the game loop with a delay
     setTimeout(gameLoop, gameSpeed);
