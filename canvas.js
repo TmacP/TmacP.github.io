@@ -64,6 +64,7 @@ function gameLoop() {
         food = randomFood();
         score++;
         updateScore();
+        snake.pop();
     } else {
         // Remove the tail segment
         snake.pop();
@@ -77,8 +78,10 @@ function gameLoop() {
 
     // Draw the snake
     snake.forEach(segment => {
-        ctx.fillStyle = "green";
-        ctx.fillRect(segment.x, segment.y, snakeSize, snakeSize);
+        ctx.beginPath();
+        ctx.arc(segment.x + snakeSize / 2, segment.y + snakeSize / 2, snakeSize / 2, 0, Math.PI * 2, false);
+        ctx.fill();
+        ctx.closePath();
     });
 
     // Draw the food
@@ -87,6 +90,7 @@ function gameLoop() {
 
     // Draw the score
     ctx.fillStyle = "black";
+    console.log(`snake ${snake}`);
     ctx.fillText("wasd to move", canvas.width / 2 - 80, canvas.height / 2 - 20);
     ctx.fillText(`Your score is ${score}`, canvas.width / 2 - 80, canvas.height / 2);
     ctx.fillText(`High score is ${hiscore}`, canvas.width / 2 - 80, canvas.height / 2 + 20);
