@@ -1,5 +1,5 @@
 // canvas.js
-
+console.log("canvas.js loaded");
 const gameSpeed = 100; // Delay in milliseconds
 // Score tracking
 let score = 0;
