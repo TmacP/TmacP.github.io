@@ -20,4 +20,3 @@ toggleContainer(togglePlayerButton, playerContainer);
 toggleContainer(toggleFormButton, formContainer);
 toggleContainer(toggleLinkButton, linkContainer);
 toggleContainer(toggleAboutButton, aboutContainer);
-toggleContainer(toggleGameButton, gameContainer, 'canvas.js'); // Load "canvas.js" when game container is displayed
