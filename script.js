@@ -1,8 +1,13 @@
 function toggleContainer(button, container, scriptToLoad) {
     button.addEventListener('click', () => {
         if (container.style.display === 'none') {
-            greetingContainer.style.display = 'none';
-            container.style.display = 'block';
+// make container display none so only the open one is visabile
+	playerContainer.style.display = 'none';
+    	formContainer.style.display = 'none';
+    	linkContainer.style.display = 'none';
+    	aboutContainer.style.display = 'none';
+	// set the one selected to block            
+	container.style.display = 'block';
 
             // Check if the script should be loaded
             if (scriptToLoad) {
