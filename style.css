@@ -99,3 +99,12 @@ button:hover {
     padding-left: 100px;
 }
 
+.landingText {
+    color: #804225f9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-right: 100px;
+    padding-left: 100px;
+}
