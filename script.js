@@ -55,3 +55,23 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+
+// make logo go to landing
+document.addEventListener("DOMContentLoaded", function() {
+    // Select the logo link and landing container
+    const logoLink = document.getElementById("logo-link");
+    const landingContainer = document.getElementById("landingContainer");
+
+    // Add event listener for click event on the logo link
+    logoLink.addEventListener("click", function(event) {
+        event.preventDefault(); // Prevent default link behavior
+
+        // Toggle the landing container
+landingContainer.style.display = 'block';
+            playerContainer.style.display = 'none';
+            formContainer.style.display = 'none';
+            linkContainer.style.display = 'none';
+            aboutContainer.style.display = 'none';
+    });
+});
+
