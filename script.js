@@ -8,6 +8,9 @@ function toggleContainer(button, container, scriptToLoad) {
     	aboutContainer.style.display = 'none';
 	// set the one selected to block            
 	container.style.display = 'block';
+	// Scroll to the container 
+	container.scrollIntoView({ behavior: 'smooth' });
+
 
             // Check if the script should be loaded
             if (scriptToLoad) {

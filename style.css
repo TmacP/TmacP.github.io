@@ -93,19 +93,9 @@ button:hover {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-right: 100px;
+    padding-left: 100px;
 }
 
-canvas {
-    border: 5px solid #b4f8f1; /* 2px wide solid black border */
-    margin: 0 auto; /* Center horizontally */
-}
-
-#gameContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 10px;
-    margin:  0 auto;
-}   
