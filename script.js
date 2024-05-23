@@ -40,3 +40,18 @@ toggleContainer(toggleFormButton, formContainer);
 toggleContainer(toggleLinkButton, linkContainer);
 toggleContainer(toggleAboutButton, aboutContainer);
 
+// make footer scrool to top
+document.addEventListener("DOMContentLoaded", function() {
+    // Select the footer element
+    const footer = document.querySelector("footer");
+
+    // Add event listener for click event
+    footer.addEventListener("click", function() {
+        // Scroll to the top of the page
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth" // Optional: smooth scrolling animation
+        });
+    });
+});
+
