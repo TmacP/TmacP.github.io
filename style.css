@@ -1,6 +1,7 @@
 :root {
     --main-font-color: #804225f9;
     --main-bg-color: #b4f8f1;
+    --second-bg-color: #babcb7e9;
   }
   
 
@@ -21,7 +22,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    background-image: linear-gradient(to bottom right, var(--main-bg-color), #babcb7e9);
+    background-image: linear-gradient(to bottom right, var(--main-bg-color), var(--second-bg-color));
 }
 
 /* Style for the header element */
@@ -32,7 +33,7 @@ header{
     text-align: center;
     color: var(--main-bg-color);
     padding: 20px;
-    background-image: linear-gradient(to bottom right, var(--main-bg-color), #babcb7e9);
+    background-image: linear-gradient(to bottom right, var(--main-bg-color), var(--second-bg-color));
 }
 
 /* Common styles for various text elements */
@@ -44,7 +45,7 @@ header{
 
 /* Styles for the main content area */
 main {
-    background-image: linear-gradient(to bottom right, #babcb7e9, var(--main-bg-color));
+    background-image: linear-gradient(to bottom right, var(--second-bg-color), var(--main-bg-color));
     flex-grow: 1;
     display: flex;
     flex-direction: column;
