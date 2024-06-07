@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>7risten Design</title>
+    <title>Studio 7risten</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
@@ -22,19 +22,28 @@
 
 <main>
     <div id="landingContainer" style="display: block;">
-        <h1 class="landingContainer">7risten Design</h1>
-        <p class="landingText">Professional static site web development services.</p>
+        <h1 class="landingContainer">Studio 7risten</h1>
+        <p class="landingText">Professional static site web development services</p>
+        <p class="landingText">Located in Saskatoon, Saskatchewan, we offer a complete web development solution.</p>
     </div>
-
+    
     <div id="aboutContainer" style="display: none;">
         <h2>About</h2>
-        <p>Information about your business, mission, and values.</p>
+        <p>At Studio 7risten, we believe in creating beautiful, high-performance websites that deliver exceptional user experiences. Our mission is to provide clients with custom hand-coded static sites that are not only visually stunning but also secure and fast.</p>
+        <p>Founded in Saskatoon, Saskatchewan, our team is dedicated to excellence in web development. We pride ourselves on our meticulous attention to detail and our commitment to client satisfaction. Our values include transparency, innovation, and integrity, which guide us in every project we undertake.</p>
     </div>
-
+    
     <div id="servicesContainer" style="display: none;">
         <h2>Services</h2>
-        <p>Detailed descriptions of services you offer.</p>
+        <p>We offer a comprehensive range of services to meet your web development needs:</p>
+        <ul>
+            <li><strong>Site Design:</strong> We craft visually appealing designs tailored to your brand, ensuring a unique and engaging user experience.</li>
+            <li><strong>Site Development:</strong> Our expertise lies in developing custom hand-coded static sites from scratch. These sites are optimized for performance and security, providing a reliable online presence.</li>
+            <li><strong>Copywriting:</strong> Our skilled copywriters create compelling content that resonates with your audience and enhances your site's effectiveness.</li>
+            <li><strong>Hosting:</strong> We offer robust hosting solutions to ensure your site remains accessible and performs well under all conditions.</li>
+        </ul>
     </div>
+    
 
     <div id="portfolioContainer" style="display: none;">
         <h2>Portfolio</h2>
@@ -43,20 +52,30 @@
 
     <div id="contactContainer" style="display: none;">
         <h2>Contact</h2>
-        <form>
+        <form id="contactForm" method="POST" action="https://docs.google.com/forms/d/e/1FAIpQLSedk9IsSFjJhNhXlAMGOl493dlOdIav84SKQkBWr0my_TpL6Q/formResponse" target="hiddenIframe">
             <label for="name">Name:</label>
-            <input type="text" id="name" name="name">
+            <input name="entry.69042632" type="text" id="name" name="name">
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email">
+            <input name="entry.672529567" type="email" id="email" name="email">
+            <label for="phone">Phone:</label>
+            <input name="entry.2113784187" type="number" id="phone" name="phone">
             <label for="message">Message:</label>
-            <textarea id="message" name="message"></textarea>
+            <textarea name="entry.1861349441" id="message" name="message"></textarea>
             <button type="submit">Send</button>
         </form>
     </div>
+    
+    
+    <!-- Hidden iframe for Google Form submission -->
+    <iframe id="hiddenIframe" name="hiddenIframe" style="display: none;"></iframe>
+
+      
+
+
 </main>
 
 <footer>
-    Copyright &copy; <span id="year"></span> 7risten Design
+    Copyright &copy; <span id="year"></span> Studio 7risten
 </footer>
 
 <script src="script.js"></script>

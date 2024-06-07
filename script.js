@@ -31,4 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('year').innerHTML = new Date().getFullYear();
+
+
+
+
+    // Add submit event listener to the contact form
+    document.getElementById('contactForm').addEventListener('submit', handleSubmit);
 });

@@ -57,15 +57,6 @@ footer {
     padding: 0.5rem;
 }
 
-/* Common styles for elements with class spotify-container and forms */
-.spotify-container, .forms {
-    padding-top: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: var(--main-bg-color);
-}
-
 /* Style for buttons (button and elements with class button) */
 button {
     padding: 5px 10px;
@@ -119,3 +110,26 @@ button:hover {
     align-items: center;
     padding: 10px 100px; /* Adjusted padding shorthand */
 }
+
+
+#contactForm {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+#contactForm label {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#contactForm input, 
+#contactForm textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
