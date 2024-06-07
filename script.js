@@ -75,3 +75,7 @@ landingContainer.style.display = 'block';
     });
 });
 
+
+
+// set correct year
+document.getElementById("year").innerHTML = new Date().getFullYear();

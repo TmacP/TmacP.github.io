@@ -1,10 +1,16 @@
+:root {
+    --main-font-color: #804225f9;
+    --main-bg-color: #b4f8f1;
+  }
+  
+
 /* Reset some default styles and set the base font and color */
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    color: #b4f8f1;
+    color: var(--main-bg-color);
 
 }
 
@@ -15,7 +21,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    background-image: linear-gradient(to bottom right, #b4f8f1, #babcb7e9);
+    background-image: linear-gradient(to bottom right, var(--main-bg-color), #babcb7e9);
 }
 
 /* Style for the header element */
@@ -24,9 +30,9 @@ header{
     background-position: center;
     height: auto;
     text-align: center;
-    color: #b4f8f1;
+    color: var(--main-bg-color);
     padding: 20px;
-    background-image: linear-gradient(to bottom right, #b4f8f1, #babcb7e9);
+    background-image: linear-gradient(to bottom right, var(--main-bg-color), #babcb7e9);
 }
 
 /* Common styles for various text elements */
@@ -38,7 +44,7 @@ header{
 
 /* Styles for the main content area */
 main {
-    background-image: linear-gradient(to bottom right, #babcb7e9, #b4f8f1);
+    background-image: linear-gradient(to bottom right, #babcb7e9, var(--main-bg-color));
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -46,8 +52,8 @@ main {
 
 /* Style for the footer */
 footer {
-    background-color: #b4f8f1;
-    color: #804225f9;
+    background-color: var(--main-bg-color);
+    color: var(--main-font-color);
     text-align: center;
     padding: 0.5rem;
 }
@@ -58,7 +64,7 @@ footer {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #b4f8f1;
+    color: var(--main-bg-color);
 }
 
 /* Style for buttons (button and elements with class button) */
@@ -71,12 +77,12 @@ button {
     background-color: transparent;
     display: block;
     margin: 0 auto;
-    color: #804225f9;
+    color: var(--main-font-color);
 
 }
 
 button:hover {
-    background-color: #b4f8f1; 
+    background-color: var(--main-bg-color);
     color: white;
   }
 
@@ -88,7 +94,7 @@ button:hover {
 }
 
 .aboutContainer, .servicesContainer, .landingContainer {
-    color: #804225f9;
+    color: var(--main-font-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -100,7 +106,7 @@ button:hover {
 }
 
 .landingText {
-    color: #804225f9;
+    color: var(--main-font-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
