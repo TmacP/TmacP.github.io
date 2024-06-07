@@ -3,74 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tristen</title>
+    <title>7risten Design</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 
-    <header>
-<a id="logo-link" href="#">
-        <img src="image/icon.avif" alt="TripVsFlow Logo" width="100" height="100">
-</a>
-        <div class="button">
-            <button id="toggleAboutButton">About</button>
-            <button id="togglePlayerButton">Listen</button>
-            <button id="toggleFormButton">Contact</button>
-            <button id="toggleLinkButton">Links</button>
-        </div>
-    </header>
-    <section>
-        <div id="linkContainer" style="display: none;">
-            <p class="title">
-                <a href="https://www.instagram.com/the7risten/" target="_blank">
-                    <img src="image/instagram.png" class="icon" alt="Instagram Icon"></a>
-                <a href="https://www.tiktok.com/@the7risten/" target="_blank">
-                    <img src="image/tiktok.png" class="icon" alt="TikTok Icon"></a>
-                <a href="https://twitter.com/the7risten" target="_blank">
-                    <img src="image/twitter.png" class="icon" alt="Twitter Icon"></a>
-                    <a href="https://www.youtube.com/@TripVsFlow" target="_blank">
-                        <img src="image/youtube.png" class="icon" alt="YouTube Icon"></a>
-                    <a href="https://open.spotify.com/artist/3z9DIQ71xObX4mDsLYpI01?si=XmdXr2CNQ_eD80b8b7FAJQ" target="_blank">
-                        <img src="image/spotify.png" class="icon" alt="Spotify Icon"></a>
-                    <a href="https://music.apple.com/us/artist/tripvsflow/1704379764" target="_blank">
-                        <img src="image/apple.png" class="icon" alt="Apple Music Icon"></a>
-            </p>
-        </div>
-    </section>
-    <main>
+<header>
+    <a id="logo-link" href="#">
+        <img src="image/icon.avif" alt="Logo" width="100" height="100">
+    </a>
+    <div class="button">
+        <button id="toggleAboutButton">About</button>
+        <button id="toggleServicesButton">Services</button>
+        <button id="togglePortfolioButton">Portfolio</button>
+        <button id="toggleContactButton">Contact</button>
+    </div>
+</header>
 
-        <div id="landingContainer" style="display: block;">
-<h1 class="landingContainer">Tristen MacPherson</h1>
-    <p class="landingText">
-Front end web developer and musician based in Saskatoon, Saskatchewan.
-    </p>
-        </div>
+<main>
+    <div id="landingContainer" style="display: block;">
+        <h1 class="landingContainer">7risten Design</h1>
+        <p class="landingText">Professional static site web development services.</p>
+    </div>
 
+    <div id="aboutContainer" style="display: none;">
+        <h2>About</h2>
+        <p>Information about your business, mission, and values.</p>
+    </div>
 
-        <div id="aboutContainer" style="display: none;">
-            <p class="aboutContainer">         
-I'm doing stuff.
-            </p>
-        </div>
-        <div id="playerContainer" style="display: none;">
-            <div class="spotify-container">
-                <iframe src="https://open.spotify.com/embed/artist/3z9DIQ71xObX4mDsLYpI01?utm_source=generator&theme=0" 
-                        width="80%" height="152" frameborder="0" allowfullscreen="true" 
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                        loading="lazy">
-                </iframe>
-            </div>
-        </div>
-        <div id="formContainer" style="display: none;">
-            <div class="forms">
-                <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScUtCkU7Y7xJr8jGmhcGt8gV0_EEVXS-Ru1hsmHpcALTuNPrA/viewform?embedded=true" width="640" height="812" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-            </div>
-        </div>
-    </main>
-    <footer>
-        Copyright &copy; <span id="year"></span> Tristen MacPherson
-    </footer>
-    <script src="script.js"></script>
+    <div id="servicesContainer" style="display: none;">
+        <h2>Services</h2>
+        <p>Detailed descriptions of services you offer.</p>
+    </div>
+
+    <div id="portfolioContainer" style="display: none;">
+        <h2>Portfolio</h2>
+        <p>Showcase of your previous projects.</p>
+    </div>
+
+    <div id="contactContainer" style="display: none;">
+        <h2>Contact</h2>
+        <form>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email">
+            <label for="message">Message:</label>
+            <textarea id="message" name="message"></textarea>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+</main>
+
+<footer>
+    Copyright &copy; <span id="year"></span> 7risten Design
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>
-

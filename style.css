@@ -2,8 +2,7 @@
     --main-font-color: #804225f9;
     --main-bg-color: #b4f8f1;
     --second-bg-color: #babcb7e9;
-  }
-  
+}
 
 /* Reset some default styles and set the base font and color */
 html, body {
@@ -11,13 +10,10 @@ html, body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    color: var(--main-bg-color);
-
+    color: var(--main-font-color);
+    background-color: var(--main-bg-color);
 }
 
-.section {
-    padding: 10px;
-}
 /* Define the overall layout as a flex column */
 body {
     display: flex;
@@ -26,7 +22,7 @@ body {
 }
 
 /* Style for the header element */
-header{
+header {
     background-size: cover;
     background-position: center;
     height: auto;
@@ -49,6 +45,8 @@ main {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    align-items: center; /* Center content horizontally */
+    padding: 20px; /* Add some padding for spacing */
 }
 
 /* Style for the footer */
@@ -79,13 +77,12 @@ button {
     display: block;
     margin: 0 auto;
     color: var(--main-font-color);
-
 }
 
 button:hover {
     background-color: var(--main-bg-color);
     color: white;
-  }
+}
 
 /* Leave the .icon class as is */
 .icon {
@@ -94,16 +91,24 @@ button:hover {
     height: 32px;
 }
 
-.aboutContainer, .servicesContainer, .landingContainer {
+.aboutContainer, .servicesContainer, .landingContainer, .portfolioContainer, .contactContainer {
     color: var(--main-font-color);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    padding-right: 100px;
-    padding-left: 100px;
+    padding: 10px 100px; /* Adjusted padding shorthand */
+    text-align: center; /* Center align text */
+}
+
+.landingContainer h1, .aboutContainer h2, .servicesContainer h2, .portfolioContainer h2, .contactContainer h2 {
+    font-size: 2rem; /* Example heading font size */
+    margin: 10px 0;
+}
+
+.landingContainer p, .aboutContainer p, .servicesContainer p, .portfolioContainer p, .contactContainer form {
+    font-size: 1rem; /* Example paragraph font size */
+    margin: 10px 0;
 }
 
 .landingText {
@@ -112,6 +117,5 @@ button:hover {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding-right: 100px;
-    padding-left: 100px;
+    padding: 10px 100px; /* Adjusted padding shorthand */
 }
