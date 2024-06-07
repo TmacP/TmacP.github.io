@@ -28,7 +28,7 @@ header {
     height: auto;
     text-align: center;
     color: var(--main-bg-color);
-    padding: 20px;
+    padding: 5px;
     background-image: linear-gradient(to bottom right, var(--main-bg-color), var(--second-bg-color));
 }
 
