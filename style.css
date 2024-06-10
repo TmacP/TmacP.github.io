@@ -58,7 +58,7 @@ footer {
 }
 
 /* Style for buttons (button and elements with class button) */
-button {
+button, .form-button {
     padding: 5px 10px;
     font-size: 23px;
     width: 60%;
@@ -70,7 +70,7 @@ button {
     color: var(--main-font-color);
 }
 
-button:hover {
+button:hover, .form-button:hover {
     background-color: var(--main-bg-color);
     color: white;
 }
@@ -111,7 +111,6 @@ button:hover {
     padding: 10px 100px; /* Adjusted padding shorthand */
 }
 
-
 #contactForm {
     display: flex;
     flex-direction: column;
@@ -120,16 +119,27 @@ button:hover {
     margin: 0 auto;
 }
 
-#contactForm label {
-    margin-top: 10px;
-    font-weight: bold;
+#contactForm .form-group {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
 }
 
-#contactForm input, 
+#contactForm .form-group input {
+    flex: 1;
+    margin-right: 10px;
+}
+
+#contactForm .form-group input:last-child {
+    margin-right: 0;
+}
+
+#contactForm input,
 #contactForm textarea {
     width: 100%;
     padding: 8px;
     margin-top: 5px;
     box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 8px; /* Added border-radius to match buttons */
 }
-

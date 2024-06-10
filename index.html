@@ -44,7 +44,6 @@
         </ul>
     </div>
     
-
     <div id="portfolioContainer" style="display: none;">
         <h2>Portfolio</h2>
         <p>Showcase of your previous projects.</p>
@@ -53,24 +52,18 @@
     <div id="contactContainer" style="display: none;">
         <h2>Contact</h2>
         <form id="contactForm" method="POST" action="https://docs.google.com/forms/d/e/1FAIpQLSedk9IsSFjJhNhXlAMGOl493dlOdIav84SKQkBWr0my_TpL6Q/formResponse" target="hiddenIframe">
-            <label for="name">Name:</label>
-            <input name="entry.69042632" type="text" id="name" name="name">
-            <label for="email">Email:</label>
-            <input name="entry.672529567" type="email" id="email" name="email">
-            <label for="phone">Phone:</label>
-            <input name="entry.2113784187" type="number" id="phone" name="phone">
-            <label for="message">Message:</label>
-            <textarea name="entry.1861349441" id="message" name="message"></textarea>
-            <button type="submit">Send</button>
+            <div class="form-group">
+                <input name="entry.69042632" type="text" placeholder="Name" id="name">
+                <input name="entry.2113784187" type="text" placeholder="Phone Number" id="phone">
+            </div>
+            <input name="entry.672529567" type="email" placeholder="Email" id="email">
+            <textarea name="entry.1861349441" placeholder="Tell us a little about your business." id="message"></textarea>
+            <button class="form-button" type="submit">Get in Touch</button>
         </form>
     </div>
     
-    
     <!-- Hidden iframe for Google Form submission -->
     <iframe id="hiddenIframe" name="hiddenIframe" style="display: none;"></iframe>
-
-      
-
 
 </main>
 
