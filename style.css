@@ -197,6 +197,7 @@ button:hover, .form-button:hover {
     border: 1px solid #ccc;
     padding: 10px;
     box-sizing: border-box;
+    align-content: center;
 }
 
 
