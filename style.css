@@ -186,6 +186,19 @@ button:hover, .form-button:hover {
     }
 }
 
+/* Pricing */
+.price-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.price-box {
+    width: 45%; /* Adjust width as needed */
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
 
 
 .scrollToTop {
