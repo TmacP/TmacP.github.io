@@ -143,3 +143,43 @@ button:hover, .form-button:hover {
     border: 1px solid #ccc;
     border-radius: 8px; /* Added border-radius to match buttons */
 }
+
+/* Styles for the info boxes */
+.info-boxes {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.info-box {
+    flex: 1;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    max-width: 300px;
+}
+
+.info-box h3 {
+    margin-top: 0;
+}
+
+.info-box p {
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .info-boxes {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .info-box {
+        width: 100%;
+        max-width: 600px;
+    }
+}
