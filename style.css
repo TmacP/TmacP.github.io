@@ -92,10 +92,11 @@ button:hover, .form-button:hover {
     text-align: center; /* Center align text */
 }
 
-.landingContainer h1, .aboutContainer h2, .servicesContainer h2, .portfolioContainer h2, .contactContainer h2 {
+.landingContainer header, .aboutContainer header, .servicesContainer header, .portfolioContainer header, .contactContainer header {
     font-size: 2rem; /* Example heading font size */
     margin: 10px 0;
 }
+
 
 .landingContainer p, .aboutContainer p, .servicesContainer p, .portfolioContainer p, .contactContainer form {
     font-size: 1rem; /* Example paragraph font size */
@@ -109,8 +110,7 @@ button:hover, .form-button:hover {
     justify-content: center;
     align-items: center;
     padding: 10px 100px; /* Adjusted padding shorthand */
-    margin-bottom: 100px;
-    margin-top: 100px;
+
 }
 
 #contactForm {
@@ -194,9 +194,6 @@ button:hover, .form-button:hover {
     right: 20px;
     font-size: 24px;
     text-decoration: none;
-    color: #333;
+    color: var(--main-font-color);
 }
 
-.scrollToTop:hover {
-    color: #666;
-}
