@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
+    const scrollToTopLinks = document.querySelectorAll('.scrollToTop');
+
+    scrollToTopLinks.forEach(link => {
+        link.addEventListener('click', function(event) {
+            event.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    });
+
     const toggleContainer = (button, container) => {
         button.addEventListener('click', () => {
             const containers = ['landingContainer', 'aboutContainer', 'servicesContainer', 'portfolioContainer', 'contactContainer'];
@@ -31,9 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     document.getElementById('year').innerHTML = new Date().getFullYear();
-
-
-
 
     // Add submit event listener to the contact form
     document.getElementById('contactForm').addEventListener('submit', handleSubmit);

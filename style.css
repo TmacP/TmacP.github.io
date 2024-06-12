@@ -109,6 +109,8 @@ button:hover, .form-button:hover {
     justify-content: center;
     align-items: center;
     padding: 10px 100px; /* Adjusted padding shorthand */
+    margin-bottom: 100px;
+    margin-top: 100px;
 }
 
 #contactForm {
@@ -182,4 +184,19 @@ button:hover, .form-button:hover {
         width: 100%;
         max-width: 600px;
     }
+}
+
+
+
+.scrollToTop {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 24px;
+    text-decoration: none;
+    color: #333;
+}
+
+.scrollToTop:hover {
+    color: #666;
 }
