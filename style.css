@@ -160,10 +160,12 @@ button:hover, .form-button:hover {
     padding: 20px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    background-color: #f9f9f9;
+    background-size: cover; /* Adjust as needed */
+    background-position: center; /* Adjust as needed */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     max-width: 300px;
 }
+
 
 .info-box h3 {
     margin-top: 0;
