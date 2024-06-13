@@ -71,7 +71,7 @@ button, .form-button {
 }
 
 button:hover, .form-button:hover {
-    background-color: var(--main-bg-color);
+    background-color: rgba(180, 248, 241, 0.25);
     color: white;
 }
 
@@ -195,11 +195,14 @@ button:hover, .form-button:hover {
 }
 
 .price-box {
-    width: 45%; /* Adjust width as needed */
-    border: 1px solid #ccc;
-    padding: 10px;
-    box-sizing: border-box;
-    align-content: center;
+    flex: 1;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-size: cover; /* Adjust as needed */
+    background-position: center; /* Adjust as needed */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    max-width: 300px;
 }
 
 
