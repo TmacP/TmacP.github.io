@@ -222,3 +222,36 @@ button:hover, .form-button:hover {
     text-align: center; /* Add this line to center the content horizontally */
     margin: auto;
 }
+
+/* Step 1: Define the animation keyframes */
+@keyframes slideIn {
+    0% {
+      transform: translateX(-100px); /* Start from -100px off-screen to the left */
+      opacity: 0; /* Start from fully transparent */
+      visibility: hidden; /* Start as invisible */
+    }
+    1% {
+      visibility: visible; /* Make the element visible as soon as the animation starts */
+    }
+    100% {
+      transform: translateX(0); /* End at the element's final position */
+      opacity: 1; /* Fully visible */
+      visibility: visible; /* Ensure it stays visible after animation */
+    }
+  }
+  
+  /* Step 2: Apply the animation to your elements */
+  .landingText {
+    animation: slideIn 1.25s ease-out forwards; /* 1s duration, ease-out timing, and make sure the final state is retained */
+    animation-delay: 2.25s;
+    visibility: hidden; /* Initially hidden */
+  }
+  
+  /* Optional: Adjust the delay for each element if you want them to slide in one after the other */
+  h2.landingText {
+    animation-delay: 0.75s; /* Starts half a second after the page loads */
+  }
+  
+  h3.landingText {
+    animation-delay: 1.50s; /* Starts 1 second after the page loads */
+  }
