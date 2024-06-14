@@ -29,9 +29,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const contactContainer = document.getElementById('contactContainer');
 
     toggleContainer(document.getElementById('toggleAboutButton'), aboutContainer);
+    toggleContainer(document.getElementById('gotoggleAboutButton'), aboutContainer);
+
     toggleContainer(document.getElementById('toggleServicesButton'), servicesContainer);
+    toggleContainer(document.getElementById('gotoggleServicesButton'), servicesContainer);
+
     toggleContainer(document.getElementById('togglePortfolioButton'), portfolioContainer);
+
     toggleContainer(document.getElementById('toggleContactButton'), contactContainer);
+    toggleContainer(document.getElementById('gotoggleContactButton'), contactContainer);
 
     document.getElementById('logo-link').addEventListener('click', function(event) {
         event.preventDefault();
