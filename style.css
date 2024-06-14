@@ -215,3 +215,10 @@ button:hover, .form-button:hover {
     color: var(--main-font-color);
 }
 
+.team-member {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center; /* Add this line to center the content horizontally */
+    margin: auto;
+}
