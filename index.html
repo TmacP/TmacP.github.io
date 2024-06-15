@@ -6,64 +6,57 @@
     <title>7risten.ca</title>
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
-<body>
-
+<body id="top">
 <header>
-    <a id="logo-link" href="#">
-        <img src="image/icon.avif" alt="Logo" width="100" height="100">
-    </a>
-    <div class="button">
-        <button id="toggleAboutButton">About</button>
-        <button id="toggleServicesButton">Services</button>
-        <button id="togglePortfolioButton">Portfolio</button>
-        <button id="toggleContactButton">Contact</button>
-    </div>
+    <img src="image/icon.avif" alt="Logo" width="100" height="100">
+    <nav>
+        <a href="#about">About</a>
+        <a href="#services">Services</a>
+        <a href="#portfolio">Portfolio</a>
+        <a href="#contact">Contact</a>
+    </nav>
 </header>
 
 <main>
-    <!--Landing-->
-    <div id="landingContainer" style="display: block;">
-        <h2 class="landingText">Delicious Design. Decadent Development.</h2>
-        <h3 class="landingText">  Have Your Cake and Eat It Too.</h3>
-        <p class="landingText">7risten.ca is a boutique website design and development company based in Saskatoon, Saskatchewan. We specialize in creating custom, high-performance websites for small businesses.</p>
-        <button id="gotoggleAboutButton">About</button>
-        <a class="scrollToTop" href="#top">↑</a>
-    </div>
+    <!-- Landing -->
+    <section id="landing">
+        <h2>Delicious Design. Decadent Development.</h2>
+        <h3>Have Your Cake and Eat It Too.</h3>
+        <p>7risten.ca is a boutique website design and development company based in Saskatoon, Saskatchewan. We specialize in creating custom, high-performance websites for small businesses.</p>
+    </section>
 
-    <!--About-->
-    <div id="aboutContainer" style="display: none;">
+    <!-- About -->
+    <section id="about">
         <h1>About Us</h1>
-        <div id="infoBoxesContainer" class="info-boxes">
-            <div class="info-box">
+        <div class="boxes">
+            <div class="box">
                 <h3>Who We Are</h3>
                 <p>7risten.ca is a boutique website design and development company based in Saskatoon, Saskatchewan. We specialize in creating custom, high-performance websites for small businesses.</p>
             </div>
-            <div class="info-box">
+            <div class="box">
                 <h3>What We Do</h3>
                 <p>We provide comprehensive website design, development, and maintenance services with a focus on affordability and value for small businesses.</p>
             </div>
-            <div class="info-box">
+            <div class="box">
                 <h3>Why We Do It</h3>
                 <p>Our mission is to create beautiful, high-performance websites that deliver exceptional user experiences. We are passionate about helping small businesses establish a strong online presence through visually stunning, secure, and fast websites.</p>
             </div>
         </div>        
-        <p>Founded in Saskatoon, Saskatchewan, our team is dedicated to excellence in web development. We pride ourselves on our meticulous attention to detail and our commitment to client satisfaction. </p>
+        <p>Founded in Saskatoon, Saskatchewan, our team is dedicated to excellence in web development. We pride ourselves on our meticulous attention to detail and our commitment to client satisfaction.</p>
         <h3>Our values</h3>
-        <p>transparency, innovation, and integrity, which guide us in every project we undertake.</p>
-       
+        <p>Transparency, innovation, and integrity, which guide us in every project we undertake.</p>
         <h3>Our Team</h3>
-        <div class="team-member">
-            <img src="/image/portfolio.png" alt="Tristen MacPherson Headshot">
-            <div class="member-info">
+
+            <div class="box">
+                <img src="/image/portfolio.png" alt="Tristen MacPherson Headshot">
                 <p><strong>Tristen MacPherson</strong> is the driving force behind 7risten.ca. He discovered his passion for web development while earning his B.A. Sc. in Computer Science at the University of Saskatchewan. <a href="https://www.linkedin.com/in/tristen-macpherson-15042029b" target="_blank">LinkedIn Profile</a></p>
             </div>
-        </div>
-        <button id="gotoggleServicesButton">Services</button>
-        <a class="scrollToTop" href="#top">↑</a>
-    </div>
+
+        
+    </section>
     
-    <!--Services--> 
-    <div id="servicesContainer" style="display: none;">
+    <!-- Services --> 
+    <section id="services">
         <h1>Services</h1>
         <p>We offer a comprehensive range of services to meet your web development needs:</p>
         <ul>
@@ -72,10 +65,10 @@
             <li><strong>Copywriting:</strong> Compelling content that resonates with your audience and enhances your site's effectiveness.</li>
             <li><strong>Hosting:</strong> Robust hosting solutions ensure your site remains accessible and performs well under all conditions.</li>
         </ul>
-        <!--Prices-->
+        <!-- Prices -->
         <h2>Prices</h2>
-        <div class="price-container">
-            <div class="price-box">
+        <div class="boxes">
+            <div class="box">
                 <h2>Monthly</h2>
                 <p>$82.50/MO</p>
                 <p>$0 Down</p>
@@ -83,7 +76,7 @@
                 <p>24/7 Customer Service</p>
                 <p>Unlimited Edits</p>
             </div>
-            <div class="price-box">
+            <div class="box">
                 <h2>Annually</h2>
                 <p>$75/MO</p>
                 <p>Best Value</p>
@@ -92,24 +85,19 @@
                 <p>Unlimited Edits</p>
             </div>
         </div>
-        <button id="gotoggleContactButton">Contact</button>
-        <a class="scrollToTop" href="#top">↑</a>
-    </div>
+    </section>
     
-    <!--Portfolio-->
-    <div id="portfolioContainer" style="display: none;">
+    <!-- Portfolio -->
+    <section id="portfolio">
         <h1>Portfolio</h1>
         <p>See some of our previous projects:</p>
-        <div class="portfolio-item">
             <h3>University of Saskatchewan CST</h3>
             <p>This project involved designing and developing a custom static site for the Computer Science Department at the University of Saskatchewan. The site is optimized for performance and security, providing a reliable and visually appealing online presence.</p>
             <iframe src="https://cst.cs.usask.ca/" width="100%" height="600px" style="border:none;"></iframe>
-        </div>
-        <a class="scrollToTop" href="#top">↑</a>
-    </div>
+    </section>
 
-    <!--Contact-->
-    <div id="contactContainer" style="display: none;">
+    <!-- Contact -->
+    <section id="contact">
         <h1>Contact</h1>
         <h2>Sweeten Your Day - Reach Out Today!</h2>
         <h3>Email</h3>
@@ -118,24 +106,21 @@
         <p>1(306)229-6406</p>
         <h3>Send us a message</h3>
         <form id="contactForm" method="POST" action="https://docs.google.com/forms/d/e/1FAIpQLSedk9IsSFjJhNhXlAMGOl493dlOdIav84SKQkBWr0my_TpL6Q/formResponse" target="hiddenIframe">
-            <div class="form-group">
-                <input name="entry.69042632" type="text" placeholder="Name" id="name">
-                <input name="entry.2113784187" type="text" placeholder="Phone Number" id="phone">
-            </div>
+            <input name="entry.69042632" type="text" placeholder="Name" id="name">
+            <input name="entry.2113784187" type="text" placeholder="Phone Number" id="phone">
             <input name="entry.672529567" type="email" placeholder="Email" id="email">
             <textarea name="entry.1861349441" placeholder="Tell us a little about your self." id="message"></textarea>
-            <button class="form-button" type="submit">Connect</button>
+            <button class="button" type="submit">Connect</button>
         </form>
-        <a class="scrollToTop" href="#top">↑</a>
-    </div>
+    </section>
     
     <!-- Hidden iframe for Google Form submission -->
     <iframe id="hiddenIframe" name="hiddenIframe" style="display: none;"></iframe>
-
+    <a class="scrollToTop" href="#top">↑</a>
 </main>
 
 <footer>
-    Copyright &copy; <span id="year"></span> <a href="https://7risten.ca/" target="_self"> 7risten.ca</a>
+    <p>&copy; <span id="year"></span> <a href="https://7risten.ca/" target="_self">7risten.ca</a></p>
 </footer>
 
 <script src="script.js"></script>
