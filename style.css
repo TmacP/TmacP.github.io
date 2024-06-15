@@ -108,7 +108,8 @@ button:hover {
     box-sizing: border-box;
     font-family: 'Roboto';
     border: 1px solid var(--border-color);
-    border-radius: 8px; /* Added border-radius to match buttons */
+    border-radius: 8px; 
+    font-size: 24px;
 }
 
 /* Styles for boxes */
@@ -125,8 +126,10 @@ button:hover {
 }
 
 .boxes {
-    /* aligh boxes in a row horizontally */
+    /* align boxes in a row horizontally */
     display: flex;
+    flex-wrap: wrap; /* Allow boxes to wrap to the next line */
+    justify-content: center; /* Center boxes horizontally */
 }
 
 /* scroll to top button */
