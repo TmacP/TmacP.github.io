@@ -2,9 +2,10 @@
     --main-font-color: #242d2d;
     --main-bg-color: #C1FEFC;
     --body-color: #D7FEFD;
+    --back-body-color: #d9f8f7;
     --second-bg-color: #DCF7E6;
-    --border-color:  #010000;
-    --box-shadow: #979999;
+    --border-color:  #F7FEFD;
+    --box-shadow: #C1FEFC;
     --gradient--1: linear-gradient(to bottom right, var(--main-bg-color) 0% , var(--body-color)20%, var(--body-color)80%, var(--second-bg-color) 100% );
     --gradient--2: linear-gradient(to bottom right, var(--second-bg-color) 0%, var(--body-color)20% , var(--body-color)80%, var(--main-bg-color) 100%);
     font-family: 'Roboto';
@@ -14,9 +15,14 @@
 body {
     margin: 0;
     padding: 0;
-    background-color: var(--body-color);
+    background-color: var(--back-body-color);
     display: flex;
     flex-direction: column;
+}
+
+a {
+    text-decoration: none;
+    color: var(--main-font-color);
 }
 
 /* Style for the header element */
@@ -48,7 +54,7 @@ main {
 /* Add border to all sections */
 section {
     border: 1px solid var(--border-color); /* Example border style */
-    margin: 20px;
+    margin: 50px;
     padding: 20px; /* Optional: Add padding inside the border */
     width: 80%;
 }
