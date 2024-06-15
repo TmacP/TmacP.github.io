@@ -8,10 +8,11 @@
 </head>
 <body id="top">
 <header>
-    <img src="image/icon.avif" alt="Logo" width="100" height="100">
+    
     <nav>
         <a href="#about">About</a>
         <a href="#services">Services</a>
+        <img src="image/icon.avif" alt="Logo" width="100" height="100">
         <a href="#portfolio">Portfolio</a>
         <a href="#contact">Contact</a>
     </nav>
@@ -20,7 +21,7 @@
 <main>
     <!-- Landing -->
     <section id="landing">
-        <h2>Delicious Design. Decadent Development.</h2>
+        <h2>Delicious Design.<br>Decadent Development.</h2>
         <h3>Have Your Cake and Eat It Too.</h3>
         <p>7risten.ca is a boutique website design and development company based in Saskatoon, Saskatchewan. We specialize in creating custom, high-performance websites for small businesses.</p>
     </section>
@@ -123,6 +124,11 @@
     <p>&copy; <span id="year"></span> <a href="https://7risten.ca/" target="_self">7risten.ca</a></p>
 </footer>
 
-<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('year').innerHTML = new Date().getFullYear();
+    document.getElementById('contactForm').addEventListener('submit', handleSubmit);
+});
+</script>
 </body>
 </html>
