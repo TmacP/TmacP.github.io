@@ -2,8 +2,6 @@
     --main-font-color: #804225f9;
     --main-bg-color: #b4f8f1;
     --second-bg-color: #babcb7e9;
-    --button-border-color: #ccc; /* Default button border color */
-    --info-box-border-color: #ddd; /* Default info box border color */
     font-family: 'Roboto';
 }
 
@@ -65,14 +63,13 @@ button, .form-button {
     padding: 5px 10px;
     font-size: 23px;
     font-family: 'Roboto';
-    width: 30%;
+    width: 60%;
     border-radius: 8px;
     transition-duration: 0.4s;
     background-color: transparent;
     display: block;
     margin: 0 auto;
     color: var(--main-font-color);
-    border: 1px solid var(--button-border-color); /* Use variable for button border */
 }
 
 button:hover, .form-button:hover {
@@ -87,6 +84,72 @@ button:hover, .form-button:hover {
     height: 32px;
 }
 
+.aboutContainer, .servicesContainer, .landingContainer, .portfolioContainer, .contactContainer {
+    color: var(--main-font-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 100px; /* Adjusted padding shorthand */
+    text-align: center; /* Center align text */
+}
+
+.landingContainer header, .aboutContainer header, .servicesContainer header, .portfolioContainer header, .contactContainer header {
+    font-size: 2rem; /* Example heading font size */
+    margin: 10px 0;
+}
+
+
+.landingContainer p, .aboutContainer p, .servicesContainer p, .portfolioContainer p, .contactContainer form {
+    font-size: 1rem; /* Example paragraph font size */
+    margin: 10px 0;
+}
+
+.landingText {
+    color: var(--main-font-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 100px; /* Adjusted padding shorthand */
+
+}
+
+#contactForm {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    font-family: 'Roboto';
+}
+
+#contactForm .form-group {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#contactForm .form-group input {
+    flex: 1;
+    margin-right: 10px;
+}
+
+#contactForm .form-group input:last-child {
+    margin-right: 0;
+}
+
+#contactForm input,
+#contactForm textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    font-family: 'Roboto';
+    border: 1px solid #ccc;
+    border-radius: 8px; /* Added border-radius to match buttons */
+}
+
 /* Styles for the info boxes */
 .info-boxes {
     display: flex;
@@ -99,7 +162,7 @@ button:hover, .form-button:hover {
 .info-box, .team-member {
     flex: 1;
     padding: 20px;
-    border: 1px solid var(--info-box-border-color); /* Use variable for info box border */
+    border: 1px solid #ddd;
     border-radius: 5px;
     background-size: cover; /* Adjust as needed */
     background-position: center; /* Adjust as needed */
@@ -145,6 +208,7 @@ button:hover, .form-button:hover {
     max-width: 300px;
 }
 
+
 /* Scroll to top */
 .scrollToTop {
     position: fixed;
@@ -178,4 +242,20 @@ button:hover, .form-button:hover {
       opacity: 1; /* Fully visible */
       visibility: visible; /* Ensure it stays visible after animation */
     }
-}
+  }
+  
+  /* Step 2: Apply the animation to your elements */
+  .landingText {
+    animation: slideIn 1.25s ease-out forwards; /* 1s duration, ease-out timing, and make sure the final state is retained */
+    animation-delay: 2.25s;
+    visibility: hidden; /* Initially hidden */
+  }
+  
+  /* Optional: Adjust the delay for each element if you want them to slide in one after the other */
+  h2.landingText {
+    animation-delay: 0.75s; /* Starts half a second after the page loads */
+  }
+  
+  h3.landingText {
+    animation-delay: 1.50s; /* Starts 1 second after the page loads */
+  }
