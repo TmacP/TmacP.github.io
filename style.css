@@ -1,7 +1,7 @@
 :root {
     --main-font-color: #242d2d;
     --main-bg-color: #C1FEFC;
-    --body-color: #D7FEFD;
+    --body-color: #d9fffe; /* middle gradient color */
     --back-body-color: #d9f8f7;
     --second-bg-color: #DCF7E6;
     --border-color:  #F7FEFD;
