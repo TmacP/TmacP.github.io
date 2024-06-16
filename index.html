@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <!-- Live reload comment out for deployment-->
-    <meta http-equiv="refresh" content="2.5">
+    <!--<meta http-equiv="refresh" content="5">-->
     <!-- Live reload comment out for deployment-->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,11 +34,13 @@
 <main>
     <!-- Landing -->
     <section id="landing">
-        <h1>7risten.ca</h1>
         <h2>Delicious Design.<br>Decadent Development.</h2>
         <h3>Have Your Cake and Eat It Too.</h3>
         <p>
-            woo your customers with a visually stunning website that delivers an exceptional user experience.
+            Is your website looking a little stale? 
+            Let us help you sweeten your online presence with a fresh, custom hand coded website. 
+            We don't just make beautiful websites, we support you every step of the way. 
+            So you can focus on what you do best, while we take care of the rest.
         </p>
     </section>
 
@@ -49,26 +51,26 @@
             <div class="box">
                 <h2>Who We Are</h2>
                 <p>
-                    7risten.ca is a boutique website design and development company based in Saskatoon, Saskatchewan. 
                     We specialize in creating custom, high-performance websites for small businesses.
                 </p>
             </div>
             <div class="box">
                 <h2>What We Do</h2>
                 <p>
-                    We provide comprehensive website design, development, and maintenance services with a focus on affordability and value for small businesses.
+                    We provide comprehensive website design, and development services 
+                    with a focus on affordability and value.
                 </p>
             </div>
             <div class="box">
                 <h2>Why We Do It</h2>
-                <p>
-                    Our mission is to create beautiful, high-performance websites that deliver exceptional user experiences. 
-                    We are passionate about helping small businesses establish a strong online presence through visually stunning, secure, and fast websites.
+                <p> 
+                    We are passionate about helping small businesses establish a strong online presence 
+                    through visually stunning, and fast websites.
                 </p>
             </div>
         </div>        
         <p>
-            Founded in Saskatoon, Saskatchewan, our team is dedicated to excellence in web development.
+            Founded in Saskatoon, Saskatchewan, 7risten.ca is dedicated to excellence in web development.
             We pride ourselves on our meticulous attention to detail and our commitment to client satisfaction.
         </p>
         <h3>Our values</h3>
@@ -76,16 +78,18 @@
             Transparency, innovation, and integrity, which guide us in every project we undertake.
         </p>
         <h3>Our Team</h3>
+        <div class="boxes">
             <div class="box">
-                <img class="portfolio-pic" src="image/portfolio.png" alt="Tristen MacPherson Headshot" width="150" height="150" >
+                <img src="image/portfolio.png" alt="Tristen MacPherson Headshot" width="150" height="150" >
                 <p>
                     <strong>Tristen MacPherson</strong> is the driving force behind 7risten.ca. 
                     He discovered his passion for web development while earning his B.A. Sc. in Computer Science at the University of Saskatchewan. 
                 </p>
                 <a href="https://www.linkedin.com/in/tristen-macpherson-15042029b" target="_blank">
-                    <img src="image/linkedin.png" alt="Tristen MacPherson Headshot" width="24" height="24">
+                    <img src="image/linkedin.png" alt="LinkedIn" width="24" height="24">
                 </a>  
             </div>  
+        </div>
     </section>
     
     <!-- Services --> 
@@ -100,22 +104,41 @@
         </ul>
         <!-- Prices -->
         <h2>Prices</h2>
-        <div class="boxes">
-            <div class="box">
-                <h2>Monthly</h2>
-                <p>$82.50/MO</p>
-                <p>$0 Down</p>
-                <p>Hosting Included</p>
-                <p>24/7 Customer Service</p>
-                <p>Unlimited Edits</p>
+        <div class="pricing-container">
+            <div class="pricing-box">
+                <h2>Our Best Deal</h2>
+                <p class="price">$75/mo</p>
+                <p>Billed Annually</p>
+                <ul>
+                    <li>$0 Down</li>
+                    <li>Hosting</li>
+                    <li>24/7 Customer Service</li>
+                    <li>Unlimited Edits</li>
+                    <li>Security</li>
+                    <li>Copywriting</li>
+                    <li>Mobile Optimization</li>
+                    <li>Fast Load Speed</li>
+                    <li>Domain Management</li>
+                    <li>Maintenance</li>
+                </ul>
+                </ul>
             </div>
-            <div class="box">
-                <h2>Annually</h2>
-                <p>$75/MO</p>
-                <p>Best Value</p>
-                <p>Hosting Included</p>
-                <p>24/7 Customer Service</p>
-                <p>Unlimited Edits</p>
+            <div class="pricing-box">
+                <h2>Pay As You Go</h2>
+                <p class="price">$82.50/mo</p>
+                <p>Billed Monthly</p>
+                <ul>
+                    <li>$0 Down</li>
+                    <li>Hosting</li>
+                    <li>24/7 Customer Service</li>
+                    <li>Unlimited Edits</li>
+                    <li>Security</li>
+                    <li>Copywriting</li>
+                    <li>Mobile Optimization</li>
+                    <li>Fast Load Speed</li>
+                    <li>Domain Management</li>
+                    <li>Maintenance</li>
+                </ul>
             </div>
         </div>
     </section>
@@ -153,10 +176,11 @@
 </main>
 
 <footer>
-    <p>&copy; <span id="year"></span> <a href="https://7risten.ca/" target="_self">7risten.ca</a></p>
+    <p>&copy; <span id="year"></span> <a href="https://7risten.ca/" target="_blank">7risten.ca</a>. All rights reserved.</p>
 </footer>
-
-<script src="script.js"></script>
-
 </body>
+<script>
+    // Set the current year in the footer
+    document.getElementById("year").textContent = new Date().getFullYear();
+</script>
 </html>
