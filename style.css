@@ -23,6 +23,33 @@ body {
 a {
     text-decoration: none;
     color: var(--main-font-color);
+    font-size: 1.5rem;
+}
+
+
+h1 {
+    font-size: 2rem;
+    color: var(--main-font-color);
+    font-family: 'Roboto';
+
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: var(--main-font-color);
+    font-family: 'Roboto';
+}
+
+h3 {
+    font-size: 1.25rem;
+    color: var(--main-font-color);
+    font-family: 'Roboto';
+}
+
+p {
+    font-size: 1.2rem;
+    color: var(--main-font-color);
+    font-family: 'Roboto';
 }
 
 /* Style for the header element */
@@ -112,6 +139,7 @@ button:hover {
     font-size: 24px;
 }
 
+
 /* Styles for boxes */
 .box {
     flex: 1;
@@ -123,7 +151,16 @@ button:hover {
     box-shadow: 0 4px 8px var(--box-shadow);
     max-width: 300px;
     margin: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centers the image and text horizontally */
+    text-align: center; /* Centers the text within the box */
 }
+
+.portfolio-pic {
+    margin-bottom: 10px; /* Optional: Adds some space below the image */
+}
+
 
 .boxes {
     /* align boxes in a row horizontally */
