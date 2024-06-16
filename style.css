@@ -36,19 +36,10 @@ header {
     background-image: var(--gradient--1);
 }
 
-.about {
+#about,  #portfolio{
     background-image: var(--gradient--1);
 }
-.portfolio {
-    background-image: var(--gradient--1);
-}
-.services {
-    background-image: var(--gradient--2);
-}
-.landing {
-    background-image: var(--gradient--2);
-}
-.contact {
+ #services, #landing, #contact {
     background-image: var(--gradient--2);
 }
 /* Styles for the main content area */
@@ -150,10 +141,3 @@ button:hover {
     text-decoration: none;
     color: var(--main-font-color);
 }
-
-@font-face {
-    font-family: 'Hack';
-    src: url('/fonts/hack-regular.woff2?sha=3114f1256') format('woff2');
-    font-display: swap;
-  }
-  
