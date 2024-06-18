@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Title</title>
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+    <header>
+        <img src="../image/7risten.svg" alt="Logo" width="103" height="124.8">
+        <nav>
+            <a href="../#about">About</a>
+            <a href="../#services">Services</a>
+            <a href="../#portfolio">Portfolio</a>
+            <a href="../#contact">Contact</a>
+            <a href="index.html">Blog</a>
+        </nav>
+    </header>
+
+    <main>
+        <article>
+            <h1>Blog Title</h1>
+            <p>Date: YYYY-MM-DD</p>
+            <section>
+                <h2>Section Title</h2>
+                <p>Blog post content goes here...</p>
+            </section>
+            <section>
+                <h2>Another Section Title</h2>
+                <p>More blog post content goes here...</p>
+            </section>
+        </article>
+    </main>
+
+    <footer>
+        <p><span id="year"></span> &copy; <a href="https://7risten.ca/" target="_blank">7risten.ca</a></p>
+    </footer>
+    <script src="../script.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
