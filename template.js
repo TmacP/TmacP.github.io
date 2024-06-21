@@ -23,6 +23,15 @@ fetch(getRelativePath('header-template.html'))
         // Clone the template content
         const header = document.importNode(template.content, true);
 
+        // Adjust links based on the current location
+        const basePath = getRelativePath('');
+        header.querySelector('#home-link').href = `${basePath}index.html`;
+        header.querySelector('#logo').src = `${basePath}image/7risten.svg`;
+        header.querySelector('#about-link').href = `${basePath}index.html#about`;
+        header.querySelector('#services-link').href = `${basePath}index.html#services`;
+        header.querySelector('#portfolio-link').href = `${basePath}index.html#portfolio`;
+        header.querySelector('#contact-link').href = `${basePath}index.html#contact`;
+
         // Insert the header into the header container
         const headerContainer = document.getElementById('header-container');
         headerContainer.appendChild(header);
