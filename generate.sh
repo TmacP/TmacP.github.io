@@ -45,9 +45,6 @@ process_html_files() {
         # Get the relative path and output file path
         RELATIVE_PATH="${FILE#$BASE_SOURCE_DIR/}"
         OUTPUT_FILE="$OUTPUT_DIR/$RELATIVE_PATH"
-
-        # Ensure the output directory exists
-        mkdir -p "$(dirname "$OUTPUT_FILE")"
         
         # Write the updated HTML content to the output directory
         echo "$HTML_CONTENT" > "$OUTPUT_FILE"

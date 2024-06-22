@@ -1,0 +1,14 @@
+{
+    "watch": [
+      "index.html",
+      "css/*.css",
+      "blog/*.html"
+    ],
+    "ignore": [
+      "docs/*",
+      "header-template.html",
+      "footer-template.html"
+    ],
+    "exec": "bash generate.sh"
+  }
+  
