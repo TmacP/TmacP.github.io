@@ -251,8 +251,7 @@ button:hover {
 
 .hidden {
     opacity: 0;
-    filter: blur(2px);
-    transform: translateX(-100%);
+    filter: blur(0.5px);
     transition: all 2s;
 
 }
@@ -260,7 +259,6 @@ button:hover {
 .visible {
     opacity: 1;
     filter: blur(0);
-    transform: translateX(0);
 }
 
 @media(prefers-reduced-motion: reduce) {
