@@ -251,15 +251,41 @@ button:hover {
 
 .hidden {
     opacity: 0;
-    transition: opacity 2s ease-in-out; /* Ensure transition is defined */
+    filter: blur(2px);
+    transform: translateX(-100%);
+    transition: all 2s;
+
 }
 
 .visible {
     opacity: 1;
+    filter: blur(0);
+    transform: translateX(0);
 }
 
 @media(prefers-reduced-motion: reduce) {
     .visable {
         transition: none;
     }
+}
+
+.box:nth-child(2) {
+    transition-delay: 400ms;
+}
+
+.box:nth-child(3) {
+    transition-delay: 800ms;
+}
+
+.box:nth-child(4) {
+    transition-delay: 1000ms;
+}
+
+/* Transition delay for .price elements */
+.pricing-box:nth-of-type(1) {
+    transition-delay: 400ms;
+}
+
+.pricing-box:nth-of-type(2) {
+    transition-delay: 800ms;
 }
