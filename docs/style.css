@@ -249,3 +249,17 @@ button:hover {
     border-bottom: 1px solid var(--border-color);
 }
 
+.hidden {
+    opacity: 0;
+    transition: opacity 2s ease-in-out; /* Ensure transition is defined */
+}
+
+.visible {
+    opacity: 1;
+}
+
+@media(prefers-reduced-motion: reduce) {
+    .visable {
+        transition: none;
+    }
+}
