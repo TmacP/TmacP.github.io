@@ -288,11 +288,15 @@ button:hover {
     transition-delay: 800ms;
 }
 
-
+/* Blog and signature */
 .blog-post-content {
     padding-left: 20px; /* Space between text and border */
     padding-right: 20px; /* Space between text and border */
     box-sizing: border-box; /* Ensures padding doesn't affect the width */
     max-width: 800px; /* Optional: Set a maximum width */
     margin: 0 auto; /* Center the content */
+}
+
+.signature {
+    font-style: italic; /* Optional for styling the text */
 }

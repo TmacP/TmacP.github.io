@@ -1,4 +1,3 @@
-<!-- layouts/blog/single.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,11 +9,13 @@
 <body>
     {{ partial "header.html" . }}
 
-    <main>
+    <main class="blog-post-content">
         <h1>{{ .Title }}</h1>
         <p>{{ .Date.Format "2006-01-02" }}</p>
-        <div class="blog-post-content">
-            {{ .Content }}
+        {{ .Content }}
+        <div class="signature">
+            XOXO,<br>
+            <img src="/image/Signature.png" alt="Signature" style="width: 15%; height: auto;">
         </div>
     </main>
 

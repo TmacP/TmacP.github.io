@@ -19,5 +19,3 @@ Since I launched 7risten.ca and made my presence public, I’ve been inundated w
 ## Motivation
 
 What enticed me to work in computing is the Promethean thrill of creating tangible experiences out of the seemingly lifeless medium of text. But, as satisfying as that power is to wield, I completely believe in the duty of the computing professional to direct that awesome ability to benefit the community by which I am borne. Unless my τέχνη can improve the world, I don't want to waste my already limited and precious time interacting with people who have none. I’d much rather be producing music on Instagram for the three people who care to listen to it; at least then these cold-blooded reptiles (no offense to actual reptiles intended, whom I regard in infinitely higher rank) would stop bothering me to become involved in their duplicitous and fraudulent attempts to extract from, and provide nothing of value to, the world.
-
-XOXO, Tristen
