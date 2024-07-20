@@ -39,3 +39,12 @@ but who could have anticipated
 
 
 if we care about the negative consequences
+
+
+for licensing
+p1 computing is high consequence
+p2 in other high consequence occupation
+
+should not be licensed unless stifle innovation raise prices to consumer
+p1 some is high consequence not all is
+p2 word done my amateurs
