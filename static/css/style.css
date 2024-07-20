@@ -287,3 +287,10 @@ button:hover {
 .pricing-box:nth-of-type(2) {
     transition-delay: 800ms;
 }
+
+
+/* portfolio images */
+.portfolio-img {
+    max-width: 60%;
+    height: auto;
+}
