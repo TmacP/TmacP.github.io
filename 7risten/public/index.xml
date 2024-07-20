@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>My New Hugo Site</title>
+    <link>http://localhost:1313/</link>
+    <description>Recent content on My New Hugo Site</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 19 Jul 2024 19:07:22 -0600</lastBuildDate>
+    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Portfolio</title>
+      <link>http://localhost:1313/portfolio/</link>
+      <pubDate>Fri, 19 Jul 2024 19:07:22 -0600</pubDate>
+      <guid>http://localhost:1313/portfolio/</guid>
+      <description> &lt;!DOCTYPE html&gt; Portfolio - 7risten.ca {{- partial &#34;header.html&#34; -}} Portfolio University of Saskatchewan Cyber Security Team This project involved redesigning the University of Saskatchewan Cyber Security Team&#39;s website to be more modern and attractive. The site is a simple way for people to learn about the team and its members, as well as to contact them or link to their Discord or Instagram. {{- partial &#34;footer.html&#34; -}} </description>
+    </item>
+  </channel>
+</rss>
