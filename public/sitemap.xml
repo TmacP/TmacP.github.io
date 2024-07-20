@@ -3,13 +3,19 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>http://localhost:1313/</loc>
-    <lastmod>2024-07-19T00:00:00+00:00</lastmod>
+    <lastmod>2024-07-19T22:02:21-06:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/blog/</loc>
+    <lastmod>2024-07-19T22:02:21-06:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/blog/g/designing-better-applications-at-the-expense-of-user-autonomy/</loc>
+    <lastmod>2024-07-19T22:02:21-06:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/blog/professionalism-in-computing/</loc>
+    <lastmod>2024-07-19T21:29:42-06:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/portfolio/</loc>
     <lastmod>2024-07-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/blog/</loc>
-    <lastmod>2024-06-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/blog/the-value-of-simplicity-in-web-development/</loc>
     <lastmod>2024-06-18T00:00:00+00:00</lastmod>
