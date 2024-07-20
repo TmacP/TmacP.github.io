@@ -1,5 +1,5 @@
 ---
-title: "The Duty of Simplicity"
+title: "The Duty of Software"
 date: 2024-06-18T00:00:00Z
 draft: false
 ---
