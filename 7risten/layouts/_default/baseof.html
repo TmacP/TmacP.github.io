@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }} - {{ .Site.Title }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ "css/style.css" | relURL }}">
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://docs.google.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data:;
+    frame-src https://cst.cs.usask.ca https://docs.google.com;
+    connect-src 'self';
+    font-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self' https://docs.google.com;">
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EC1L2NDYL7"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-EC1L2NDYL7');
+</script>
+
+<body id="top">
+{{- partial "header.html" -}}
+
+<main>
+    {{ block "main" . }}{{ end }}
+</main>
+
+{{- partial "footer.html" -}}
+
+<script src="{{ "js/script.js" | relURL }}"></script>
+</body>
+</html>

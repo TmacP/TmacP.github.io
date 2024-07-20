@@ -1,10 +1,10 @@
 <header>
-    <a href="/index.html"><img src="/image/7risten.svg" alt="Logo" width="103" height="124.8"></a>
+    <a href="{{ "/" | relURL }}"><img src="{{ "image/7risten.svg" | relURL }}" alt="Logo" width="103" height="124.8"></a>
     <nav>
-        <a id="about-link" href="../index.html#about">About</a>
-        <a id="services-link" href="../index.html#services">Services</a>
-        <a id="portfolio-link" href="../portfolio.html">Portfolio</a>
-        <a id="contact-link" href="../index.html#contact">Contact</a>
-        <a href="/blog/index.html">Blog</a>
+        <a id="about-link" href="{{ "/" | relURL }}#about">About</a>
+        <a id="services-link" href="{{ "/" | relURL }}#services">Services</a>
+        <a id="portfolio-link" href="{{ "portfolio/" | relURL }}">Portfolio</a>
+        <a id="contact-link" href="{{ "/" | relURL }}#contact">Contact</a>
+        <a href="{{ "blog/" | relURL }}">Blog</a>
     </nav>
 </header>
