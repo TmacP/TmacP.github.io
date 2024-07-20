@@ -1,0 +1,23 @@
+<!-- layouts/blog/single.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ "css/style.css" | relURL }}">
+</head>
+<body>
+    {{ partial "header.html" . }}
+
+    <main>
+        <h1>{{ .Title }}</h1>
+        <p>{{ .Date.Format "2006-01-02" }}</p>
+        {{ .Content }}
+    </main>
+
+    {{ partial "footer.html" . }}
+
+    <script src="{{ "js/script.js" | relURL }}"></script>
+</body>
+</html>
