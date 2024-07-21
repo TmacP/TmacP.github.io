@@ -342,7 +342,9 @@ button:hover {
     display: flex;
     flex-direction: column; /* Stack images vertically */
     gap: 10px; /* Space between images */
-    align-items: flex-end; /* Align images to the right */
+    align-items: center; /* Center images horizontally */
+    /* Center images vertically */
+    justify-content: center;
 }
 
 #image-container img {
