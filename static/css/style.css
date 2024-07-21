@@ -320,4 +320,50 @@ button:hover {
 }
 #landing h3 {
     font-size: 2rem; /* Adjust this value as needed */
+    margin: 0%;
+}
+
+/* landing section */
+#landing {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    background-image: var(--gradient--2);
+}
+
+#landing .text-content {
+    flex: 1; /* Adjust to take up to 60% of the space */
+    min-width: 300px; /* Ensure it doesn't shrink too small */
+}
+
+#image-container {
+    flex: 1; /* Adjust to take up to 35% of the space */
+    min-width: 200px; /* Ensure it doesn't shrink too small */
+    display: flex;
+    flex-direction: column; /* Stack images vertically */
+    gap: 10px; /* Space between images */
+    align-items: flex-end; /* Align images to the right */
+}
+
+#image-container img {
+    width: auto; /* Adjust the size as needed */
+    height: auto; /* Maintain aspect ratio */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #landing {
+        flex-direction: column; /* Stack content vertically on small screens */
+        align-items: center;
+    }
+    
+    #landing .text-content, #image-container {
+        flex: 1 1 100%; /* Take full width */
+        text-align: center; /* Center the text */
+        min-width: 0; /* Allow shrinking */
+    }
+    
+    #image-container {
+        align-items: center; /* Center images */
+    }
 }
