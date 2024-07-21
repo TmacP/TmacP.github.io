@@ -1,6 +1,6 @@
 baseURL = 'https://7risten.ca'
 languageCode = 'en-us'
-title = '7risten | Design and Development'
+title = 'Design & Development'
 
 [markup]
   [markup.goldmark]
