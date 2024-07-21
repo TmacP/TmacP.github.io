@@ -32,12 +32,10 @@ a {
     font-size: 1.5rem;
 }
 
-
 h1 {
     font-size: 2rem;
     color: var(--main-font-color);
     font-family: 'Roboto';
-
 }
 
 h2 {
@@ -75,6 +73,7 @@ header {
  #services, #landing{
     background-image: var(--gradient--2);
 }
+
 /* Styles for the main content area */
 main {
     flex-grow: 1;
@@ -92,8 +91,6 @@ section {
     width: 80%;
     border-radius: 8px;
 }
-
-
 
 /* Style for the footer */
 footer {
@@ -129,7 +126,55 @@ button:hover {
 }
 
 /* Styles for the contact form */
-/* Styles for the contact form */
+.contact-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+.contact-text,
+.contact-form {
+    flex: 1;
+    margin: 10px;
+}
+
+.contact-form {
+    max-width: 400px;
+}
+
+.contact-form form {
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-form input,
+.contact-form textarea,
+.contact-form button {
+    margin-bottom: 10px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.contact-form textarea {
+    height: 100px;
+    resize: none;
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .contact-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .contact-text,
+    .contact-form {
+        max-width: 100%;
+    }
+}
+
 #contactForm {
     display: flex;
     flex-direction: column;
@@ -141,7 +186,6 @@ button:hover {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     font-family: 'Roboto', sans-serif;
 }
-
 
 #contactForm input,
 #contactForm textarea {
@@ -165,8 +209,6 @@ button:hover {
     height: 150px;
 }
 
-
-
 /* Styles for boxes */
 .box {
     flex: 1;
@@ -178,11 +220,9 @@ button:hover {
     box-shadow: 0 4px 8px var(--box-shadow);
     max-width: 300px;
     margin: 10px;
-
     flex-direction: column;
     align-items: center; /* Centers the image and text horizontally */
     text-align: center; /* Centers the text within the box */
-
 }
 
 .boxes {
@@ -191,7 +231,6 @@ button:hover {
     flex-wrap: wrap; /* Allow boxes to wrap to the next line */
     justify-content: center; /* Center boxes horizontally */
     gap: 2rem;
-    
 }
 
 .box h2 {
@@ -238,7 +277,7 @@ button:hover {
 
 .pricing-box h2 {
     background-color: var(--second-bg-color);
-    color: var(--main-font-color);
+    color: var (--main-font-color);
     margin: -2rem -2rem 1rem -2rem;
     padding: 1rem 0;
     border-radius: 8px 8px 0 0;
@@ -265,7 +304,6 @@ button:hover {
     opacity: 0;
     filter: blur(0.5px);
     transition: all 2s;
-
 }
 
 .visible {
@@ -274,7 +312,7 @@ button:hover {
 }
 
 @media(prefers-reduced-motion: reduce) {
-    .visable {
+    .visible {
         transition: none;
     }
 }
@@ -292,13 +330,18 @@ button:hover {
 }
 
 /* Transition delay for .price elements */
-.pricing-box:nth-of-type(1) {
+.pricing-box:nth-of-type(2) {
     transition-delay: 400ms;
 }
 
-.pricing-box:nth-of-type(2) {
+.pricing-box:nth-of-type(3) {
     transition-delay: 800ms;
 }
+
+.pricing-box:nth-of-type(4) {
+    transition-delay: 800ms;
+}
+
 
 /* Blog and signature */
 .blog-post-content {
@@ -312,7 +355,6 @@ button:hover {
 .signature {
     font-style: italic; /* Optional for styling the text */
 }
-
 
 /* about section */
 #landing h2 {
@@ -343,8 +385,7 @@ button:hover {
     flex-direction: column; /* Stack images vertically */
     gap: 10px; /* Space between images */
     align-items: center; /* Center images horizontally */
-    /* Center images vertically */
-    justify-content: center;
+    justify-content: center; /* Center images vertically */
 }
 
 #image-container img {
