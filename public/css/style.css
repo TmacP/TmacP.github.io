@@ -69,10 +69,10 @@ header {
     background-image: var(--gradient--1);
 }
 
-#about,  #portfolio{
+#about,  #portfolio, #contact {
     background-image: var(--gradient--1);
 }
- #services, #landing, #contact {
+ #services, #landing{
     background-image: var(--gradient--2);
 }
 /* Styles for the main content area */
