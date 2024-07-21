@@ -170,7 +170,7 @@ button:hover {
 /* Styles for boxes */
 .box {
     flex: 1;
-    padding: 20px;
+    padding: 2rem;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background-size: cover; /* Adjust as needed */
@@ -178,10 +178,11 @@ button:hover {
     box-shadow: 0 4px 8px var(--box-shadow);
     max-width: 300px;
     margin: 10px;
-    display: flex;
+
     flex-direction: column;
     align-items: center; /* Centers the image and text horizontally */
     text-align: center; /* Centers the text within the box */
+
 }
 
 .boxes {
@@ -189,6 +190,16 @@ button:hover {
     display: flex;
     flex-wrap: wrap; /* Allow boxes to wrap to the next line */
     justify-content: center; /* Center boxes horizontally */
+    gap: 2rem;
+    
+}
+
+.box h2 {
+    background-color: var(--second-bg-color);
+    color: var(--main-font-color);
+    margin: -2rem -2rem 2rem -2rem;
+    padding: 1rem 0;
+    border-radius: 8px 8px 0 0;
 }
 
 /* scroll to top button */
@@ -217,6 +228,7 @@ button:hover {
     width: 250px;
     text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 4px 8px var(--box-shadow);
 }
 
 .pricing-box:hover {
@@ -299,4 +311,13 @@ button:hover {
 
 .signature {
     font-style: italic; /* Optional for styling the text */
+}
+
+
+/* about section */
+#landing h2 {
+    font-size: 3rem; /* Adjust this value as needed */
+}
+#landing h3 {
+    font-size: 2rem; /* Adjust this value as needed */
 }
