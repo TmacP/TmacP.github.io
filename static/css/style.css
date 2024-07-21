@@ -1,8 +1,8 @@
 :root {
     --main-font-color: #242d2d;
     --main-bg-color: #C1FEFC; /* lightest gradient color */
-    --body-color: #e1fffe; /* middle gradient color */
-    --back-body-color: #defffe; /* very background color */
+    --body-color: #f1ffff; /* middle gradient color */
+    --back-body-color: #f5ffff; /* very background color */
     --second-bg-color: #DCF7E6; /* darkest gradient color */
  
     --border-color:  #F7FEFD;
