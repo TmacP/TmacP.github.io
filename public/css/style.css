@@ -4,7 +4,7 @@
     --body-color: #f1ffff; /* middle gradient color */
     --back-body-color: #f5ffff; /* very background color */
     --second-bg-color: #DCF7E6; /* darkest gradient color */
- 
+    --button-color: #D9F8F7;
     --border-color:  #F7FEFD;
     --box-shadow: #C1FEFC;
     --gradient--1: linear-gradient(to bottom right, var(--main-bg-color) 0% , var(--body-color)15%, var(--body-color)85%, var(--second-bg-color) 100% );
@@ -100,21 +100,22 @@ footer {
 }
 
 /* Style for buttons */
-button {
+button,
+a.button {
     padding: 5px 10px;
     font-size: 23px;
     font-family: 'Roboto';
-    width: 60%;
-    border-radius: 8px;
+    border-radius: 12px;
     transition-duration: 0.4s;
-    background-color: transparent;
-    display: block;
-    margin: 0 auto;
-    color: var(--main-font-color);
+    margin: 0 auto; 
+    background-color: var(--button-color);
+    text-align: center; /* Center the text */
+    text-decoration: none; /* Remove underline */
 }
 
-button:hover {
-    background-color: rgba(180, 248, 241, 0.25);
+button:hover,
+a.button:hover {
+    background-color: var(--button-color);
     color: white;
 }
 
@@ -365,17 +366,23 @@ button:hover {
     margin: 0%;
 }
 
-/* landing section */
+
+/* Landing section */
 #landing {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
     background-image: var(--gradient--2);
+    height: 68vh; /* Ensure it takes the full viewport height */
 }
 
-#landing .text-content {
-    flex: 1; /* Adjust to take up to 60% of the space */
+.text-content {
     min-width: 300px; /* Ensure it doesn't shrink too small */
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    text-align: center; /* Center text inside the content */
 }
 
 #image-container {
@@ -386,6 +393,7 @@ button:hover {
     gap: 10px; /* Space between images */
     align-items: center; /* Center images horizontally */
     justify-content: center; /* Center images vertically */
+    order: 2; /* Ensure it comes after the text content */
 }
 
 #image-container img {
