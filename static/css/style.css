@@ -152,9 +152,7 @@ a.button:hover {
 .contact-form input,
 .contact-form textarea,
 .contact-form button {
-    margin-bottom: 10px;
-    padding: 10px;
-    font-size: 16px;
+border: none;
 }
 
 .contact-form textarea {
