@@ -1,8 +1,10 @@
 ---
-title: "Portfolio"
-date: 2024-07-19
-layout: "portfolio"
+title: "University of Saskatchewan Cyber Security Team"
+date: 2024-08-28
+draft: false
+summary: "Redesign the University of Saskatchewan Cyber Security Team's website"
 ---
+
 
 ## University of Saskatchewan Cyber Security Team
 
