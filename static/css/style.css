@@ -26,6 +26,11 @@ span {
     font-size: 1.5rem;
 }
 
+ul, li {
+    font-size: 1.2rem;
+}
+
+
 a {
     text-decoration: none;
     color: var(--main-font-color);
