@@ -9,4 +9,6 @@ summary: "Computer Science 406 Game Design Workshop project."
 
 Description and details about the Potions & Pastries project.
 
-{{< youtube id"iMgsxGeCC24" >}}
+<div class="video-container">
+    <iframe width="560" height="315" src="https://youtu.be/iMgsxGeCC24" frameborder="0" allowfullscreen></iframe>
+</div>
