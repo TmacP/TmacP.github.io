@@ -7,6 +7,6 @@ summary: "Computer Science 406 Game Design Workshop project."
 
 ## Potions & Pastries
 
-Description and details about the Potions & Pastries project.
+Potions & Pastries was my 4th year game development project. I did the audio/sfx, writing, and some of the programming.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/iMgsxGeCC24" frameborder="0" allowfullscreen></iframe>

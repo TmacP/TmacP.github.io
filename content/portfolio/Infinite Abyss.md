@@ -7,7 +7,7 @@ summary: "Computer Science 306 Game Mechanics course."
 
 ## Infinite Abyss
 
-Description and details about the Infinite Abyss project.
+Infinite Abyss was my 3rd year game development group project done in Unity. I did the music/sfx and a large portion of the programming.
 
 <div class="video-container">
     <iframe width="1080" height="960" src="https://infinite-abyss.pages.dev/" frameborder="0" allowfullscreen></iframe>
