@@ -13,4 +13,4 @@ the University of Saskatchewan Cyber Security Team's website to be more modern a
 The site is a simple way for people to learn about the team and its members, as well as to contact them 
 or link to their Discord or Instagram.
 
-<img src="/image/Landing%20Page.png" alt="University of Saskatchewan CST Website" style="max-width: 100%; height: auto;">
+<iframe width="1080" height="960" src="https://cst.cs.usask.ca/" frameborder="0" allowfullscreen></iframe>
