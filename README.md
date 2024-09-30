@@ -1,2 +1,2 @@
 # 7risten.ca WebSite
-Here is the source code for my freelance web design business. 
+Here is the source code for my personal website
