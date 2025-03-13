@@ -7,8 +7,6 @@ summary: "Computer Science 453 Project."
 
 ## Koi Keep
 
-WebSockets and Defold
-
 <div>
-<a href="/Koi Keep/index.html">Play the Defold Game</a>
+<a href="https://cozy-cachet.itch.io/koi">itch.io</a>
 </div>
