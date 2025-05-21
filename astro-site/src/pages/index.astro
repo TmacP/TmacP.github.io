@@ -1,0 +1,78 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout title="7risten.ca" description="7risten.ca offers expert web design and development services in Saskatoon.">
+  <Fragment slot="header">
+    <Header />
+  </Fragment>
+
+  <section id="landing" class="hidden flex flex-col items-center justify-center min-h-[60vh]">
+    <div class="text-content text-center">
+      <h2 class="text-4xl font-bold mb-2">Delicious Design.<br />Decadent Development.</h2>
+      <h3 class="text-2xl mb-4">Tristen MacPherson</h3>
+      <a id="contact-link" class="button bg-[var(--button-color)] px-4 py-2 rounded" href="#contact">Contact</a>
+    </div>
+  </section>
+
+  <section id="about" class="hidden py-12">
+    <h1 class="text-3xl font-bold mb-4">About</h1>
+    <div id="image-container" class="mb-4"></div>
+    <p class="mb-6">
+      I'm a game developer and sound designer with a passion for creating unforgettable digital experiences.<br />
+      I excel in blending creative storytelling with cutting-edge technology to bring immersive worlds to life.<br />
+      My expertise spans game development, audio design, and web development, allowing me to craft unique experiences.<br />
+    </p>
+    <div class="boxes flex flex-wrap gap-4 mb-6">
+      <div class="box hidden p-4 bg-white rounded shadow flex-1 min-w-[200px]">
+        <h2 class="font-semibold mb-2">Who Am I</h2>
+        <p>Game Developer, & Audio Designer.</p>
+        <img src="/image/desktop.svg" alt="desktop" class="mx-auto mt-2" />
+      </div>
+      <div class="box hidden p-4 bg-white rounded shadow flex-1 min-w-[200px]">
+        <h2 class="font-semibold mb-2">What I Do</h2>
+        <p>Create magical experiences, & mesmerizing sounds</p>
+        <img src="/image/tablet.svg" alt="tablet" class="mx-auto mt-2" />
+      </div>
+      <div class="box hidden p-4 bg-white rounded shadow flex-1 min-w-[200px]">
+        <h2 class="font-semibold mb-2">Why I Do It</h2>
+        <p>Creating transfixing artifacts is my passion.</p>
+        <img src="/image/phone.svg" alt="phone" class="mx-auto mt-2" />
+      </div>
+    </div>
+    <div class="boxes flex flex-col items-center">
+      <div class="box p-4 bg-white rounded shadow flex flex-col items-center">
+        <img src="/image/portfolio.png" alt="Tristen MacPherson Headshot" width="150" height="150" class="mb-2 rounded-full" />
+        <p class="mb-2">I'm dedicated to excellence, and pride myself on my meticulous attention to detail. My guiding principles are <strong>Transparency</strong>, <strong>Creativity</strong>, and <strong>Integrity</strong>.</p>
+        <div class="flex gap-4">
+          <a href="https://www.linkedin.com/in/tristen-macpherson-15042029b" target="_blank">
+            <img src="/image/linkedin.png" alt="LinkedIn" width="24" height="24" />
+          </a>
+          <a href="https://github.com/TmacP/" target="_blank">
+            <img src="/image/github.svg" alt="GitHub" width="24" height="24" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="hidden py-12">
+    <div class="contact-container flex flex-col items-center">
+      <div class="contact-text text-center">
+        <h1 class="text-3xl font-bold mb-4">Contact</h1>
+        <h3 class="text-xl font-semibold">Email</h3>
+        <p>service@7risten.ca</p>
+        <h3 class="text-xl font-semibold mt-4">Discord</h3>
+        <p>tr1st3n</p>
+      </div>
+    </div>
+  </section>
+
+  <a class="scrollToTop fixed bottom-4 right-4 bg-[var(--button-color)] p-2 rounded shadow" href="#top">↑</a>
+
+  <Fragment slot="footer">
+    <Footer />
+  </Fragment>
+</BaseLayout>
