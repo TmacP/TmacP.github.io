@@ -1,0 +1,517 @@
+/* CSS Variables for consistent theming */
+:root {
+    --main-font-color: #242d2d;
+    --main-bg-color: #C1FEFC;
+    --body-color: #f1ffff;
+    --back-body-color: #f5ffff;
+    --second-bg-color: #DCF7E6;
+    --button-color: #D9F8F7;
+    --border-color: #F7FEFD;
+    --box-shadow-color: #C1FEFC;
+    --gradient-1: linear-gradient(to bottom right, var(--main-bg-color) 0%, var(--body-color) 15%, var(--body-color) 85%, var(--second-bg-color) 100%);
+    --gradient-2: linear-gradient(to bottom right, var(--second-bg-color) 0%, var(--body-color) 15%, var(--body-color) 85%, var(--main-bg-color) 100%);
+    font-family: 'Roboto', Arial, sans-serif;
+}
+
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--back-body-color);
+    color: var(--main-font-color);
+    font-family: var(--main-font-family);
+    line-height: 1.6;
+    scroll-behavior: smooth;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Typography */
+h1 {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: var(--main-font-color);
+}
+
+h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--main-font-color);
+    text-align: center;
+}
+
+h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: var(--main-font-color);
+}
+
+p {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+}
+
+a {
+    color: var(--main-font-color);
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+}
+
+a:hover {
+    opacity: 0.7;
+}
+
+/* Header */
+header {
+    background-image: var(--gradient-1);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo img {
+    height: auto;
+    max-height: 60px;
+}
+
+nav {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+nav a {
+    font-size: 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+nav a:hover {
+    transform: translateY(-2px);
+}
+
+/* Button styles */
+.button, .cta-button, .portfolio-link {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: var(--button-color);
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+}
+
+.button:hover, .cta-button:hover, .portfolio-link:hover {
+    background-color: var(--second-bg-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.cta-button {
+    font-size: 1.3rem;
+    padding: 16px 32px;
+    margin-top: 2rem;
+}
+
+/* Hero Section */
+.hero {
+    background-image: var(--gradient-2);
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.hero-content h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--main-font-color);
+}
+
+.hero-content p {
+    font-size: 1.3rem;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+/* About Section */
+.about {
+    padding: 6rem 0;
+    background-image: var(--gradient-1);
+}
+
+.about h2 {
+    margin-bottom: 2rem;
+}
+
+.about-content {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.about-text p:first-child {
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.skill-item {
+    background-color: var(--body-color);
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: left;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.skill-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.skill-item h3 {
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+    color: var(--main-font-color);
+}
+
+.skill-item p {
+    font-size: 1rem;
+    opacity: 0.8;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.principles-section {
+    background-color: var(--body-color);
+    padding: 2.5rem;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-top: 3rem;
+}
+
+.principles-section p {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+}
+
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.social-links a {
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.social-links a:hover {
+    background-color: var(--button-color);
+}
+
+/* Portfolio Section */
+.portfolio {
+    padding: 6rem 0;
+    background-color: var(--back-body-color);
+}
+
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 3rem;
+    margin-top: 3rem;
+}
+
+.portfolio-item {
+    background-color: var(--body-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.portfolio-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.portfolio-content {
+    padding: 2rem;
+}
+
+.portfolio-content h3 {
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.portfolio-date {
+    color: var(--main-font-color);
+    opacity: 0.7;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.portfolio-embed {
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.portfolio-embed iframe {
+    width: 100%;
+    height: 300px;
+    border: none;
+    display: block;
+}
+
+.portfolio-links {
+    margin-top: 1.5rem;
+}
+
+/* Contact Section */
+.contact {
+    padding: 6rem 0;
+    background-image: var(--gradient-2);
+}
+
+.contact-content {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.contact-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.contact-item {
+    background-color: var(--body-color);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.contact-item h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.contact-item p {
+    font-size: 1.1rem;
+    margin: 0;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
+.contact-item a {
+    color: var(--main-font-color);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+/* Footer */
+footer {
+    background-image: var(--gradient-1);
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.footer-nav {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.footer-nav a {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+footer p {
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+/* Back to top button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 50px;
+    height: 50px;
+    background-color: var(--button-color);
+    border: none;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.back-to-top:hover {
+    background-color: var(--second-bg-color);
+    transform: translateY(-3px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    h2 {
+        font-size: 2rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.8rem;
+    }
+    
+    .hero-content h2 {
+        font-size: 1.6rem;
+    }
+    
+    header .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    nav {
+        gap: 1rem;
+    }
+    
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .portfolio-item {
+        margin: 0 auto;
+        max-width: 500px;
+    }
+    
+    .skills-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .contact-info {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .contact-item {
+        padding: 1.5rem;
+    }
+    
+    .contact-item p {
+        font-size: 1rem;
+    }
+    
+    .footer-nav {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+    
+    .hero-content h2 {
+        font-size: 1.4rem;
+    }
+    
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .portfolio-item {
+        max-width: 100%;
+    }
+    
+    .cta-button {
+        font-size: 1.1rem;
+        padding: 14px 28px;
+    }
+}
+
+/* Smooth animations */
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s ease;
+}
+
+.fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Print styles */
+@media print {
+    .back-to-top,
+    .portfolio-embed iframe {
+        display: none;
+    }
+}
