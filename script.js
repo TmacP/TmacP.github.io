@@ -210,6 +210,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Stop game/iframe audio when scrolling away
+    const gameIframes = document.querySelectorAll('.portfolio-embed iframe');
+    const iframeStates = new Map();
+    
+    // Store original src for each iframe
+    gameIframes.forEach(iframe => {
+        iframeStates.set(iframe, iframe.src);
+    });
+    
+    // Create intersection observer for iframes
+    const iframeObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const iframe = entry.target;
+            const originalSrc = iframeStates.get(iframe);
+            
+            if (!entry.isIntersecting) {
+                // Iframe is out of view - reload it to stop audio
+                iframe.src = 'about:blank';
+            } else if (entry.isIntersecting && iframe.src === 'about:blank') {
+                // Iframe is back in view - restore original src
+                iframe.src = originalSrc;
+            }
+        });
+    }, {
+        threshold: 0.1, // Trigger when 10% visible/hidden
+        rootMargin: '0px'
+    });
+    
+    // Observe all game iframes
+    gameIframes.forEach(iframe => {
+        iframeObserver.observe(iframe);
+    });
+
     // Initialize everything
     highlightActiveNavItem();
     toggleBackToTopButton();
