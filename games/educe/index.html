@@ -191,8 +191,10 @@ const FACING_RIGHT = 0;
 const FACING_LEFT = 1;
 const FACING_UP = 2;
 const FACING_DOWN = 3;
-const WIDTH = 320;
-const HEIGHT = 180;
+const WIDTH = 512;
+const HEIGHT = 288;
+const ROOM_TILE_COLS = 16;
+const ROOM_TILE_ROWS = 9;
 const WORLD_WIDTH = 3;
 const WORLD_HEIGHT = 3;
 
@@ -1005,9 +1007,11 @@ class MapManager {
   }
 
   getCurrentMap() {
+    const width = Math.min(this.world.roomWidth, ROOM_TILE_COLS);
+    const height = Math.min(this.world.roomHeight, ROOM_TILE_ROWS);
     return {
-      width: this.world.roomWidth,
-      height: this.world.roomHeight,
+      width,
+      height,
       tileData: this.world.rooms[this.currentRoomY][this.currentRoomX]
     };
   }
@@ -1015,8 +1019,8 @@ class MapManager {
   setTile(row, col, tileId) {
     const map = this.world.rooms[this.currentRoomY][this.currentRoomX];
     if (
-      row >= 0 && row < map.length &&
-      col >= 0 && col < map[0].length
+      row >= 0 && row < map.length && row < ROOM_TILE_ROWS &&
+      col >= 0 && col < map[0].length && col < ROOM_TILE_COLS
     ) {
       map[row][col] = tileId;
       return true;
@@ -1036,11 +1040,15 @@ const RUNTIME_CONFIG = globalThis.RUNTIME_CONFIG || {};
 const DEV_TOOLS_ENABLED = RUNTIME_CONFIG.devTools !== undefined ? !!RUNTIME_CONFIG.devTools : true;
 
 // Game dimensions
-const GAME_WIDTH = 320;
-const GAME_HEIGHT = 180;
+const GAME_WIDTH = CONFIG_WIDTH;
+const GAME_HEIGHT = CONFIG_HEIGHT;
 const TILE_SIZE = 32; // Tiles are 32x32 pixels
-const ROOM_TILE_COLS = 10;
-const ROOM_TILE_ROWS = 6;
+const ROOM_TILE_COLS = CONFIG_ROOM_TILE_COLS;
+const ROOM_TILE_ROWS = CONFIG_ROOM_TILE_ROWS;
+
+if (GAME_WIDTH % TILE_SIZE !== 0 || GAME_HEIGHT % TILE_SIZE !== 0) {
+  console.warn('Game resolution is not tile aligned. Update config to keep tiles on whole pixels.');
+}
 
 const SHADER_URL = new URL('./shader.wgsl', import.meta.url);
 const ATLAS_IMAGE_URL = new URL('./assets.png', import.meta.url);
@@ -1532,23 +1540,26 @@ function rebuildCurrentRoomTiles() {
     for (let i = 0; i < flatTiles.length; i++) {
       memory[(tilePtr / 4) + i] = flatTiles[i];
     }
-    
-  wasm.SetTileData(tilePtr, ROOM_TILE_COLS, ROOM_TILE_ROWS);
-    
+
+    wasm.SetTileData(tilePtr, ROOM_TILE_COLS, ROOM_TILE_ROWS);
+
     // Debug: Verify tiles were received correctly in WASM
-    if (wasm.GetTileAt) {
-      const tile_0_0 = wasm.GetTileAt(0, 0);
-      const tile_10_10 = wasm.GetTileAt(10, 10);
-      const tile_0_10 = wasm.GetTileAt(0, 10);
-      console.log(`Tile data sent: JS[0][0]=${tileData[0][0]} WASM[0][0]=${tile_0_0}, JS[10][10]=${tileData[10][10]} WASM[10][10]=${tile_10_10}, JS[10][0]=${tileData[10][0]} WASM[10][0]=${tile_0_10}`);
+    if (wasm.GetTileAt && tileData.length > 0 && tileData[0].length > 0) {
+      const lastRow = Math.min(ROOM_TILE_ROWS - 1, tileData.length - 1);
+      const lastCol = Math.min(ROOM_TILE_COLS - 1, tileData[0].length - 1);
+      const tileTopLeft = wasm.GetTileAt(0, 0);
+      const tileBottomRight = wasm.GetTileAt(lastCol, lastRow);
+      console.log(`Tile data sent: WASM[0,0]=${tileTopLeft}, WASM[${lastCol},${lastRow}]=${tileBottomRight}`);
     }
   }
   
   // Build instance data: each tile is 6 floats (x, y, frameX, frameY, frameW, frameH)
   const instances = [];
   
-  for (let row = 0; row < tileData.length; row++) {
-    for (let col = 0; col < tileData[row].length; col++) {
+  const maxRows = Math.min(tileData.length, ROOM_TILE_ROWS);
+  for (let row = 0; row < maxRows; row++) {
+    const maxCols = Math.min(tileData[row].length, ROOM_TILE_COLS);
+    for (let col = 0; col < maxCols; col++) {
       const tileId = tileData[row][col];
       if (tileId === 0) continue; // Skip empty tiles
       
@@ -1644,7 +1655,7 @@ function renderSprite() {
   
   const frameData = frames[currentFrame];
 
-  // Player position is already in current room coordinates (0-320, 0-180)
+  // Player position is already in current room coordinates (0-512, 0-288)
   // No camera offset needed - position is reset when changing rooms
   
   // Update uniform buffer
