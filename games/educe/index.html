@@ -133,9 +133,14 @@
   
   <div id="editor-ui">
     <div><strong>EDITOR MODE</strong></div>
+    <div>Mode: <span id="editor-mode">Tiles</span></div>
     <div>Selected Tile: <span id="selected-tile">1</span></div>
-    <div>Press 0-5 to select tile</div>
-    <div>Click to paint tiles</div>
+    <div>Room NPCs: <span id="room-npc-count">0</span></div>
+  <div>WASM NPC Count: <span id="wasm-npc-count">0</span></div>
+  <div>Last NPC Debug: <span id="npc-debug" style="display:inline-block; min-width:140px;">n/a</span></div>
+    <div>Press 0-9 to select tile</div>
+    <div>Press N to toggle NPC mode</div>
+    <div>Click to paint tiles / place NPCs</div>
     <div>Ctrl+S to save</div>
     <div>Press E to exit editor</div>
   </div>
@@ -999,6 +1004,8 @@ function unlockAudioContext() {
   }
 }
 
+const MAX_NPCS_PER_ROOM = 16;
+
 const WORLD_FILE_URL = new URL('./world.json', import.meta.url);
 
 class MapManager {
@@ -1006,6 +1013,54 @@ class MapManager {
     this.world = worldData;
     this.currentRoomX = worldData.startRoomX || 0;
     this.currentRoomY = worldData.startRoomY || 0;
+    this.ensureNpcGrid();
+  }
+
+  ensureNpcGrid() {
+    const rooms = this.world.rooms || [];
+    const maxY = this.world.worldHeight ?? rooms.length;
+    const maxX = this.world.worldWidth ?? (rooms[0]?.length ?? 0);
+
+    if (!Array.isArray(this.world.npcs)) {
+      this.world.npcs = Array.from({ length: maxY }, () => Array.from({ length: maxX }, () => []));
+      return;
+    }
+
+    if (this.world.npcs.length < maxY) {
+      for (let y = this.world.npcs.length; y < maxY; y++) {
+        this.world.npcs[y] = Array.from({ length: maxX }, () => []);
+      }
+    }
+
+    for (let y = 0; y < maxY; y++) {
+      if (!Array.isArray(this.world.npcs[y])) {
+        this.world.npcs[y] = Array.from({ length: maxX }, () => []);
+      }
+
+      if (this.world.npcs[y].length < maxX) {
+        for (let x = this.world.npcs[y].length; x < maxX; x++) {
+          this.world.npcs[y][x] = [];
+        }
+      }
+
+      for (let x = 0; x < maxX; x++) {
+        if (!Array.isArray(this.world.npcs[y][x])) {
+          this.world.npcs[y][x] = [];
+        }
+      }
+    }
+  }
+
+  ensureNpcList(roomX, roomY) {
+    this.ensureNpcGrid();
+    const grid = this.world.npcs;
+    const safeRow = Math.max(0, Math.min(roomY, grid.length - 1));
+    const row = grid[safeRow] ?? [];
+    const safeCol = Math.max(0, Math.min(roomX, row.length - 1));
+    if (!Array.isArray(row[safeCol])) {
+      row[safeCol] = [];
+    }
+    return row[safeCol];
   }
 
   getRoom(roomX, roomY) {
@@ -1032,7 +1087,49 @@ class MapManager {
     };
   }
 
+  getCurrentNpcs() {
+    return [...this.ensureNpcList(this.currentRoomX, this.currentRoomY)];
+  }
+
+  getNpcCount(roomX = this.currentRoomX, roomY = this.currentRoomY) {
+    const list = this.ensureNpcList(roomX, roomY);
+    return list.length;
+  }
+
+  removeNpcByIndex(roomX, roomY, index) {
+    const list = this.ensureNpcList(roomX, roomY);
+    if (index < 0 || index >= list.length) {
+      return false;
+    }
+    list.splice(index, 1);
+    return true;
+  }
+
+  toggleNpc(roomX, roomY, row, col) {
+    if (row < 0 || col < 0 || row >= ROOM_TILE_ROWS || col >= ROOM_TILE_COLS) {
+      return 'ignored';
+    }
+
+    const list = this.ensureNpcList(roomX, roomY);
+    const index = list.findIndex((npc) => npc.row === row && npc.col === col);
+    if (index === -1) {
+      if (list.length >= MAX_NPCS_PER_ROOM) {
+        return 'limit';
+      }
+      list.push({ row, col });
+      return 'added';
+    }
+
+    list.splice(index, 1);
+    return 'removed';
+  }
+
+  toggleNpcInCurrentRoom(row, col) {
+    return this.toggleNpc(this.currentRoomX, this.currentRoomY, row, col);
+  }
+
   setTile(row, col, tileId) {
+    this.ensureNpcGrid();
     const map = this.world.rooms[this.currentRoomY][this.currentRoomX];
     if (
       row >= 0 && row < map.length && row < ROOM_TILE_ROWS &&
@@ -1074,6 +1171,13 @@ const ATLAS_IMAGE_URL = new URL('./assets.png', import.meta.url);
 const ATLAS_DATA_URL = new URL('./atlas.json', import.meta.url);
 const WORLD_DATA_URL = new URL('./world.json', import.meta.url);
 const WASM_URL = new URL('./main.wasm', import.meta.url);
+const MAX_NPCS_PER_ROOM = 16;
+const MAX_CHARACTERS = MAX_NPCS_PER_ROOM + 1;
+const NPC_MEMORY_OFFSET = 600 * 1024;
+const CHARACTER_ANIMATION = 'player_walk_left';
+const characterUniformData = new Float32Array(12);
+let characterFrameWidth = 32;
+let characterFrameHeight = 32;
 
 // Setup canvas
 const canvas = document.getElementById('screen');
@@ -1087,13 +1191,15 @@ let device = null;
 let gpuContext = null;
 let pipeline = null;
 let tilePipeline = null;
-let bindGroup = null;
 let tileBindGroup = null;
-let uniformBuffer = null;
+let characterUniformBuffers = [];
+let characterBindGroups = [];
 let tileGlobalsBuffer = null;
 let tileInstanceBuffer = null;
 let atlasWidth = 0;
 let atlasHeight = 0;
+let spriteSampler = null;
+let spriteTextureView = null;
 
 // Sprite/Atlas system
 let atlasData = null;
@@ -1106,6 +1212,9 @@ let devToolsInitialized = false;
 let currentRoomX = 0;
 let currentRoomY = 0;
 let tileInstanceCount = 0;
+let initialNpcSyncPending = true;
+let lastNpcCount = 0;
+let lastRoomSent = `${currentRoomX},${currentRoomY}`;
 
 // Input state
 const inputState = {
@@ -1318,7 +1427,7 @@ function gameLoop(currentTime) {
   
   // Render with WebGPU
   if (device) {
-    renderSprite();
+    renderScene();
   }
 }
 
@@ -1381,16 +1490,15 @@ async function initWebGPU() {
   // Load sprite atlas
   const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
   atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
+  const characterFrames = atlasData?.[CHARACTER_ANIMATION];
+  if (Array.isArray(characterFrames) && characterFrames.length > 0) {
+    characterFrameWidth = characterFrames[0].width ?? characterFrameWidth;
+    characterFrameHeight = characterFrames[0].height ?? characterFrameHeight;
+  }
     
     atlasWidth = imgBitmap.width;
     atlasHeight = imgBitmap.height;
     console.log('Atlas loaded:', atlasWidth, 'x', atlasHeight);
-
-    // Create uniform buffer
-    uniformBuffer = device.createBuffer({
-      size: 12 * 4, // 12 floats
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
 
     // Create texture from atlas
     const texture = device.createTexture({
@@ -1406,20 +1514,31 @@ async function initWebGPU() {
     );
 
     // Create sampler
-    const sampler = device.createSampler({
+    spriteSampler = device.createSampler({
       magFilter: 'nearest',
       minFilter: 'nearest',
     });
 
-    // Create bind group
-    bindGroup = device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: sampler },
-        { binding: 1, resource: texture.createView() },
-        { binding: 2, resource: { buffer: uniformBuffer } },
-      ],
-    });
+    spriteTextureView = texture.createView();
+
+    const uniformBufferSize = 12 * 4;
+    characterUniformBuffers = Array.from({ length: MAX_CHARACTERS }, () =>
+      device.createBuffer({
+        size: uniformBufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      })
+    );
+
+    characterBindGroups = characterUniformBuffers.map((buffer) =>
+      device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: spriteSampler },
+          { binding: 1, resource: spriteTextureView },
+          { binding: 2, resource: { buffer } },
+        ],
+      })
+    );
 
     // Create tile rendering pipeline
     tilePipeline = device.createRenderPipeline({
@@ -1480,8 +1599,8 @@ async function initWebGPU() {
     tileBindGroup = device.createBindGroup({
       layout: tilePipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: sampler },
-        { binding: 1, resource: texture.createView() },
+        { binding: 0, resource: spriteSampler },
+        { binding: 1, resource: spriteTextureView },
         { binding: 2, resource: { buffer: tileGlobalsBuffer } },
       ],
     });
@@ -1527,6 +1646,7 @@ async function initializeDevTools() {
   levelEditor = new LevelEditor(canvas, mapManager, rebuildCurrentRoomTiles, {
     tileSize: TILE_WIDTH,
     statusUpdateCallback: updateEditorStatus,
+    onNpcClick: handleNpcEditorClick,
   });
   devToolsInitialized = true;
   updateEditorStatus();
@@ -1538,6 +1658,10 @@ function rebuildCurrentRoomTiles() {
   if (!mapManager || !device || !atlasData) return;
 
   const map = mapManager.getCurrentMap();
+  if (!map || !Array.isArray(map.tileData)) {
+    console.warn(`No tile data for room (${currentRoomX}, ${currentRoomY})`);
+    return;
+  }
   const tileData = map.tileData;
   const tiles = atlasData.tiles;
   const tileLookup = new Map(tiles.map((t) => [t.id, t]));
@@ -1564,14 +1688,9 @@ function rebuildCurrentRoomTiles() {
     wasm.SetTileData(tilePtr, ROOM_TILE_COLS, ROOM_TILE_ROWS);
 
     // Debug: Verify tiles were received correctly in WASM
-    if (wasm.GetTileAt && tileData.length > 0 && tileData[0].length > 0) {
-      const lastRow = Math.min(ROOM_TILE_ROWS - 1, tileData.length - 1);
-      const lastCol = Math.min(ROOM_TILE_COLS - 1, tileData[0].length - 1);
-      const tileTopLeft = wasm.GetTileAt(0, 0);
-      const tileBottomRight = wasm.GetTileAt(lastCol, lastRow);
-      console.log(`Tile data sent: WASM[0,0]=${tileTopLeft}, WASM[${lastCol},${lastRow}]=${tileBottomRight}`);
-    }
   }
+
+  sendCurrentRoomNpcData();
   
   // Build instance data: each tile is 6 floats (x, y, frameX, frameY, frameW, frameH)
   const instances = [];
@@ -1635,13 +1754,87 @@ function rebuildCurrentRoomTiles() {
     device.queue.writeBuffer(tileInstanceBuffer, 0, instanceData);
   }
   
-  console.log(`Built ${tileInstanceCount} tile instances for room (${currentRoomX}, ${currentRoomY})`);
+  updateEditorStatus();
+}
+
+function sendCurrentRoomNpcData() {
+  if (!mapManager || !wasm || !wasm.SetNpcData) {
+    return;
+  }
+
+  if (!wasm.memory || !wasm.memory.buffer) {
+    return;
+  }
+
+  const npcList = mapManager.getCurrentNpcs ? mapManager.getCurrentNpcs() : [];
+  const count = Math.min(npcList.length, MAX_NPCS_PER_ROOM);
+  if (npcList.length > MAX_NPCS_PER_ROOM) {
+    console.warn(`NPC list truncated to ${MAX_NPCS_PER_ROOM} entries for room (${currentRoomX}, ${currentRoomY}).`);
+  }
+  const npcBuffer = new Int32Array(wasm.memory.buffer, NPC_MEMORY_OFFSET, MAX_NPCS_PER_ROOM * 2);
+  npcBuffer.fill(0);
+
+  for (let i = 0; i < count; i++) {
+    const spawn = npcList[i] || { col: 0, row: 0 };
+    npcBuffer[i * 2] = spawn.col ?? 0;
+    npcBuffer[i * 2 + 1] = spawn.row ?? 0;
+  }
+
+  wasm.SetNpcData(currentRoomX, currentRoomY, NPC_MEMORY_OFFSET, count);
+  lastRoomSent = `${currentRoomX},${currentRoomY}`;
+  lastNpcCount = count;
+  if (DEV_TOOLS_ENABLED) {
+    let wasmCount = -1;
+    if (typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
+      wasmCount = __educeWasm.GetNpcCount();
+    }
+    console.log(`Sent ${count} NPC spawns to WASM for room (${currentRoomX}, ${currentRoomY}) -> wasm reports ${wasmCount}`);
+  }
+}
+
+function handleNpcEditorClick({ worldX, worldY }) {
+  if (!mapManager || !wasm) {
+    return false;
+  }
+
+  const { GetNpcCount, GetNpcX, GetNpcY } = wasm;
+  if (typeof GetNpcCount !== 'function' || typeof GetNpcX !== 'function' || typeof GetNpcY !== 'function') {
+    return false;
+  }
+
+  const npcCount = GetNpcCount();
+  if (!npcCount || npcCount <= 0) {
+    return false;
+  }
+
+  const width = characterFrameWidth;
+  const height = characterFrameHeight;
+
+  for (let index = npcCount - 1; index >= 0; index--) {
+    const npcX = GetNpcX(index);
+    const npcY = GetNpcY(index);
+    if (worldX >= npcX && worldX <= npcX + width &&
+        worldY >= npcY && worldY <= npcY + height) {
+      const removed = mapManager.removeNpcByIndex(mapManager.currentRoomX, mapManager.currentRoomY, index);
+      if (removed) {
+        rebuildCurrentRoomTiles();
+        return true;
+      }
+      return false;
+    }
+  }
+
+  return false;
 }
 
 // Update editor status UI
 function updateEditorStatus() {
   const editorUI = document.getElementById('editor-ui');
   const selectedTileSpan = document.getElementById('selected-tile');
+  const editorModeSpan = document.getElementById('editor-mode');
+  const npcCountSpan = document.getElementById('room-npc-count');
+  const wasmNpcSpan = document.getElementById('wasm-npc-count');
+  const npcDebugSpan = document.getElementById('npc-debug');
   
   if (!editorUI || !selectedTileSpan) {
     return;
@@ -1654,7 +1847,31 @@ function updateEditorStatus() {
 
   if (levelEditor && levelEditor.isEditorMode) {
     editorUI.style.display = 'block';
-    selectedTileSpan.textContent = levelEditor.selectedTileId;
+    if (levelEditor.editMode === 'tiles') {
+      selectedTileSpan.textContent = levelEditor.selectedTileId;
+    } else {
+      selectedTileSpan.textContent = 'NPC';
+    }
+    if (editorModeSpan) {
+      editorModeSpan.textContent = levelEditor.editMode === 'tiles' ? 'Tiles' : 'NPCs';
+    }
+    if (npcCountSpan && mapManager) {
+      npcCountSpan.textContent = mapManager.getNpcCount ? mapManager.getNpcCount() : 0;
+    }
+    if (wasmNpcSpan && typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
+      wasmNpcSpan.textContent = __educeWasm.GetNpcCount();
+    }
+    if (npcDebugSpan) {
+      const debugPieces = [];
+      debugPieces.push(`local:${mapManager ? mapManager.getNpcCount() : 0}`);
+      debugPieces.push(`sent:${lastNpcCount} @ ${lastRoomSent}`);
+      if (typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
+        debugPieces.push(`wasm:${__educeWasm.GetNpcCount()}`);
+      } else {
+        debugPieces.push('wasm:n/a');
+      }
+      npcDebugSpan.textContent = debugPieces.join(' | ');
+    }
   } else {
     editorUI.style.display = 'none';
   }
@@ -1666,6 +1883,15 @@ function checkRoomChange() {
   
   const newRoomX = wasm.GetPlayerRoomX();
   const newRoomY = wasm.GetPlayerRoomY();
+
+  if (initialNpcSyncPending) {
+    if (mapManager) {
+      mapManager.currentRoomX = currentRoomX;
+      mapManager.currentRoomY = currentRoomY;
+      rebuildCurrentRoomTiles();
+    }
+    initialNpcSyncPending = false;
+  }
   
   if (newRoomX !== currentRoomX || newRoomY !== currentRoomY) {
     currentRoomX = newRoomX;
@@ -1681,52 +1907,56 @@ function checkRoomChange() {
   }
 }
 
-function renderSprite() {
+function renderScene() {
   if (!atlasLoaded || !wasm || !device) return;
 
-  // Get player data from WASM
-  const playerX = wasm.GetPlayerX();
-  const playerY = wasm.GetPlayerY();
-  const playerFacing = wasm.GetPlayerFacing();
-  const currentFrame = wasm.GetCurrentFrame();
+  const frames = atlasData[CHARACTER_ANIMATION];
+  if (!frames || frames.length === 0) return;
 
-  // Get frame data from atlas
-  const animation = 'player_walk_left';
-  const frames = atlasData[animation];
-  if (!frames || currentFrame >= frames.length) return;
-  
-  const frameData = frames[currentFrame];
+  const characters = [];
 
-  // Player position is already in current room coordinates (0-320, 0-180)
-  // No camera offset needed - position is reset when changing rooms
-  
-  // Update uniform buffer
-  const uniformData = new Float32Array([
-    frameData.x, frameData.y, frameData.width, frameData.height, // frameRect
-    atlasWidth, atlasHeight,                                      // atlasSize
-    playerX, playerY,                                            // spritePos
-    GAME_WIDTH, GAME_HEIGHT,                                     // gameResolution
-    playerFacing,                                                // facing
-    0.0,                                                         // padding
-  ]);
-  device.queue.writeBuffer(uniformBuffer, 0, uniformData);
+  const getNpcCount = wasm.GetNpcCount;
+  const getNpcX = wasm.GetNpcX;
+  const getNpcY = wasm.GetNpcY;
+  const getNpcFrame = wasm.GetNpcFrame;
+  const getNpcFacing = wasm.GetNpcFacing;
 
-  // Render
+  if (typeof getNpcCount === 'function' && typeof getNpcX === 'function' && typeof getNpcY === 'function') {
+    const npcCount = getNpcCount();
+    for (let i = 0; i < npcCount; i++) {
+      const frameIndex = typeof getNpcFrame === 'function' ? getNpcFrame(i) : 0;
+      const frame = frames[frameIndex % frames.length];
+      characters.push({
+        x: getNpcX(i),
+        y: getNpcY(i),
+        facing: typeof getNpcFacing === 'function' ? getNpcFacing(i) : 1,
+        frame
+      });
+    }
+  }
+
+  const playerFrameIndex = wasm.GetCurrentFrame();
+  const playerFrame = frames[playerFrameIndex % frames.length];
+  characters.push({
+    x: wasm.GetPlayerX(),
+    y: wasm.GetPlayerY(),
+    facing: wasm.GetPlayerFacing(),
+    frame: playerFrame
+  });
+
   const encoder = device.createCommandEncoder({ label: 'render-encoder' });
-  
   const pass = encoder.beginRenderPass({
     label: 'render-pass',
     colorAttachments: [
       {
         view: gpuContext.getCurrentTexture().createView(),
         loadOp: 'clear',
-        clearValue: [0.39, 0.58, 0.93, 1], // Sky blue
+        clearValue: [0.39, 0.58, 0.93, 1],
         storeOp: 'store',
       },
     ],
   });
 
-  // Draw tiles first (background)
   if (tileInstanceCount > 0 && tileInstanceBuffer) {
     pass.setPipeline(tilePipeline);
     pass.setBindGroup(0, tileBindGroup);
@@ -1734,10 +1964,36 @@ function renderSprite() {
     pass.draw(6, tileInstanceCount);
   }
 
-  // Draw player sprite on top
-  pass.setPipeline(pipeline);
-  pass.setBindGroup(0, bindGroup);
-  pass.draw(6);
+  if (characters.length > 0) {
+    pass.setPipeline(pipeline);
+    const maxRenderable = Math.min(characters.length, characterBindGroups.length);
+    if (characters.length > maxRenderable && DEV_TOOLS_ENABLED) {
+      console.warn(`Character render capped at ${maxRenderable} instances (have ${characters.length})`);
+    }
+
+    for (let i = 0; i < maxRenderable; i++) {
+      const character = characters[i];
+      const frame = character.frame;
+      if (!frame) continue;
+
+      characterUniformData[0] = frame.x;
+      characterUniformData[1] = frame.y;
+      characterUniformData[2] = frame.width;
+      characterUniformData[3] = frame.height;
+      characterUniformData[4] = atlasWidth;
+      characterUniformData[5] = atlasHeight;
+      characterUniformData[6] = character.x;
+      characterUniformData[7] = character.y;
+      characterUniformData[8] = GAME_WIDTH;
+      characterUniformData[9] = GAME_HEIGHT;
+      characterUniformData[10] = character.facing;
+      characterUniformData[11] = 0.0;
+
+      device.queue.writeBuffer(characterUniformBuffers[i], 0, characterUniformData);
+      pass.setBindGroup(0, characterBindGroups[i]);
+      pass.draw(6);
+    }
+  }
 
   pass.end();
   device.queue.submit([encoder.finish()]);
@@ -1754,7 +2010,8 @@ async function init() {
   const response = await fetch(WASM_URL);
     const { instance } = await WebAssembly.instantiateStreaming(response);
     
-    wasm = instance.exports;
+  wasm = instance.exports;
+  globalThis.__educeWasm = wasm;
     memory = wasm.memory;
     
     console.log('WASM loaded');
