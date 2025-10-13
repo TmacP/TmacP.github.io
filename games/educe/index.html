@@ -191,12 +191,14 @@ const FACING_RIGHT = 0;
 const FACING_LEFT = 1;
 const FACING_UP = 2;
 const FACING_DOWN = 3;
-const WIDTH = 512;
-const HEIGHT = 288;
-const ROOM_TILE_COLS = 16;
-const ROOM_TILE_ROWS = 9;
-const WORLD_WIDTH = 3;
-const WORLD_HEIGHT = 3;
+const WIDTH = 320;
+const HEIGHT = 180;
+const ROOM_TILE_COLS = 40;
+const ROOM_TILE_ROWS = 22;
+const TILE_PIXEL_WIDTH = 8;
+const TILE_PIXEL_HEIGHT = 8;
+const WORLD_WIDTH = 16;
+const WORLD_HEIGHT = 16;
 
 // Auto-generated from MIDI file: bgm.mid
 // Total notes: 194
@@ -1006,6 +1008,20 @@ class MapManager {
     this.currentRoomY = worldData.startRoomY || 0;
   }
 
+  getRoom(roomX, roomY) {
+    const worldRows = this.world.rooms || [];
+    const maxY = this.world.worldHeight ?? worldRows.length;
+    const maxX = this.world.worldWidth ?? (worldRows[0]?.length ?? 0);
+
+    if (roomY < 0 || roomY >= maxY || roomX < 0 || roomX >= maxX) {
+      return null;
+    }
+
+    const row = worldRows[roomY];
+    if (!row) return null;
+    return row[roomX] || null;
+  }
+
   getCurrentMap() {
     const width = Math.min(this.world.roomWidth, ROOM_TILE_COLS);
     const height = Math.min(this.world.roomHeight, ROOM_TILE_ROWS);
@@ -1042,12 +1058,15 @@ const DEV_TOOLS_ENABLED = RUNTIME_CONFIG.devTools !== undefined ? !!RUNTIME_CONF
 // Game dimensions
 const GAME_WIDTH = CONFIG_WIDTH;
 const GAME_HEIGHT = CONFIG_HEIGHT;
-const TILE_SIZE = 32; // Tiles are 32x32 pixels
+const TILE_WIDTH = CONFIG_TILE_PIXEL_WIDTH;
+const TILE_HEIGHT = CONFIG_TILE_PIXEL_HEIGHT;
 const ROOM_TILE_COLS = CONFIG_ROOM_TILE_COLS;
 const ROOM_TILE_ROWS = CONFIG_ROOM_TILE_ROWS;
 
-if (GAME_WIDTH % TILE_SIZE !== 0 || GAME_HEIGHT % TILE_SIZE !== 0) {
-  console.warn('Game resolution is not tile aligned. Update config to keep tiles on whole pixels.');
+const horizontalAligned = (GAME_WIDTH % TILE_WIDTH) === 0;
+const verticalRemainder = GAME_HEIGHT % TILE_HEIGHT;
+if (!horizontalAligned || verticalRemainder !== 0) {
+  console.warn(`Game resolution leaves ${verticalRemainder}px extra vertically; rendering will anchor tiles to the top and leave the remainder at the bottom.`);
 }
 
 const SHADER_URL = new URL('./shader.wgsl', import.meta.url);
@@ -1506,7 +1525,7 @@ async function initializeDevTools() {
   const module = await import('./level-editor.js');
   const { LevelEditor } = module;
   levelEditor = new LevelEditor(canvas, mapManager, rebuildCurrentRoomTiles, {
-    tileSize: TILE_SIZE,
+    tileSize: TILE_WIDTH,
     statusUpdateCallback: updateEditorStatus,
   });
   devToolsInitialized = true;
@@ -1521,7 +1540,8 @@ function rebuildCurrentRoomTiles() {
   const map = mapManager.getCurrentMap();
   const tileData = map.tileData;
   const tiles = atlasData.tiles;
-  
+  const tileLookup = new Map(tiles.map((t) => [t.id, t]));
+
   // Send tile data to WASM for collision detection
   if (wasm && wasm.SetTileData) {
     // Flatten the 2D array into a 1D array
@@ -1531,7 +1551,7 @@ function rebuildCurrentRoomTiles() {
         flatTiles[row * ROOM_TILE_COLS + col] = tileData[row][col];
       }
     }
-    
+
     // Allocate memory in WASM, copy data, call function
     // Use a safe memory offset that won't conflict with game memory
     const memOffset = 512 * 1024; // 512KB offset
@@ -1563,16 +1583,38 @@ function rebuildCurrentRoomTiles() {
       const tileId = tileData[row][col];
       if (tileId === 0) continue; // Skip empty tiles
       
-      const tileInfo = tiles.find(t => t.id === tileId);
+      const tileInfo = tileLookup.get(tileId);
       if (!tileInfo) continue;
       
-      const x = col * TILE_SIZE;
-      const y = row * TILE_SIZE;
+      const x = col * TILE_WIDTH;
+      const y = row * TILE_HEIGHT;
       
       instances.push(
         x, y,  // tile position
         tileInfo.x, tileInfo.y, tileInfo.width, tileInfo.height  // frame rect
       );
+    }
+  }
+
+  // Render a visual seam using the next room's top row while keeping collisions unchanged
+  if (verticalRemainder > 0) {
+    const partialHeight = verticalRemainder;
+    const nextRoom = mapManager.getRoom(currentRoomX, currentRoomY + 1);
+    if (nextRoom && nextRoom.length > 0) {
+      const nextRow = nextRoom[0] || [];
+      const partialY = ROOM_TILE_ROWS * TILE_HEIGHT;
+      const maxCols = Math.min(nextRow.length, ROOM_TILE_COLS);
+      for (let col = 0; col < maxCols; col++) {
+        const tileId = nextRow[col] ?? 0;
+        if (tileId === 0) continue;
+        const tileInfo = tileLookup.get(tileId);
+        if (!tileInfo) continue;
+        const x = col * TILE_WIDTH;
+        instances.push(
+          x, partialY,
+          tileInfo.x, tileInfo.y, tileInfo.width, partialHeight
+        );
+      }
     }
   }
   
@@ -1655,7 +1697,7 @@ function renderSprite() {
   
   const frameData = frames[currentFrame];
 
-  // Player position is already in current room coordinates (0-512, 0-288)
+  // Player position is already in current room coordinates (0-320, 0-180)
   // No camera offset needed - position is reset when changing rooms
   
   // Update uniform buffer
