@@ -19,8 +19,8 @@ export class LevelEditor {
     this.tool = TOOL_PAINT;
     this.selectedTileId = 1;
     this.selectedTileInfo = this.tileLookup.get(this.selectedTileId) || null;
-  this.selectedNpcId = 'default';
-  this.selectedNpcLabel = 'NPC Spawn';
+    this.selectedNpcId = 'default';
+    this.selectedNpcLabel = 'NPC Spawn';
 
     this.isMouseDown = false;
     this.isSelecting = false;
@@ -30,6 +30,7 @@ export class LevelEditor {
     this.selectionPreview = null;
     this.moveStart = null;
     this.movePreviewTarget = null;
+    this.selectionAction = 'move';
 
     this.selectionOverlay = document.getElementById('editor-selection-overlay');
     this.previewOverlay = document.getElementById('editor-preview-overlay');
@@ -267,7 +268,7 @@ export class LevelEditor {
     if (this.editMode === 'tiles') {
       if (this.tool === TOOL_SELECT) {
         if (this.selection && this.isCellWithinSelection(cell.row, cell.col)) {
-          this.beginSelectionMove(cell);
+          this.beginSelectionMove(cell, event);
         } else {
           this.beginSelection(cell);
         }
@@ -447,13 +448,15 @@ export class LevelEditor {
     this.updateStatus();
   }
 
-  beginSelectionMove(cell) {
+  beginSelectionMove(cell, event) {
     this.isMovingSelection = true;
     this.moveStart = { row: cell.row, col: cell.col };
     this.movePreviewTarget = {
       row: this.selection.originRow,
       col: this.selection.originCol,
     };
+  // Holding a modifier key (Alt/Cmd/Ctrl) duplicates instead of moving.
+  this.selectionAction = (event?.altKey || event?.metaKey || event?.ctrlKey) ? 'duplicate' : 'move';
     this.showOverlay(this.previewOverlay, {
       row: this.selection.originRow,
       col: this.selection.originCol,
@@ -496,12 +499,24 @@ export class LevelEditor {
 
     if (!this.movePreviewTarget || !this.selection) {
       this.clearPreviewOverlay();
+      this.selectionAction = 'move';
       return;
     }
 
     const { row, col } = this.movePreviewTarget;
     this.movePreviewTarget = null;
     this.clearPreviewOverlay();
+
+    const action = this.selectionAction;
+    this.selectionAction = 'move';
+
+    if (action === 'duplicate') {
+      if (row === this.selection.originRow && col === this.selection.originCol) {
+        return;
+      }
+      this.applySelectionDuplicate(row, col);
+      return;
+    }
 
     if (row === this.selection.originRow && col === this.selection.originCol) {
       return;
@@ -558,6 +573,43 @@ export class LevelEditor {
     this.updateStatus();
   }
 
+  applySelectionDuplicate(targetRow, targetCol) {
+    const map = this.mapManager.getCurrentMap();
+    if (!map || !Array.isArray(map.tileData)) {
+      return;
+    }
+
+    const { width, height, tiles } = this.selection;
+
+    for (let r = 0; r < height; r++) {
+      const rowIndex = targetRow + r;
+      if (!Array.isArray(map.tileData[rowIndex])) continue;
+      for (let c = 0; c < width; c++) {
+        const colIndex = targetCol + c;
+        if (typeof map.tileData[rowIndex][colIndex] !== 'undefined') {
+          map.tileData[rowIndex][colIndex] = tiles[r][c];
+        }
+      }
+    }
+
+    this.selection.originRow = targetRow;
+    this.selection.originCol = targetCol;
+
+    this.showOverlay(this.selectionOverlay, {
+      row: targetRow,
+      col: targetCol,
+      rows: height,
+      cols: width,
+    });
+
+    if (this.palette) {
+      this.palette.setSelectionState(true);
+    }
+
+    this.updateCallback();
+    this.updateStatus();
+  }
+
   clearSelection() {
     this.selection = null;
     this.selectionStart = null;
@@ -565,6 +617,7 @@ export class LevelEditor {
     this.isMovingSelection = false;
     this.hideOverlay(this.selectionOverlay);
     this.clearPreviewOverlay();
+    this.selectionAction = 'move';
     if (this.palette) {
       this.palette.setSelectionState(false);
     }

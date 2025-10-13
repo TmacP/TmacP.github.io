@@ -1,19 +1,469 @@
 {
   "player_walk_left": [
-    { "id": 0, "x": 0, "y": 0, "width": 32, "height": 32 },
-    { "id": 1, "x": 32, "y": 0, "width": 32, "height": 32 },
-    { "id": 2, "x": 64, "y": 0, "width": 32, "height": 32 },
-    { "id": 3, "x": 96, "y": 0, "width": 32, "height": 32 },
-    { "id": 4, "x": 128, "y": 0, "width": 32, "height": 32 },
-    { "id": 5, "x": 160, "y": 0, "width": 32, "height": 32 },
-    { "id": 6, "x": 192, "y": 0, "width": 32, "height": 32 }
+    {
+      "x": 0,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 0
+    },
+    {
+      "x": 32,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 1
+    },
+    {
+      "x": 64,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 2
+    },
+    {
+      "x": 96,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 3
+    },
+    {
+      "x": 128,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 4
+    },
+    {
+      "x": 160,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 5
+    },
+    {
+      "x": 192,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "id": 6
+    }
   ],
   "tiles": [
-  { "id": 0, "name": "tile_0", "x": 0, "y": 32, "width": 8, "height": 8 },
-  { "id": 1, "name": "tile_1", "x": 8, "y": 32, "width": 8, "height": 8 },
-  { "id": 2, "name": "tile_2", "x": 16, "y": 32, "width": 8, "height": 8 },
-  { "id": 3, "name": "tile_3", "x": 24, "y": 32, "width": 8, "height": 8 },
-  { "id": 4, "name": "tile_4", "x": 32, "y": 32, "width": 8, "height": 8 },
-  { "id": 5, "name": "tile_5", "x": 40, "y": 32, "width": 8, "height": 8 }
+    {
+      "x": 0,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 0,
+      "name": "tile_0"
+    },
+    {
+      "x": 8,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 1,
+      "name": "tile_1"
+    },
+    {
+      "x": 16,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 2,
+      "name": "tile_2"
+    },
+    {
+      "x": 24,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 3,
+      "name": "tile_3"
+    },
+    {
+      "x": 32,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 4,
+      "name": "tile_4"
+    },
+    {
+      "x": 40,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 5,
+      "name": "tile_5"
+    },
+    {
+      "x": 48,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 6,
+      "name": "tile_6"
+    },
+    {
+      "x": 56,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 7,
+      "name": "tile_7"
+    },
+    {
+      "x": 64,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 8,
+      "name": "tile_8"
+    },
+    {
+      "x": 72,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 9,
+      "name": "tile_9"
+    },
+    {
+      "x": 80,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 10,
+      "name": "tile_10"
+    },
+    {
+      "x": 88,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 11,
+      "name": "tile_11"
+    },
+    {
+      "x": 96,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 12,
+      "name": "tile_12"
+    },
+    {
+      "x": 104,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 13,
+      "name": "tile_13"
+    },
+    {
+      "x": 112,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 14,
+      "name": "tile_14"
+    },
+    {
+      "x": 120,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 15,
+      "name": "tile_15"
+    },
+    {
+      "x": 128,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 16,
+      "name": "tile_16"
+    },
+    {
+      "x": 136,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 17,
+      "name": "tile_17"
+    },
+    {
+      "x": 144,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 18,
+      "name": "tile_18"
+    },
+    {
+      "x": 152,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 19,
+      "name": "tile_19"
+    },
+    {
+      "x": 160,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 20,
+      "name": "tile_20"
+    },
+    {
+      "x": 168,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 21,
+      "name": "tile_21"
+    },
+    {
+      "x": 176,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 22,
+      "name": "tile_22"
+    },
+    {
+      "x": 184,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 23,
+      "name": "tile_23"
+    },
+    {
+      "x": 192,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 24,
+      "name": "tile_24"
+    },
+    {
+      "x": 200,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 25,
+      "name": "tile_25"
+    },
+    {
+      "x": 208,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 26,
+      "name": "tile_26"
+    },
+    {
+      "x": 216,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 27,
+      "name": "tile_27"
+    },
+    {
+      "x": 224,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 28,
+      "name": "tile_28"
+    },
+    {
+      "x": 232,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 29,
+      "name": "tile_29"
+    },
+    {
+      "x": 240,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 30,
+      "name": "tile_30"
+    },
+    {
+      "x": 248,
+      "y": 32,
+      "width": 8,
+      "height": 8,
+      "id": 31,
+      "name": "tile_31"
+    },
+    {
+      "x": 0,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 32,
+      "name": "tile_32"
+    },
+    {
+      "x": 8,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 33,
+      "name": "tile_33"
+    },
+    {
+      "x": 16,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 34,
+      "name": "tile_34"
+    },
+    {
+      "x": 24,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 35,
+      "name": "tile_35"
+    },
+    {
+      "x": 32,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 36,
+      "name": "tile_36"
+    },
+    {
+      "x": 40,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 37,
+      "name": "tile_37"
+    },
+    {
+      "x": 48,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 38,
+      "name": "tile_38"
+    },
+    {
+      "x": 56,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 39,
+      "name": "tile_39"
+    },
+    {
+      "x": 64,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 40,
+      "name": "tile_40"
+    },
+    {
+      "x": 72,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 41,
+      "name": "tile_41"
+    },
+    {
+      "x": 80,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 42,
+      "name": "tile_42"
+    },
+    {
+      "x": 88,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 43,
+      "name": "tile_43"
+    },
+    {
+      "x": 96,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 44,
+      "name": "tile_44"
+    },
+    {
+      "x": 104,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 45,
+      "name": "tile_45"
+    },
+    {
+      "x": 112,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 46,
+      "name": "tile_46"
+    },
+    {
+      "x": 120,
+      "y": 40,
+      "width": 8,
+      "height": 8,
+      "id": 47,
+      "name": "tile_47"
+    }
+  ],
+  "blob": [
+    {
+      "x": 0,
+      "y": 48,
+      "width": 8,
+      "height": 8,
+      "id": 0
+    },
+    {
+      "x": 8,
+      "y": 48,
+      "width": 8,
+      "height": 8,
+      "id": 1
+    },
+    {
+      "x": 16,
+      "y": 48,
+      "width": 8,
+      "height": 8,
+      "id": 2
+    },
+    {
+      "x": 24,
+      "y": 48,
+      "width": 8,
+      "height": 8,
+      "id": 3
+    }
   ]
 }
