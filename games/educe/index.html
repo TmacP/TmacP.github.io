@@ -15,13 +15,31 @@
       width: 100%;
       height: 100%;
       background-color: #000;
-      overflow: hidden;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      overflow-y: auto;
       position: relative;
     }
-    
+
+    #app {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      padding: 20px 0 40px;
+    }
+
+    #game-container {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+    }
+
     canvas {
       display: block;
       image-rendering: pixelated;
@@ -29,20 +47,94 @@
       image-rendering: crisp-edges;
       background-color: #000;
     }
-    
-    #editor-ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: white;
+
+    #editor-container {
+      width: 100%;
+      padding: 16px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #222;
+      border-radius: 6px;
+      color: #fff;
       font-family: monospace;
-      font-size: 14px;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      border-radius: 4px;
-      z-index: 1000;
+    }
+
+    #editor-ui {
+      display: none;
+      pointer-events: auto;
+    }
+
+    #editor-selection-overlay,
+    #editor-preview-overlay {
+      position: absolute;
+      border: 2px solid rgba(0, 255, 255, 0.6);
+      background: rgba(0, 255, 255, 0.18);
       pointer-events: none;
       display: none;
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    #editor-preview-overlay {
+      border: 2px dashed rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 3;
+    }
+
+    .palette-root {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .palette-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .palette-grid[data-active="false"] {
+      opacity: 0.55;
+    }
+
+    .palette-item {
+      position: relative;
+      border: 1px solid rgba(80, 80, 80, 0.8);
+      background: rgba(15, 15, 15, 0.9);
+      border-radius: 4px;
+      padding: 4px;
+      cursor: pointer;
+      transition: border 0.15s ease, transform 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .palette-item:hover {
+      border-color: rgba(120, 120, 120, 0.9);
+      transform: translateY(-1px);
+    }
+
+    .palette-item.is-selected {
+      border-color: rgba(100, 170, 255, 0.95);
+      box-shadow: 0 0 4px rgba(100, 170, 255, 0.6);
+    }
+
+    .palette-item canvas,
+    .palette-item img {
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    .palette-item-label {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
     }
     
     #debug-info {
@@ -129,20 +221,16 @@
   </style>
 </head>
 <body>
-  <canvas id="screen"></canvas>
-  
-  <div id="editor-ui">
-    <div><strong>EDITOR MODE</strong></div>
-    <div>Mode: <span id="editor-mode">Tiles</span></div>
-    <div>Selected Tile: <span id="selected-tile">1</span></div>
-    <div>Room NPCs: <span id="room-npc-count">0</span></div>
-  <div>WASM NPC Count: <span id="wasm-npc-count">0</span></div>
-  <div>Last NPC Debug: <span id="npc-debug" style="display:inline-block; min-width:140px;">n/a</span></div>
-    <div>Press 0-9 to select tile</div>
-    <div>Press N to toggle NPC mode</div>
-    <div>Click to paint tiles / place NPCs</div>
-    <div>Ctrl+S to save</div>
-    <div>Press E to exit editor</div>
+  <div id="app">
+    <div id="game-container">
+      <canvas id="screen"></canvas>
+      <div id="editor-selection-overlay"></div>
+      <div id="editor-preview-overlay"></div>
+    </div>
+
+    <div id="editor-container">
+      <div id="palette-root" class="palette-root"></div>
+    </div>
   </div>
   
   <div id="debug-info">

@@ -80,6 +80,7 @@ let atlasLoaded = false;
 // Map/Editor system
 let mapManager = null;
 let levelEditor = null;
+let editorPalette = null;
 let devToolsInitialized = false;
 let currentRoomX = 0;
 let currentRoomY = 0;
@@ -129,6 +130,10 @@ function resizeCanvas() {
   canvas.style.height = `${GAME_HEIGHT * scale}px`;
   
   console.log(`Canvas: ${GAME_WIDTH}x${GAME_HEIGHT}, Display scale: ${scale}x`);
+
+  if (levelEditor && typeof levelEditor.refreshOverlayPositions === 'function') {
+    levelEditor.refreshOverlayPositions();
+  }
 }
 
 window.addEventListener('resize', resizeCanvas);
@@ -513,13 +518,51 @@ async function initializeDevTools() {
     return;
   }
 
-  const module = await import('./level-editor.js');
-  const { LevelEditor } = module;
+  const [editorModule, paletteModule] = await Promise.all([
+    import('./level-editor.js'),
+    import('./palette.js'),
+  ]);
+  const { LevelEditor } = editorModule;
+  const { EditorPalette } = paletteModule;
+
   levelEditor = new LevelEditor(canvas, mapManager, rebuildCurrentRoomTiles, {
     tileSize: TILE_WIDTH,
     statusUpdateCallback: updateEditorStatus,
     onNpcClick: handleNpcEditorClick,
+    tileDefinitions: Array.isArray(atlasData?.tiles) ? atlasData.tiles : [],
   });
+
+  const paletteRoot = document.getElementById('palette-root');
+  if (paletteRoot) {
+    const npcFrame = Array.isArray(atlasData?.player_walk_left) ? atlasData.player_walk_left[0] : null;
+    editorPalette = new EditorPalette(paletteRoot, {
+      atlasImageUrl: ATLAS_IMAGE_URL.href,
+      tiles: Array.isArray(atlasData?.tiles) ? atlasData.tiles : [],
+      npcFrame,
+      onModeChange: (mode) => {
+        if (levelEditor) {
+          levelEditor.setEditMode(mode, { silent: true, force: true });
+          updateEditorStatus();
+        }
+      },
+      onTileSelect: (tile) => {
+        if (levelEditor) {
+          levelEditor.setSelectedTile(tile.id, { info: tile, silent: true });
+          updateEditorStatus();
+        }
+      },
+      onNpcSelect: (npc) => {
+        if (levelEditor) {
+          levelEditor.setSelectedNpc(npc.id, { label: npc.label, silent: true });
+          levelEditor.setEditMode('npcs', { silent: true, force: true });
+          updateEditorStatus();
+        }
+      }
+    });
+
+    levelEditor.attachPalette(editorPalette);
+  }
+
   devToolsInitialized = true;
   updateEditorStatus();
   console.log('Level editor initialized (dev tools enabled)');
@@ -701,51 +744,23 @@ function handleNpcEditorClick({ worldX, worldY }) {
 
 // Update editor status UI
 function updateEditorStatus() {
-  const editorUI = document.getElementById('editor-ui');
-  const selectedTileSpan = document.getElementById('selected-tile');
-  const editorModeSpan = document.getElementById('editor-mode');
-  const npcCountSpan = document.getElementById('room-npc-count');
-  const wasmNpcSpan = document.getElementById('wasm-npc-count');
-  const npcDebugSpan = document.getElementById('npc-debug');
-  
-  if (!editorUI || !selectedTileSpan) {
-    return;
-  }
-
+  const editorContainer = document.getElementById('editor-container');
   if (!DEV_TOOLS_ENABLED) {
-    editorUI.style.display = 'none';
+    if (editorContainer) {
+      editorContainer.style.display = 'none';
+    }
     return;
   }
 
   if (levelEditor && levelEditor.isEditorMode) {
-    editorUI.style.display = 'block';
-    if (levelEditor.editMode === 'tiles') {
-      selectedTileSpan.textContent = levelEditor.selectedTileId;
-    } else {
-      selectedTileSpan.textContent = 'NPC';
+    if (editorContainer) {
+      editorContainer.style.display = 'block';
     }
-    if (editorModeSpan) {
-      editorModeSpan.textContent = levelEditor.editMode === 'tiles' ? 'Tiles' : 'NPCs';
-    }
-    if (npcCountSpan && mapManager) {
-      npcCountSpan.textContent = mapManager.getNpcCount ? mapManager.getNpcCount() : 0;
-    }
-    if (wasmNpcSpan && typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
-      wasmNpcSpan.textContent = __educeWasm.GetNpcCount();
-    }
-    if (npcDebugSpan) {
-      const debugPieces = [];
-      debugPieces.push(`local:${mapManager ? mapManager.getNpcCount() : 0}`);
-      debugPieces.push(`sent:${lastNpcCount} @ ${lastRoomSent}`);
-      if (typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
-        debugPieces.push(`wasm:${__educeWasm.GetNpcCount()}`);
-      } else {
-        debugPieces.push('wasm:n/a');
-      }
-      npcDebugSpan.textContent = debugPieces.join(' | ');
-    }
-  } else {
-    editorUI.style.display = 'none';
+    return;
+  }
+
+  if (editorContainer) {
+    editorContainer.style.display = 'none';
   }
 }
 
