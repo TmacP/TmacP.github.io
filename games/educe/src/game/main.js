@@ -46,10 +46,13 @@ const WASM_URL = new URL('../../dist/main.wasm', import.meta.url);
 const MAX_NPCS_PER_ROOM = 16;
 const MAX_CHARACTERS = MAX_NPCS_PER_ROOM + 1;
 const NPC_MEMORY_OFFSET = 600 * 1024;
-const CHARACTER_ANIMATION = 'player_walk_left';
+const PLAYER_ANIMATION = 'blob';
+const NPC_ANIMATION = 'player_walk_left';
 const characterUniformData = new Float32Array(12);
-let characterFrameWidth = 32;
-let characterFrameHeight = 32;
+let playerFrameWidth = 32;
+let playerFrameHeight = 32;
+let npcFrameWidth = 32;
+let npcFrameHeight = 32;
 
 // Setup canvas
 const canvas = document.getElementById('screen');
@@ -367,10 +370,16 @@ async function initWebGPU() {
   // Load sprite atlas
   const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
   atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
-  const characterFrames = atlasData?.[CHARACTER_ANIMATION];
-  if (Array.isArray(characterFrames) && characterFrames.length > 0) {
-    characterFrameWidth = characterFrames[0].width ?? characterFrameWidth;
-    characterFrameHeight = characterFrames[0].height ?? characterFrameHeight;
+  const playerFrames = atlasData?.[PLAYER_ANIMATION];
+  if (Array.isArray(playerFrames) && playerFrames.length > 0) {
+    playerFrameWidth = playerFrames[0].width ?? playerFrameWidth;
+    playerFrameHeight = playerFrames[0].height ?? playerFrameHeight;
+  }
+
+  const npcFrames = atlasData?.[NPC_ANIMATION];
+  if (Array.isArray(npcFrames) && npcFrames.length > 0) {
+    npcFrameWidth = npcFrames[0].width ?? npcFrameWidth;
+    npcFrameHeight = npcFrames[0].height ?? npcFrameHeight;
   }
     
     atlasWidth = imgBitmap.width;
@@ -534,7 +543,7 @@ async function initializeDevTools() {
 
   const paletteRoot = document.getElementById('palette-root');
   if (paletteRoot) {
-    const npcFrame = Array.isArray(atlasData?.player_walk_left) ? atlasData.player_walk_left[0] : null;
+  const npcFrame = Array.isArray(atlasData?.[NPC_ANIMATION]) ? atlasData[NPC_ANIMATION][0] : null;
     editorPalette = new EditorPalette(paletteRoot, {
       atlasImageUrl: ATLAS_IMAGE_URL.href,
       tiles: Array.isArray(atlasData?.tiles) ? atlasData.tiles : [],
@@ -712,7 +721,7 @@ function handleNpcEditorClick({ worldX, worldY }) {
     return false;
   }
 
-  const { GetNpcCount, GetNpcX, GetNpcY } = wasm;
+  const { GetNpcCount, GetNpcX, GetNpcY, GetNpcFrame } = wasm;
   if (typeof GetNpcCount !== 'function' || typeof GetNpcX !== 'function' || typeof GetNpcY !== 'function') {
     return false;
   }
@@ -722,12 +731,24 @@ function handleNpcEditorClick({ worldX, worldY }) {
     return false;
   }
 
-  const width = characterFrameWidth;
-  const height = characterFrameHeight;
+  const npcFrames = Array.isArray(atlasData?.[NPC_ANIMATION]) ? atlasData[NPC_ANIMATION] : [];
+  const defaultWidth = npcFrames[0]?.width ?? npcFrameWidth;
+  const defaultHeight = npcFrames[0]?.height ?? npcFrameHeight;
 
   for (let index = npcCount - 1; index >= 0; index--) {
     const npcX = GetNpcX(index);
     const npcY = GetNpcY(index);
+    let width = defaultWidth;
+    let height = defaultHeight;
+
+    if (npcFrames.length > 0 && typeof GetNpcFrame === 'function') {
+      const frame = npcFrames[GetNpcFrame(index) % npcFrames.length];
+      if (frame) {
+        width = frame.width ?? width;
+        height = frame.height ?? height;
+      }
+    }
+
     if (worldX >= npcX && worldX <= npcX + width &&
         worldY >= npcY && worldY <= npcY + height) {
       const removed = mapManager.removeNpcByIndex(mapManager.currentRoomX, mapManager.currentRoomY, index);
@@ -797,8 +818,12 @@ function checkRoomChange() {
 function renderScene() {
   if (!atlasLoaded || !wasm || !device) return;
 
-  const frames = atlasData[CHARACTER_ANIMATION];
-  if (!frames || frames.length === 0) return;
+  const playerFrames = atlasData[PLAYER_ANIMATION];
+  if (!Array.isArray(playerFrames) || playerFrames.length === 0) return;
+
+  const npcFrames = Array.isArray(atlasData[NPC_ANIMATION]) && atlasData[NPC_ANIMATION].length > 0
+    ? atlasData[NPC_ANIMATION]
+    : playerFrames;
 
   const characters = [];
 
@@ -812,7 +837,8 @@ function renderScene() {
     const npcCount = getNpcCount();
     for (let i = 0; i < npcCount; i++) {
       const frameIndex = typeof getNpcFrame === 'function' ? getNpcFrame(i) : 0;
-      const frame = frames[frameIndex % frames.length];
+      const frameSet = npcFrames.length > 0 ? npcFrames : playerFrames;
+      const frame = frameSet[frameIndex % frameSet.length];
       characters.push({
         x: getNpcX(i),
         y: getNpcY(i),
@@ -823,7 +849,7 @@ function renderScene() {
   }
 
   const playerFrameIndex = wasm.GetCurrentFrame();
-  const playerFrame = frames[playerFrameIndex % frames.length];
+  const playerFrame = playerFrames[playerFrameIndex % playerFrames.length];
   characters.push({
     x: wasm.GetPlayerX(),
     y: wasm.GetPlayerY(),
