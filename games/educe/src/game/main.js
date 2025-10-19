@@ -41,7 +41,7 @@ if (!horizontalAligned || verticalRemainder !== 0) {
 const SHADER_URL = new URL('./shaders/shader.wgsl', import.meta.url);
 const ATLAS_IMAGE_URL = new URL('../../assets/assets.png', import.meta.url);
 const ATLAS_DATA_URL = new URL('../../assets/atlas.json', import.meta.url);
-const WORLD_DATA_URL = new URL('../../assets/world.json', import.meta.url);
+const WORLD_EDITOR_URL = new URL('../../assets/world.json', import.meta.url);
 const WASM_URL = new URL('../../dist/main.wasm', import.meta.url);
 const MAX_NPCS_PER_ROOM = 16;
 const MAX_CHARACTERS = MAX_NPCS_PER_ROOM + 1;
@@ -491,11 +491,32 @@ async function initWebGPU() {
       ],
     });
 
-    // Load world data
-    const worldData = await fetch(WORLD_DATA_URL).then(r => r.json());
+    let worldData = null;
+    if (DEV_TOOLS_ENABLED) {
+      try {
+        const response = await fetch(WORLD_EDITOR_URL);
+        if (response.ok) {
+          worldData = await response.json();
+        } else {
+          console.warn(`Failed to load editor world JSON (${response.status}); falling back to embedded data.`);
+        }
+      } catch (err) {
+        console.warn('Error fetching editor world JSON, falling back to embedded data.', err);
+      }
+    }
+
+    if (!worldData) {
+      worldData = loadWorldFromWasm();
+    } else {
+      worldData = reconcileWithEmbeddedWorld(worldData);
+    }
+
+    if (!Array.isArray(worldData.npcs)) {
+      worldData.npcs = [];
+    }
     mapManager = new MapManager(worldData);
-    currentRoomX = worldData.startRoomX || 1;
-    currentRoomY = worldData.startRoomY || 1;
+    currentRoomX = worldData.startRoomX ?? 0;
+    currentRoomY = worldData.startRoomY ?? 0;
     mapManager.currentRoomX = currentRoomX;
     mapManager.currentRoomY = currentRoomY;
 
@@ -714,6 +735,126 @@ function sendCurrentRoomNpcData() {
     }
     console.log(`Sent ${count} NPC spawns to WASM for room (${currentRoomX}, ${currentRoomY}) -> wasm reports ${wasmCount}`);
   }
+}
+
+function loadWorldFromWasm() {
+  if (!wasm || !memory) {
+    throw new Error('WASM module not initialized before loading world data.');
+  }
+  if (typeof wasm.GetWorldDataHeaderPointer !== 'function' ||
+      typeof wasm.GetWorldTileDataPointer !== 'function') {
+    throw new Error('Current WASM build does not expose world data accessors.');
+  }
+
+  const headerPtr = wasm.GetWorldDataHeaderPointer();
+  const headerView = new Uint16Array(memory.buffer, headerPtr, 6);
+  const [
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX,
+    startRoomY
+  ] = headerView;
+
+  const expectedTiles = worldWidth * worldHeight * roomWidth * roomHeight;
+  const tilePtr = wasm.GetWorldTileDataPointer();
+  const reportedCount = (typeof wasm.GetWorldTileCount === 'function')
+    ? wasm.GetWorldTileCount()
+    : expectedTiles;
+  const actualCount = Math.min(reportedCount, expectedTiles);
+  const tileView = new Uint16Array(memory.buffer, tilePtr, actualCount);
+
+  const rooms = [];
+  let cursor = 0;
+  for (let roomY = 0; roomY < worldHeight; roomY++) {
+    const roomRow = [];
+    for (let roomX = 0; roomX < worldWidth; roomX++) {
+      const room = [];
+      for (let tileRow = 0; tileRow < roomHeight; tileRow++) {
+        const rowData = new Array(roomWidth);
+        for (let tileCol = 0; tileCol < roomWidth; tileCol++, cursor++) {
+          rowData[tileCol] = cursor < actualCount ? tileView[cursor] : 0;
+        }
+        room.push(rowData);
+      }
+      roomRow.push(room);
+    }
+    rooms.push(roomRow);
+  }
+
+  if (cursor < expectedTiles && DEV_TOOLS_ENABLED) {
+    console.warn(`World tile data truncated: expected ${expectedTiles}, got ${actualCount}`);
+  }
+
+  return {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX,
+    startRoomY,
+    rooms
+  };
+}
+
+function reconcileWithEmbeddedWorld(editorWorld) {
+  let embedded;
+  try {
+    embedded = loadWorldFromWasm();
+  } catch (err) {
+    console.warn('Unable to load embedded world metadata; using editor JSON as-is.', err);
+    return editorWorld;
+  }
+
+  const {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX: embeddedStartX = 0,
+    startRoomY: embeddedStartY = 0,
+    rooms: baselineRooms
+  } = embedded;
+
+  const normalizedRooms = [];
+  const sourceRooms = Array.isArray(editorWorld.rooms) ? editorWorld.rooms : [];
+
+  for (let roomY = 0; roomY < worldHeight; roomY++) {
+    const sourceRow = Array.isArray(sourceRooms[roomY]) ? sourceRooms[roomY] : [];
+    const normalizedRow = [];
+    for (let roomX = 0; roomX < worldWidth; roomX++) {
+      const sourceRoom = Array.isArray(sourceRow[roomX]) ? sourceRow[roomX] : [];
+      const normalizedRoom = [];
+      for (let tileRow = 0; tileRow < roomHeight; tileRow++) {
+        const sourceTileRow = Array.isArray(sourceRoom[tileRow]) ? sourceRoom[tileRow] : [];
+        const rowData = new Array(roomWidth);
+        for (let tileCol = 0; tileCol < roomWidth; tileCol++) {
+          const value = sourceTileRow[tileCol];
+          rowData[tileCol] = Number.isInteger(value) ? value : baselineRooms[roomY][roomX][tileRow][tileCol];
+        }
+        normalizedRoom.push(rowData);
+      }
+      normalizedRow.push(normalizedRoom);
+    }
+    normalizedRooms.push(normalizedRow);
+  }
+
+  const normalized = {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX: Number.isInteger(editorWorld.startRoomX) ? editorWorld.startRoomX : embeddedStartX,
+    startRoomY: Number.isInteger(editorWorld.startRoomY) ? editorWorld.startRoomY : embeddedStartY,
+    rooms: normalizedRooms
+  };
+
+  if (Array.isArray(editorWorld.npcs)) {
+    normalized.npcs = editorWorld.npcs;
+  }
+
+  return normalized;
 }
 
 function handleNpcEditorClick({ worldX, worldY }) {
