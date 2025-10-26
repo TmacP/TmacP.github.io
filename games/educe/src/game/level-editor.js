@@ -99,16 +99,6 @@ export class LevelEditor {
     this.palette.setSelectionState(!!this.selection);
   };
 
-  setMapManager(mapManager) {
-    if (!mapManager) {
-      return;
-    }
-    this.mapManager = mapManager;
-    if (typeof this.updateCallback === 'function') {
-      this.updateCallback();
-    }
-  }
-
   toggleEditorMode() {
     this.isEditorMode = !this.isEditorMode;
     if (!this.isEditorMode) {

@@ -32,82 +32,6 @@ const TILE_HEIGHT = CONFIG_TILE_PIXEL_HEIGHT;
 const ROOM_TILE_COLS = CONFIG_ROOM_TILE_COLS;
 const ROOM_TILE_ROWS = CONFIG_ROOM_TILE_ROWS;
 
-function buildDoorTiles(rowStart, rowEnd, colStart, colEnd) {
-  const tiles = [];
-  for (let row = rowStart; row <= rowEnd; row++) {
-    for (let col = colStart; col <= colEnd; col++) {
-      tiles.push({ row, col });
-    }
-  }
-  return tiles;
-}
-
-const tileRowFromBottom = (offset) => ROOM_TILE_ROWS - offset;
-
-const HUB_ROOM = { x: 1, y: 1 };
-const LEVELS = [
-  {
-    id: 'forest',
-    name: 'Verdant Approach',
-    description: 'A gentle stretch of mossy platforms – perfect for warming up.',
-    entryRoom: { x: 0, y: 1 },
-    hubDoor: {
-      room: HUB_ROOM,
-      tiles: buildDoorTiles(ROOM_TILE_ROWS - 5, ROOM_TILE_ROWS - 2, 0, 1),
-      closedTile: 24,
-    },
-    secrets: [
-      { room: { x: 0, y: 1 }, row: tileRowFromBottom(10), col: 12, radius: 1 },
-      { room: { x: 0, y: 1 }, row: tileRowFromBottom(14), col: 20, radius: 1 },
-      { room: { x: 0, y: 1 }, row: tileRowFromBottom(6), col: 30, radius: 1 },
-    ],
-    initiallyUnlocked: true,
-    unlocks: ['cavern'],
-  },
-  {
-    id: 'cavern',
-    name: 'Shimmering Hollow',
-    description: 'Crystal caverns with vertical climbs and hidden alcoves.',
-    entryRoom: { x: 1, y: 0 },
-    hubDoor: {
-      room: HUB_ROOM,
-      tiles: buildDoorTiles(0, 1, 18, 21),
-      closedTile: 24,
-    },
-    secrets: [
-      { room: { x: 1, y: 0 }, row: tileRowFromBottom(18), col: 14, radius: 1 },
-      { room: { x: 1, y: 0 }, row: tileRowFromBottom(10), col: 30, radius: 1 },
-      { room: { x: 1, y: 0 }, row: tileRowFromBottom(6), col: 20, radius: 1 },
-    ],
-    initiallyUnlocked: false,
-    unlocks: ['ruins'],
-  },
-  {
-    id: 'ruins',
-    name: 'Sunken Ruins',
-    description: 'Ancient stonework sunk beneath the waves, riddled with secrets.',
-    entryRoom: { x: 2, y: 1 },
-    hubDoor: {
-      room: HUB_ROOM,
-      tiles: buildDoorTiles(ROOM_TILE_ROWS - 5, ROOM_TILE_ROWS - 2, ROOM_TILE_COLS - 2, ROOM_TILE_COLS - 1),
-      closedTile: 24,
-    },
-    secrets: [
-      { room: { x: 2, y: 1 }, row: tileRowFromBottom(18), col: 10, radius: 1 },
-      { room: { x: 2, y: 1 }, row: tileRowFromBottom(14), col: 28, radius: 1 },
-      { room: { x: 2, y: 1 }, row: tileRowFromBottom(6), col: 12, radius: 1 },
-    ],
-    initiallyUnlocked: false,
-    unlocks: [],
-  },
-];
-
-const LEVEL_LOOKUP = new Map(LEVELS.map((level) => [level.id, level]));
-const LEVEL_BY_ROOM = new Map(LEVELS.map((level) => [`${level.entryRoom.x},${level.entryRoom.y}`, level]));
-
-const GAME_STATE_HUB = 'hub';
-const GAME_STATE_LEVEL = 'level';
-
 const horizontalAligned = (GAME_WIDTH % TILE_WIDTH) === 0;
 const verticalRemainder = GAME_HEIGHT % TILE_HEIGHT;
 if (!horizontalAligned || verticalRemainder !== 0) {
@@ -130,29 +54,8 @@ let playerFrameHeight = 32;
 let npcFrameWidth = 32;
 let npcFrameHeight = 32;
 
-const levelProgress = new Map();
-let currentLevelId = null;
-let hudMessageTimer = 0;
-let gameState = GAME_STATE_HUB;
-let gameActive = false;
-let baseWorldData = null;
-let platformReady = false;
-let platformInitPromise = null;
-
 // Setup canvas
 const canvas = document.getElementById('screen');
-const gameContainer = document.getElementById('game-container');
-const hubScreen = document.getElementById('hub-screen');
-const hubLevelList = document.getElementById('hub-level-list');
-const editorContainer = document.getElementById('editor-container');
-let levelHud = document.getElementById('level-hud');
-let levelHudName = document.getElementById('level-hud-name');
-let levelHudProgress = document.getElementById('level-hud-progress');
-let levelHudStatus = document.getElementById('level-hud-status');
-let levelMenuList = document.getElementById('level-menu-list');
-if (levelHudStatus) {
-  levelHudStatus.dataset.visible = 'false';
-}
 
 // WASM instance and exports
 let wasm = null;
@@ -273,17 +176,13 @@ document.addEventListener('keydown', (e) => {
   // Toggle editor mode with 'E' key
   if(e.code === 'KeyE' && DEV_TOOLS_ENABLED) {
     if(levelEditor) {
-      if (gameState !== GAME_STATE_LEVEL) {
-        console.warn('Editor unavailable in hub. Enter an expedition to edit.');
-        return;
-      }
       levelEditor.toggleEditorMode();
       updateEditorStatus();
       e.preventDefault();
     }
     return;
   }
-
+  
   // Don't send game input while in editor mode
   if(levelEditor && levelEditor.isEditorMode) {
     return;
@@ -375,45 +274,39 @@ function gameLoop(currentTime) {
   const dt = Math.min((currentTime - lastTime) / 1000.0, 0.1);
   lastTime = currentTime;
   
-  if (hudMessageTimer > 0 && !Number.isNaN(hudMessageTimer)) {
-    hudMessageTimer -= dt;
-    if (hudMessageTimer <= 0) {
-      clearHudMessage();
-    }
+  updateGamepadInput();
+  
+  // Don't update game if in editor mode
+  if (!levelEditor || !levelEditor.isEditorMode) {
+    // Send input to WASM
+    wasm.SetControllerInput(
+      0,
+      inputState.isAnalog,
+      inputState.stickX,
+      inputState.stickY,
+      inputState.moveUp,
+      inputState.moveDown,
+      inputState.moveLeft,
+      inputState.moveRight,
+      inputState.actionUp,
+      inputState.actionDown,
+      inputState.actionLeft,
+      inputState.actionRight,
+      inputState.leftShoulder,
+      inputState.rightShoulder,
+      inputState.start,
+      inputState.back
+    );
+    
+    // Update game logic (C++ updates game state)
+    wasm.WebUpdateAndRender(dt);
+    
+    // Check if player changed rooms
+    checkRoomChange();
   }
-
-  const isActive = gameActive && wasm;
-
-  if (isActive) {
-    updateGamepadInput();
-
-    if (!levelEditor || !levelEditor.isEditorMode) {
-      wasm.SetControllerInput(
-        0,
-        inputState.isAnalog,
-        inputState.stickX,
-        inputState.stickY,
-        inputState.moveUp,
-        inputState.moveDown,
-        inputState.moveLeft,
-        inputState.moveRight,
-        inputState.actionUp,
-        inputState.actionDown,
-        inputState.actionLeft,
-        inputState.actionRight,
-        inputState.leftShoulder,
-        inputState.rightShoulder,
-        inputState.start,
-        inputState.back
-      );
-
-      wasm.WebUpdateAndRender(dt);
-      checkRoomChange();
-      checkSecretCollection();
-    }
-  }
-
-  if (device && platformReady) {
+  
+  // Render with WebGPU
+  if (device) {
     renderScene();
   }
 }
@@ -598,6 +491,40 @@ async function initWebGPU() {
       ],
     });
 
+    let worldData = null;
+    if (DEV_TOOLS_ENABLED) {
+      try {
+        const response = await fetch(WORLD_EDITOR_URL);
+        if (response.ok) {
+          worldData = await response.json();
+        } else {
+          console.warn(`Failed to load editor world JSON (${response.status}); falling back to embedded data.`);
+        }
+      } catch (err) {
+        console.warn('Error fetching editor world JSON, falling back to embedded data.', err);
+      }
+    }
+
+    if (!worldData) {
+      worldData = loadWorldFromWasm();
+    } else {
+      worldData = reconcileWithEmbeddedWorld(worldData);
+    }
+
+    if (!Array.isArray(worldData.npcs)) {
+      worldData.npcs = [];
+    }
+    mapManager = new MapManager(worldData);
+    currentRoomX = worldData.startRoomX ?? 0;
+    currentRoomY = worldData.startRoomY ?? 0;
+    mapManager.currentRoomX = currentRoomX;
+    mapManager.currentRoomY = currentRoomY;
+
+    await initializeDevTools();
+
+    // Build initial tile buffer
+    rebuildCurrentRoomTiles();
+
     atlasLoaded = true;
     console.log('WebGPU initialized');
     return true;
@@ -617,15 +544,7 @@ async function initializeDevTools() {
     return;
   }
 
-  if (!mapManager) {
-    return;
-  }
-
   if (devToolsInitialized) {
-    if (levelEditor && typeof levelEditor.setMapManager === 'function') {
-      levelEditor.setMapManager(mapManager);
-      updateEditorStatus();
-    }
     return;
   }
 
@@ -818,449 +737,6 @@ function sendCurrentRoomNpcData() {
   }
 }
 
-function getLevelProgress(levelId) {
-  let progress = levelProgress.get(levelId);
-  if (!progress) {
-    progress = {
-      unlocked: false,
-      secretsFound: new Set(),
-    };
-    levelProgress.set(levelId, progress);
-  }
-  return progress;
-}
-
-function initializeLevelProgress() {
-  LEVELS.forEach((level) => {
-    const progress = getLevelProgress(level.id);
-    progress.unlocked = !!level.initiallyUnlocked;
-    if (!(progress.secretsFound instanceof Set)) {
-      progress.secretsFound = new Set(progress.secretsFound || []);
-    }
-  });
-  applyLevelDoorStates();
-  updateLevelHud();
-  updateLevelMenu();
-  renderHubLevels();
-}
-
-function applyLevelDoorStates() {
-  const targetWorld = mapManager?.world ?? baseWorldData;
-  if (!targetWorld || !Array.isArray(targetWorld.rooms)) {
-    return;
-  }
-
-  let needsRefresh = false;
-
-  LEVELS.forEach((level) => {
-    if (!level.hubDoor) {
-      return;
-    }
-    const progress = getLevelProgress(level.id);
-    const { room, tiles, closedTile = 24 } = level.hubDoor;
-    const roomData = targetWorld.rooms?.[room.y]?.[room.x];
-    if (!Array.isArray(roomData)) {
-      return;
-    }
-
-    const replacement = progress.unlocked ? 0 : closedTile;
-    tiles.forEach(({ row, col }) => {
-      if (row >= 0 && row < roomData.length) {
-        const rowData = roomData[row];
-        if (Array.isArray(rowData) && col >= 0 && col < rowData.length) {
-          if (rowData[col] !== replacement) {
-            rowData[col] = replacement;
-            if (room.x === mapManager?.currentRoomX && room.y === mapManager?.currentRoomY) {
-              needsRefresh = true;
-            }
-          }
-        }
-      }
-    });
-  });
-
-  if (needsRefresh && platformReady) {
-    rebuildCurrentRoomTiles();
-  }
-}
-
-function updateLevelHud() {
-  if (!levelHud) {
-    return;
-  }
-
-  if (currentLevelId) {
-    const level = LEVEL_LOOKUP.get(currentLevelId);
-    const progress = getLevelProgress(currentLevelId);
-    levelHud.hidden = false;
-    if (levelHudName) {
-      levelHudName.textContent = level?.name ?? 'Unknown Expedition';
-    }
-    if (levelHudProgress && level) {
-      levelHudProgress.textContent = `Secrets: ${progress.secretsFound.size}/${level.secrets.length}`;
-    }
-  } else {
-    levelHud.hidden = false;
-    if (levelHudName) {
-      levelHudName.textContent = 'Sanctuary Hub';
-    }
-    if (levelHudProgress) {
-      const unlockedCount = LEVELS.reduce((count, lvl) => count + (getLevelProgress(lvl.id).unlocked ? 1 : 0), 0);
-      levelHudProgress.textContent = `Unlocked Expeditions: ${unlockedCount}/${LEVELS.length}`;
-    }
-  }
-}
-
-function updateLevelMenu() {
-  if (!levelMenuList) return;
-
-  levelMenuList.innerHTML = '';
-  LEVELS.forEach((level) => {
-    const progress = getLevelProgress(level.id);
-    const item = document.createElement('div');
-    item.className = 'menu-level';
-    if (!progress.unlocked) {
-      item.dataset.state = 'locked';
-    } else if (progress.secretsFound.size >= level.secrets.length) {
-      item.dataset.state = 'cleared';
-    } else {
-      item.dataset.state = 'pending';
-    }
-
-    const title = document.createElement('div');
-    title.className = 'menu-level__title';
-    title.textContent = level.name;
-
-    const status = document.createElement('div');
-    status.className = 'menu-level__status';
-    if (!progress.unlocked) {
-      status.textContent = 'Locked';
-    } else {
-      status.textContent = `Secrets ${progress.secretsFound.size}/${level.secrets.length}`;
-    }
-
-    item.appendChild(title);
-    item.appendChild(status);
-    levelMenuList.appendChild(item);
-  });
-}
-
-function renderHubLevels() {
-  if (!hubLevelList) return;
-
-  hubLevelList.innerHTML = '';
-
-  LEVELS.forEach((level) => {
-    const progress = getLevelProgress(level.id);
-    const secretsTotal = level.secrets?.length ?? 0;
-    const secretsFound = progress.secretsFound.size;
-
-    const card = document.createElement('div');
-    card.className = 'hub-level-card';
-
-    if (!progress.unlocked) {
-      card.dataset.state = 'locked';
-    } else if (secretsFound >= secretsTotal && secretsTotal > 0) {
-      card.dataset.state = 'cleared';
-    } else {
-      card.dataset.state = 'pending';
-    }
-
-    const title = document.createElement('div');
-    title.className = 'hub-level-card__name';
-    title.textContent = level.name;
-
-    const status = document.createElement('div');
-    status.className = 'hub-level-card__status';
-    status.textContent = progress.unlocked
-      ? `Secrets ${secretsFound}/${secretsTotal}`
-      : 'Locked - uncover more secrets';
-
-    const desc = document.createElement('p');
-    desc.className = 'hub-level-card__desc';
-    desc.textContent = level.description ?? 'An unexplored region awaiting discovery.';
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    if (!progress.unlocked) {
-      button.textContent = 'Locked';
-      button.disabled = true;
-    } else if (secretsFound >= secretsTotal && secretsTotal > 0) {
-      button.textContent = 'Replay Expedition';
-    } else {
-      button.textContent = 'Enter Expedition';
-    }
-
-    if (progress.unlocked) {
-      button.addEventListener('click', () => {
-        void enterLevel(level.id);
-      });
-    }
-
-    card.appendChild(title);
-    card.appendChild(status);
-    card.appendChild(desc);
-    card.appendChild(button);
-    hubLevelList.appendChild(card);
-  });
-}
-
-function setHudMessage(message, duration = 3) {
-  if (!levelHudStatus) return;
-  levelHudStatus.textContent = message;
-  levelHudStatus.dataset.visible = 'true';
-  hudMessageTimer = duration;
-}
-
-function clearHudMessage() {
-  if (levelHudStatus) {
-    levelHudStatus.textContent = '';
-    levelHudStatus.dataset.visible = 'false';
-  }
-  hudMessageTimer = 0;
-}
-
-function showHubScreen() {
-  gameState = GAME_STATE_HUB;
-  gameActive = false;
-  currentLevelId = null;
-  if (gameContainer) {
-    gameContainer.classList.add('is-hidden');
-  }
-  if (canvas) {
-    canvas.classList.add('is-hidden');
-  }
-  if (hubScreen) {
-    hubScreen.classList.remove('is-hidden');
-  }
-  if (editorContainer) {
-    editorContainer.classList.add('is-hidden');
-  }
-  const gameMenu = document.getElementById('game-menu');
-  if (gameMenu) {
-    gameMenu.style.display = 'none';
-  }
-  if (levelEditor && levelEditor.isEditorMode) {
-    levelEditor.toggleEditorMode();
-  }
-  clearHudMessage();
-  updateLevelHud();
-  renderHubLevels();
-  updateLevelMenu();
-  updateEditorStatus();
-}
-
-async function enterLevel(levelId) {
-  const level = LEVEL_LOOKUP.get(levelId);
-  if (!level) {
-    console.warn(`Unknown level id: ${levelId}`);
-    return;
-  }
-
-  const progress = getLevelProgress(level.id);
-  progress.unlocked = true;
-
-  try {
-    await ensurePlatformReady();
-  } catch (error) {
-    console.error('Unable to initialize platform:', error);
-    setHudMessage('Failed to load expedition. See console for details.', 4);
-    showHubScreen();
-    return;
-  }
-
-  if (!mapManager) {
-    mapManager = new MapManager(baseWorldData);
-  }
-
-  currentLevelId = level.id;
-  currentRoomX = level.entryRoom.x;
-  currentRoomY = level.entryRoom.y;
-  mapManager.currentRoomX = currentRoomX;
-  mapManager.currentRoomY = currentRoomY;
-  mapManager.ensureNpcGrid();
-  initialNpcSyncPending = true;
-  lastRoomSent = '0,0';
-  lastNpcCount = 0;
-
-  if (wasm && typeof wasm.ResetGameState === 'function') {
-    wasm.ResetGameState(currentRoomX, currentRoomY);
-  }
-
-  rebuildCurrentRoomTiles();
-  sendCurrentRoomNpcData();
-
-  if (!devToolsInitialized || !levelEditor) {
-    await initializeDevTools();
-  } else if (levelEditor && typeof levelEditor.setMapManager === 'function') {
-    levelEditor.setMapManager(mapManager);
-  }
-
-  if (DEV_TOOLS_ENABLED && editorContainer) {
-    editorContainer.classList.remove('is-hidden');
-  }
-
-  if (hubScreen) {
-    hubScreen.classList.add('is-hidden');
-  }
-  if (gameContainer) {
-    gameContainer.classList.remove('is-hidden');
-  }
-  if (canvas) {
-    canvas.classList.remove('is-hidden');
-  }
-
-  gameState = GAME_STATE_LEVEL;
-  gameActive = true;
-  updateLevelHud();
-  updateLevelMenu();
-  updateEditorStatus();
-  setHudMessage(`${level.name} - Expedition Start`, 2.5);
-}
-
-function returnToHub(options = {}) {
-  if (gameState !== GAME_STATE_LEVEL) {
-    showHubScreen();
-    return;
-  }
-
-  gameActive = false;
-  gameState = GAME_STATE_HUB;
-  currentLevelId = null;
-
-  if (mapManager && baseWorldData) {
-    mapManager.currentRoomX = baseWorldData.startRoomX ?? 0;
-    mapManager.currentRoomY = baseWorldData.startRoomY ?? 0;
-    currentRoomX = mapManager.currentRoomX;
-    currentRoomY = mapManager.currentRoomY;
-    mapManager.ensureNpcGrid();
-    applyLevelDoorStates();
-    if (platformReady) {
-      rebuildCurrentRoomTiles();
-    }
-  }
-
-  showHubScreen();
-  if (options.message) {
-    setHudMessage(options.message, options.duration ?? 3);
-  }
-}
-
-function createFallbackWorld() {
-  const roomWidth = ROOM_TILE_COLS;
-  const roomHeight = ROOM_TILE_ROWS;
-  const room = Array.from({ length: roomHeight }, () => Array(roomWidth).fill(0));
-  return {
-    worldWidth: 1,
-    worldHeight: 1,
-    roomWidth,
-    roomHeight,
-    startRoomX: 0,
-    startRoomY: 0,
-    rooms: [[room]],
-    npcs: [[[]]],
-  };
-}
-
-function handleRoomChanged() {
-  if (gameState === GAME_STATE_LEVEL) {
-    updateLevelHud();
-    return;
-  }
-
-  const level = LEVEL_BY_ROOM.get(`${currentRoomX},${currentRoomY}`) || null;
-  const previousLevel = currentLevelId;
-  currentLevelId = level ? level.id : null;
-  if (level && !getLevelProgress(level.id).unlocked) {
-    const progress = getLevelProgress(level.id);
-    progress.unlocked = true;
-    updateLevelMenu();
-    renderHubLevels();
-    setHudMessage(`${level.name} discovered!`);
-  }
-
-  if (previousLevel !== currentLevelId) {
-    updateLevelHud();
-  }
-}
-
-function unlockLevel(levelId, announce = true) {
-  const progress = getLevelProgress(levelId);
-  if (progress.unlocked) {
-    return;
-  }
-  progress.unlocked = true;
-  if (announce) {
-    const level = LEVEL_LOOKUP.get(levelId);
-    if (level) {
-      setHudMessage(`Hub access opened: ${level.name}`);
-    }
-  }
-  applyLevelDoorStates();
-  updateLevelHud();
-  updateLevelMenu();
-  renderHubLevels();
-}
-
-function collectSecret(levelId, secretIndex) {
-  const level = LEVEL_LOOKUP.get(levelId);
-  if (!level) return;
-  const progress = getLevelProgress(levelId);
-  if (progress.secretsFound.has(secretIndex)) return;
-  progress.secretsFound.add(secretIndex);
-
-  const secret = level.secrets?.[secretIndex];
-  if (secret && mapManager?.world?.rooms) {
-    const roomData = mapManager.world.rooms?.[currentRoomY]?.[currentRoomX];
-    if (Array.isArray(roomData)) {
-      const rowData = roomData[secret.row];
-      if (Array.isArray(rowData) && secret.col >= 0 && secret.col < rowData.length) {
-        rowData[secret.col] = 0;
-        if (secret.room.x === currentRoomX && secret.room.y === currentRoomY) {
-          rebuildCurrentRoomTiles();
-        }
-      }
-    }
-  }
-
-  setHudMessage(`Secret found! ${progress.secretsFound.size}/${level.secrets.length}`);
-  updateLevelHud();
-  updateLevelMenu();
-  renderHubLevels();
-
-  if (progress.secretsFound.size >= level.secrets.length) {
-    level.unlocks?.forEach((nextId) => unlockLevel(nextId));
-  }
-}
-
-function checkSecretCollection() {
-  if (!wasm || !currentLevelId) return;
-  if (typeof wasm.GetPlayerX !== 'function' || typeof wasm.GetPlayerY !== 'function') return;
-
-  const level = LEVEL_LOOKUP.get(currentLevelId);
-  if (!level) return;
-
-  const progress = getLevelProgress(currentLevelId);
-  if (!level.secrets || progress.secretsFound.size >= level.secrets.length) {
-    return;
-  }
-
-  const playerX = wasm.GetPlayerX();
-  const playerY = wasm.GetPlayerY();
-  const playerCol = Math.floor((playerX + TILE_WIDTH * 0.5) / TILE_WIDTH);
-  const playerRow = Math.floor((playerY + TILE_HEIGHT * 0.5) / TILE_HEIGHT);
-
-  level.secrets.forEach((secret, index) => {
-    if (progress.secretsFound.has(index)) {
-      return;
-    }
-    const radius = secret.radius ?? 0;
-    if (Math.abs(playerCol - secret.col) <= radius && Math.abs(playerRow - secret.row) <= radius) {
-      collectSecret(level.id, index);
-    }
-  });
-}
-
 function loadWorldFromWasm() {
   if (!wasm || !memory) {
     throw new Error('WASM module not initialized before loading world data.');
@@ -1328,86 +804,57 @@ function reconcileWithEmbeddedWorld(editorWorld) {
     embedded = loadWorldFromWasm();
   } catch (err) {
     console.warn('Unable to load embedded world metadata; using editor JSON as-is.', err);
-    return sanitizeEditorWorld(editorWorld);
+    return editorWorld;
   }
 
-  return sanitizeEditorWorld(editorWorld, embedded);
-}
-
-function sanitizeEditorWorld(editorWorld, embeddedFallback = null) {
-  const fallback = embeddedFallback ?? createFallbackWorld();
-  const source = editorWorld ?? {};
-
-  const worldWidth = Math.max(1, Number(source.worldWidth ?? fallback.worldWidth) || fallback.worldWidth || 1);
-  const worldHeight = Math.max(1, Number(source.worldHeight ?? fallback.worldHeight) || fallback.worldHeight || 1);
-  const roomWidth = Math.max(1, Number(source.roomWidth ?? fallback.roomWidth) || fallback.roomWidth || ROOM_TILE_COLS);
-  const roomHeight = Math.max(1, Number(source.roomHeight ?? fallback.roomHeight) || fallback.roomHeight || ROOM_TILE_ROWS);
-
-  function getBaseline(roomY, roomX, tileRow, tileCol) {
-    const rows = fallback.rooms;
-    const roomRow = rows?.[roomY];
-    const room = roomRow?.[roomX];
-    const row = room?.[tileRow];
-    const value = row?.[tileCol];
-    return Number.isInteger(value) ? value : 0;
-  }
-
-  const normalizedRooms = Array.from({ length: worldHeight }, (_, roomY) => {
-    const sourceRow = Array.isArray(source.rooms?.[roomY]) ? source.rooms[roomY] : [];
-    return Array.from({ length: worldWidth }, (_, roomX) => {
-      const sourceRoom = Array.isArray(sourceRow?.[roomX]) ? sourceRow[roomX] : [];
-      return Array.from({ length: roomHeight }, (_, tileRow) => {
-        const sourceTileRow = Array.isArray(sourceRoom?.[tileRow]) ? sourceRoom[tileRow] : [];
-        const rowData = new Array(roomWidth);
-        for (let tileCol = 0; tileCol < roomWidth; tileCol++) {
-          const value = sourceTileRow[tileCol];
-          rowData[tileCol] = Number.isInteger(value)
-            ? value
-            : getBaseline(roomY, roomX, tileRow, tileCol);
-        }
-        return rowData;
-      });
-    });
-  });
-
-  const startRoomX = clampToRange(
-    Number.isInteger(source.startRoomX) ? source.startRoomX : fallback.startRoomX ?? 0,
-    0,
-    worldWidth - 1
-  );
-  const startRoomY = clampToRange(
-    Number.isInteger(source.startRoomY) ? source.startRoomY : fallback.startRoomY ?? 0,
-    0,
-    worldHeight - 1
-  );
-
-  const normalizedNpcs = Array.from({ length: worldHeight }, (_, roomY) => {
-    const sourceRow = Array.isArray(source.npcs?.[roomY]) ? source.npcs[roomY] : [];
-    return Array.from({ length: worldWidth }, (_, roomX) => {
-      const list = Array.isArray(sourceRow?.[roomX]) ? sourceRow[roomX] : [];
-      return list
-        .filter((npc) => npc && Number.isInteger(npc.row) && Number.isInteger(npc.col))
-        .map((npc) => ({ ...npc }));
-    });
-  });
-
-  return {
+  const {
     worldWidth,
     worldHeight,
     roomWidth,
     roomHeight,
-    startRoomX,
-    startRoomY,
-    rooms: normalizedRooms,
-    npcs: normalizedNpcs,
-  };
-}
+    startRoomX: embeddedStartX = 0,
+    startRoomY: embeddedStartY = 0,
+    rooms: baselineRooms
+  } = embedded;
 
-function clampToRange(value, min, max) {
-  if (!Number.isFinite(value)) return min;
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
+  const normalizedRooms = [];
+  const sourceRooms = Array.isArray(editorWorld.rooms) ? editorWorld.rooms : [];
+
+  for (let roomY = 0; roomY < worldHeight; roomY++) {
+    const sourceRow = Array.isArray(sourceRooms[roomY]) ? sourceRooms[roomY] : [];
+    const normalizedRow = [];
+    for (let roomX = 0; roomX < worldWidth; roomX++) {
+      const sourceRoom = Array.isArray(sourceRow[roomX]) ? sourceRow[roomX] : [];
+      const normalizedRoom = [];
+      for (let tileRow = 0; tileRow < roomHeight; tileRow++) {
+        const sourceTileRow = Array.isArray(sourceRoom[tileRow]) ? sourceRoom[tileRow] : [];
+        const rowData = new Array(roomWidth);
+        for (let tileCol = 0; tileCol < roomWidth; tileCol++) {
+          const value = sourceTileRow[tileCol];
+          rowData[tileCol] = Number.isInteger(value) ? value : baselineRooms[roomY][roomX][tileRow][tileCol];
+        }
+        normalizedRoom.push(rowData);
+      }
+      normalizedRow.push(normalizedRoom);
+    }
+    normalizedRooms.push(normalizedRow);
+  }
+
+  const normalized = {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX: Number.isInteger(editorWorld.startRoomX) ? editorWorld.startRoomX : embeddedStartX,
+    startRoomY: Number.isInteger(editorWorld.startRoomY) ? editorWorld.startRoomY : embeddedStartY,
+    rooms: normalizedRooms
+  };
+
+  if (Array.isArray(editorWorld.npcs)) {
+    normalized.npcs = editorWorld.npcs;
+  }
+
+  return normalized;
 }
 
 function handleNpcEditorClick({ worldX, worldY }) {
@@ -1464,9 +911,6 @@ function updateEditorStatus() {
     if (editorContainer) {
       editorContainer.style.display = 'none';
     }
-    if (hubScreen && gameState === GAME_STATE_HUB) {
-      hubScreen.classList.remove('is-hidden');
-    }
     return;
   }
 
@@ -1474,31 +918,11 @@ function updateEditorStatus() {
     if (editorContainer) {
       editorContainer.style.display = 'block';
     }
-    if (hubScreen) {
-      hubScreen.classList.add('is-hidden');
-    }
-    if (gameContainer) {
-      gameContainer.classList.remove('is-hidden');
-    }
-    if (canvas) {
-      canvas.classList.remove('is-hidden');
-    }
     return;
   }
 
   if (editorContainer) {
     editorContainer.style.display = 'none';
-  }
-  if (gameState === GAME_STATE_HUB) {
-    if (hubScreen) {
-      hubScreen.classList.remove('is-hidden');
-    }
-    if (gameContainer) {
-      gameContainer.classList.add('is-hidden');
-    }
-    if (canvas) {
-      canvas.classList.add('is-hidden');
-    }
   }
 }
 
@@ -1529,7 +953,6 @@ function checkRoomChange() {
     }
     
     console.log(`Room changed to (${currentRoomX}, ${currentRoomY})`);
-    handleRoomChanged();
   }
 }
 
@@ -1634,59 +1057,53 @@ function renderScene() {
 // WASM initialization
 //
 
-async function initializePlatform() {
-  if (platformReady) {
-    return;
-  }
-
-  console.log('Loading WASM...');
+async function init() {
+  try {
+    console.log('Loading WASM...');
+    
   const response = await fetch(WASM_URL);
-  const { instance } = await WebAssembly.instantiateStreaming(response);
-
+    const { instance } = await WebAssembly.instantiateStreaming(response);
+    
   wasm = instance.exports;
   globalThis.__educeWasm = wasm;
-  memory = wasm.memory;
-
-  console.log('WASM loaded');
-
-  wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);
-  console.log('Game initialized');
-
-  const gpuOk = await initWebGPU();
-  if (!gpuOk) {
-    throw new Error('WebGPU required but not available');
+    memory = wasm.memory;
+    
+    console.log('WASM loaded');
+    
+    wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);
+    console.log('Game initialized');
+    
+    // Initialize WebGPU
+    const gpuOk = await initWebGPU();
+    if (!gpuOk) {
+      throw new Error('WebGPU required but not available');
+    }
+    
+    lastTime = performance.now();
+    gameLoop(lastTime);
+    
+    console.log('Game loop started');
+    
+    // Start background music on first user interaction
+    document.addEventListener('click', () => {
+      playMidiSong(true); // Loop enabled
+      setMasterVolume(0.3); // Set volume to 30%
+    }, { once: true });
+    
+    console.log('Click anywhere to start music');
+  } catch(error) {
+    console.error('Failed to initialize:', error);
+    document.body.innerHTML = `<div style="color: white; padding: 20px;">
+      <h1>Error loading game</h1>
+      <pre>${error.message}</pre>
+    </div>`;
   }
-
-  lastTime = performance.now();
-  gameLoop(lastTime);
-
-  document.addEventListener('click', () => {
-    playMidiSong(true);
-    setMasterVolume(0.3);
-  }, { once: true });
-
-  platformReady = true;
-  console.log('Platform initialized and game loop started');
-}
-
-async function ensurePlatformReady() {
-  if (platformReady) {
-    return;
-  }
-  if (!platformInitPromise) {
-    platformInitPromise = initializePlatform().catch((error) => {
-      platformInitPromise = null;
-      throw error;
-    });
-  }
-  await platformInitPromise;
 }
 
 // Menu System Event Handlers
 function setupMenuHandlers() {
   const gameMenu = document.getElementById('game-menu');
   const resumeBtn = document.getElementById('resume-btn');
-  const exitLevelBtn = document.getElementById('exit-level-btn');
   const playMidiBtn = document.getElementById('play-midi');
   const stopMidiBtn = document.getElementById('stop-midi');
   const bgmVolumeSlider = document.getElementById('bgm-volume');
@@ -1711,9 +1128,6 @@ function setupMenuHandlers() {
   // Toggle menu with ESC key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (gameState !== GAME_STATE_LEVEL) {
-        return;
-      }
       // Don't toggle menu if in editor mode
       if (levelEditor && levelEditor.isEditorMode) {
         return;
@@ -1728,10 +1142,6 @@ function setupMenuHandlers() {
         sfxVolumeSlider.value = currentSfx;
         bgmVolumeDisplay.textContent = `BGM: ${currentBgm}%`;
         sfxVolumeDisplay.textContent = `SFX: ${currentSfx}%`;
-        updateLevelMenu();
-        if (exitLevelBtn) {
-          exitLevelBtn.classList.remove('is-hidden');
-        }
       }
       e.preventDefault();
     }
@@ -1742,14 +1152,6 @@ function setupMenuHandlers() {
     isMenuOpen = false;
     gameMenu.style.display = 'none';
   });
-
-  if (exitLevelBtn) {
-    exitLevelBtn.addEventListener('click', () => {
-      isMenuOpen = false;
-      gameMenu.style.display = 'none';
-      returnToHub();
-    });
-  }
   
   // Play music button
   playMidiBtn.addEventListener('click', () => {
@@ -1814,52 +1216,5 @@ function setupMenuHandlers() {
   console.log('Menu handlers initialized');
 }
 
-async function loadEditorWorldData() {
-  try {
-    const response = await fetch(WORLD_EDITOR_URL, { cache: 'no-store' });
-    if (response.ok) {
-      return await response.json();
-    }
-    console.warn(`Editor world JSON not available (${response.status}). Using fallback layout.`);
-  } catch (error) {
-    console.warn('Failed to fetch editor world JSON:', error);
-  }
-  return null;
-}
-
-async function bootstrap() {
-  setupMenuHandlers();
-
-  const editorWorld = await loadEditorWorldData();
-  baseWorldData = sanitizeEditorWorld(editorWorld || {}, createFallbackWorld());
-
-  mapManager = new MapManager(baseWorldData);
-  mapManager.currentRoomX = baseWorldData.startRoomX ?? 0;
-  mapManager.currentRoomY = baseWorldData.startRoomY ?? 0;
-  mapManager.ensureNpcGrid();
-  currentRoomX = mapManager.currentRoomX;
-  currentRoomY = mapManager.currentRoomY;
-
-  initializeLevelProgress();
-
-  if (DEV_TOOLS_ENABLED) {
-    try {
-      await ensurePlatformReady();
-      await initializeDevTools();
-      rebuildCurrentRoomTiles();
-    } catch (error) {
-      console.error('Dev tools initialization failed:', error);
-    }
-  }
-
-  showHubScreen();
-
-  if (platformReady) {
-    rebuildCurrentRoomTiles();
-  }
-}
-
-bootstrap().catch((error) => {
-  console.error('Failed to bootstrap game:', error);
-  setHudMessage('Unable to load required resources.', 5);
-});
+init();
+setupMenuHandlers();

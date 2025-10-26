@@ -218,226 +218,19 @@
       padding: 6px 12px;
       font-size: 12px;
     }
-    
-    .is-hidden {
-      display: none !important;
-    }
-
-    #hub-screen {
-      width: 100%;
-      max-width: 960px;
-      background: rgba(0, 0, 0, 0.85);
-      border: 1px solid #1f1f1f;
-      border-radius: 8px;
-      padding: 24px 28px;
-      color: #fff;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .hub-header h1 {
-      font-size: 28px;
-      color: #4CAF50;
-      margin-bottom: 8px;
-    }
-
-    .hub-header p {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.75);
-      line-height: 1.5;
-    }
-
-    .hub-level-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
-
-    .hub-level-card {
-      background: rgba(12, 12, 12, 0.9);
-      border: 1px solid rgba(70, 70, 70, 0.8);
-      border-radius: 6px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transition: border 0.2s ease, transform 0.2s ease;
-    }
-
-    .hub-level-card[data-state="locked"] {
-      opacity: 0.55;
-      border-style: dashed;
-    }
-
-    .hub-level-card[data-state="cleared"] {
-      border-color: rgba(255, 215, 64, 0.85);
-      box-shadow: 0 0 6px rgba(255, 215, 64, 0.35);
-    }
-
-    .hub-level-card__name {
-      font-size: 18px;
-      color: #fff;
-    }
-
-    .hub-level-card__status {
-      font-size: 13px;
-      color: rgba(200, 200, 200, 0.85);
-    }
-
-    .hub-level-card__desc {
-      font-size: 13px;
-      color: rgba(220, 220, 220, 0.75);
-      line-height: 1.4;
-      min-height: 56px;
-    }
-
-    .hub-level-card button {
-      align-self: flex-start;
-      padding: 8px 14px;
-      font-size: 13px;
-      border-radius: 4px;
-      border: 2px solid #4CAF50;
-      background: rgba(76, 175, 80, 0.8);
-      color: white;
-      cursor: pointer;
-      transition: transform 0.1s ease, background 0.2s ease;
-    }
-
-    .hub-level-card button:hover:not([disabled]) {
-      background: #4CAF50;
-      transform: translateY(-1px);
-    }
-
-    .hub-level-card button[disabled] {
-      border-color: rgba(90, 90, 90, 0.8);
-      background: rgba(50, 50, 50, 0.8);
-      color: rgba(200, 200, 200, 0.6);
-      cursor: not-allowed;
-    }
-
-    #level-hud {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      padding: 12px 16px;
-      background: rgba(0, 0, 0, 0.8);
-      border: 2px solid rgba(76, 175, 80, 0.6);
-      border-radius: 6px;
-      color: #fff;
-      font-family: monospace;
-      z-index: 1500;
-      min-width: 220px;
-    }
-
-    #level-hud[hidden] {
-      display: none;
-    }
-
-    #level-hud-name {
-      font-size: 16px;
-      color: #4CAF50;
-      margin-bottom: 4px;
-    }
-
-    #level-hud-progress {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.85);
-    }
-
-    #level-hud-status {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #ffe082;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    #level-hud-status[data-visible="true"] {
-      opacity: 1;
-    }
-
-    #level-menu {
-      margin-top: 20px;
-      text-align: left;
-    }
-
-    .menu-section-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #4CAF50;
-      margin: 18px 0 8px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    #level-menu-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 220px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .menu-level {
-      padding: 10px;
-      border: 1px solid rgba(80, 80, 80, 0.8);
-      border-radius: 4px;
-      background: rgba(20, 20, 20, 0.9);
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      font-size: 13px;
-      transition: border 0.2s ease, transform 0.15s ease;
-    }
-
-    .menu-level__title {
-      font-weight: bold;
-      margin-right: 12px;
-    }
-
-    .menu-level__status {
-      font-size: 12px;
-      opacity: 0.8;
-    }
-
-    .menu-level[data-state="locked"] {
-      opacity: 0.4;
-    }
-
-    .menu-level[data-state="cleared"] {
-      border-color: rgba(255, 215, 64, 0.9);
-      box-shadow: 0 0 6px rgba(255, 215, 64, 0.4);
-    }
   </style>
 </head>
 <body>
   <div id="app">
     <div id="game-container">
-      <canvas id="screen" class="is-hidden"></canvas>
+      <canvas id="screen"></canvas>
       <div id="editor-selection-overlay"></div>
       <div id="editor-preview-overlay"></div>
     </div>
 
-    <div id="hub-screen">
-      <div class="hub-header">
-        <h1>Sanctuary Hub</h1>
-        <p>Select an expedition to enter its world. Discover all three secrets in each expedition to unlock deeper challenges.</p>
-      </div>
-      <div id="hub-level-list" class="hub-level-list"></div>
-    </div>
-
-    <div id="editor-container" class="is-hidden">
+    <div id="editor-container">
       <div id="palette-root" class="palette-root"></div>
     </div>
-  </div>
-  
-  <div id="level-hud">
-    <div id="level-hud-name">Sanctuary Hub</div>
-    <div id="level-hud-progress">Unlocked Expeditions: 0/0</div>
-    <div id="level-hud-status" data-visible="false"></div>
   </div>
   
   <div id="debug-info">
@@ -447,11 +240,6 @@
   <div id="game-menu">
     <h2>EDUCE</h2>
     <button id="resume-btn">Resume Game</button>
-    <button id="exit-level-btn" class="is-hidden">Exit Expedition</button>
-    <div id="level-menu">
-      <div class="menu-section-title">Expeditions</div>
-      <div id="level-menu-list"></div>
-    </div>
     <div id="audio-controls">
       <div><strong>Audio Controls</strong></div>
       <div>
