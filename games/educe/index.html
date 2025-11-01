@@ -4,11 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>educe - 2D Metroidvania</title>
+  <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
     
     body, html {
@@ -21,6 +23,9 @@
       justify-content: flex-start;
       overflow-y: auto;
       position: relative;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #app {
@@ -46,6 +51,9 @@
       image-rendering: -moz-crisp-edges;
       image-rendering: crisp-edges;
       background-color: #000;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #editor-container {
@@ -218,18 +226,172 @@
       padding: 6px 12px;
       font-size: 12px;
     }
+
+    #touch-controls {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 24px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 32px;
+      z-index: 1500;
+      pointer-events: none;
+    }
+
+    .touch-controls__cluster {
+      display: flex;
+      gap: 20px;
+      pointer-events: auto;
+    }
+
+    .touch-button {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      background: rgba(30, 30, 30, 0.65);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      transition: transform 0.12s ease, border 0.12s ease, background 0.12s ease, color 0.12s ease;
+      pointer-events: auto;
+    }
+
+    .touch-button:active {
+      transform: scale(0.96);
+    }
+
+    .touch-button.is-active {
+      background: rgba(76, 175, 80, 0.7);
+      border-color: rgba(76, 175, 80, 0.9);
+      color: #e8ffe8;
+      transform: scale(1.04);
+    }
+
+    .touch-button[data-action="jump"] {
+      border-color: rgba(86, 149, 255, 0.8);
+    }
+
+    .touch-button[data-action="jump"].is-active {
+      background: rgba(86, 149, 255, 0.7);
+      border-color: rgba(86, 149, 255, 1);
+    }
+
+    .touch-button[data-action="unmerge"] {
+      border-color: rgba(255, 193, 7, 0.8);
+    }
+
+    .touch-button[data-action="unmerge"].is-active {
+      background: rgba(255, 193, 7, 0.7);
+      border-color: rgba(255, 193, 7, 1);
+      color: #1b1300;
+    }
+
+    #victory-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.82);
+      z-index: 2500;
+    }
+
+    #victory-overlay.is-visible {
+      display: flex;
+    }
+
+    .victory-modal {
+      min-width: 280px;
+      max-width: 520px;
+      padding: 36px 42px;
+      border-radius: 10px;
+      border: 2px solid rgba(76, 175, 80, 0.9);
+      background: rgba(12, 12, 12, 0.95);
+      color: #f2fff2;
+      text-align: center;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      font-family: monospace;
+    }
+
+    .victory-modal h2 {
+      font-size: 28px;
+      margin-bottom: 18px;
+      color: #7CFF8A;
+      letter-spacing: 1px;
+    }
+
+    .victory-modal p {
+      font-size: 16px;
+      margin-bottom: 24px;
+      color: #d0ffd6;
+      line-height: 1.5;
+    }
+
+    .victory-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .victory-actions button {
+      padding: 12px 18px;
+      font-size: 16px;
+      border: 2px solid rgba(76, 175, 80, 0.9);
+      border-radius: 6px;
+      background: rgba(76, 175, 80, 0.82);
+      color: #0d2b11;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+      transition: transform 0.15s ease, background 0.15s ease, border 0.15s ease;
+    }
+
+    .victory-actions button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      background: rgba(109, 209, 112, 0.9);
+    }
+
+    .victory-actions button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: rgba(60, 60, 60, 0.7);
+      border-color: rgba(90, 90, 90, 0.8);
+      color: rgba(220, 220, 220, 0.6);
+    }
+
+    @media (max-width: 720px) {
+      #touch-controls {
+        padding: 0 16px;
+        bottom: 16px;
+      }
+
+      .touch-button {
+        width: 56px;
+        height: 56px;
+        font-size: 18px;
+      }
+
+      .victory-modal {
+        width: calc(100% - 48px);
+        padding: 30px 24px;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="app">
     <div id="game-container">
       <canvas id="screen"></canvas>
-      <div id="editor-selection-overlay"></div>
-      <div id="editor-preview-overlay"></div>
-    </div>
-
-    <div id="editor-container">
-      <div id="palette-root" class="palette-root"></div>
     </div>
   </div>
   
@@ -240,6 +402,8 @@
   <div id="game-menu">
     <h2>EDUCE</h2>
     <button id="resume-btn">Resume Game</button>
+    <button id="rewarded-ad-btn">Watch Ad for Bonus</button>
+    <button id="share-game-btn">Share Game</button>
     <div id="audio-controls">
       <div><strong>Audio Controls</strong></div>
       <div>
@@ -263,11 +427,66 @@
     </div>
   </div>
 
+  <div id="victory-overlay" aria-hidden="true">
+    <div class="victory-modal" role="dialog" aria-labelledby="victory-title" aria-describedby="victory-summary">
+      <h2 id="victory-title">Level Complete</h2>
+      <p id="victory-summary">Great work!</p>
+      <div class="victory-actions">
+        <button id="victory-next-btn">Next Level</button>
+        <button id="victory-restart-btn">Restart Level</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="touch-controls">
+    <div class="touch-controls__cluster touch-controls__cluster--movement">
+      <button class="touch-button" data-action="moveLeft" aria-label="Move Left">&lt;</button>
+      <button class="touch-button" data-action="moveRight" aria-label="Move Right">&gt;</button>
+    </div>
+    <div class="touch-controls__cluster touch-controls__cluster--actions">
+      <button class="touch-button" data-action="jump" aria-label="Jump">J</button>
+      <button class="touch-button" data-action="unmerge" aria-label="Unmerge">U</button>
+    </div>
+  </div>
+
   <script>
-    window.RUNTIME_CONFIG = {
-      devTools: false,
-      hotReload: false,
+    const isLocalDev = ['localhost', '127.0.0.1', ''].includes(location.hostname);
+    const defaultRuntimeConfig = {
+      devTools: isLocalDev,
+      hotReload: isLocalDev,
     };
+    window.RUNTIME_CONFIG = Object.assign({}, defaultRuntimeConfig, window.RUNTIME_CONFIG || {});
+
+    if (window.RUNTIME_CONFIG.devTools) {
+      const gameContainer = document.getElementById('game-container');
+      if (gameContainer) {
+        const selectionOverlay = document.createElement('div');
+        selectionOverlay.id = 'editor-selection-overlay';
+        gameContainer.appendChild(selectionOverlay);
+
+        const previewOverlay = document.createElement('div');
+        previewOverlay.id = 'editor-preview-overlay';
+        gameContainer.appendChild(previewOverlay);
+      }
+
+      const appRoot = document.getElementById('app');
+      if (appRoot) {
+        const editorUI = document.createElement('div');
+        editorUI.id = 'editor-ui';
+        editorUI.style.display = 'block';
+
+        const editorContainer = document.createElement('div');
+        editorContainer.id = 'editor-container';
+
+        const paletteRoot = document.createElement('div');
+        paletteRoot.id = 'palette-root';
+        paletteRoot.className = 'palette-root';
+
+        editorContainer.appendChild(paletteRoot);
+        editorUI.appendChild(editorContainer);
+        appRoot.appendChild(editorUI);
+      }
+    }
   </script>
   <script type="module" src="src/game/main.js"></script>
 </body>

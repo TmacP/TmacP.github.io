@@ -14,6 +14,11 @@ export class EditorPalette {
     this.npcs = Array.isArray(options.npcs) && options.npcs.length > 0
       ? options.npcs
       : [{ id: 'default', label: 'NPC Spawn', frame: options.npcFrame || null }];
+    this.npcs = this.npcs.map((npc, index) => {
+      const id = npc.id ?? `npc_${index}`;
+      const label = npc.label || String(id);
+      return { ...npc, id, label };
+    });
 
     this.tileScale = options.tileScale ?? DEFAULT_TILE_SCALE;
     this.npcScale = options.npcScale ?? DEFAULT_NPC_SCALE;
@@ -151,17 +156,20 @@ export class EditorPalette {
       button.title = npc.label || 'NPC';
       button.addEventListener('click', () => this.selectNpc(npc));
 
-      if (npc.frame && this.atlasReady) {
+      if (npc.frame) {
         const canvas = this.createNpcCanvas(npc.frame);
         button.appendChild(canvas);
-      } else if (npc.frame) {
-        const canvas = this.createNpcCanvas(npc.frame);
-        button.appendChild(canvas);
-        // Draw later once atlas ready
       } else {
         const fallback = document.createElement('span');
-        fallback.textContent = npc.label || 'NPC';
+        fallback.textContent = npc.label || npc.id || 'NPC';
         button.appendChild(fallback);
+      }
+
+      const label = document.createElement('span');
+      label.className = 'palette-item-label';
+      label.textContent = npc.label || npc.id || '';
+      if (label.textContent) {
+        button.appendChild(label);
       }
 
       this.npcGrid.appendChild(button);

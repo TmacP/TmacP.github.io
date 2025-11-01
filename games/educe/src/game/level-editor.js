@@ -12,13 +12,23 @@ export class LevelEditor {
     this.statusUpdateCallback = options.statusUpdateCallback || null;
     this.onNpcClick = options.onNpcClick || null;
     this.tileDefinitions = Array.isArray(options.tileDefinitions) ? options.tileDefinitions : [];
-    this.tileLookup = new Map(this.tileDefinitions.map((tile) => [tile.id, tile]));
+    const tileEntries = this.tileDefinitions
+      .map((tile) => {
+        const key = typeof tile.id === 'number' ? tile.id : Number(tile.id);
+        return Number.isFinite(key) ? [key, tile] : null;
+      })
+      .filter((entry) => entry !== null);
+    this.tileLookup = new Map(tileEntries);
+    const firstTile = tileEntries[0] || null;
+    const initialTileId = Number.isFinite(options.selectedTileId)
+      ? Number(options.selectedTileId)
+      : (firstTile ? firstTile[0] : 0);
 
     this.isEditorMode = false;
     this.editMode = 'tiles';
     this.tool = TOOL_PAINT;
-    this.selectedTileId = 1;
-    this.selectedTileInfo = this.tileLookup.get(this.selectedTileId) || null;
+    this.selectedTileId = Number.isFinite(initialTileId) ? initialTileId : 0;
+    this.selectedTileInfo = this.tileLookup.get(this.selectedTileId) || (firstTile ? firstTile[1] : null);
     this.selectedNpcId = 'default';
     this.selectedNpcLabel = 'NPC Spawn';
 
@@ -51,6 +61,12 @@ export class LevelEditor {
     this.canvas.addEventListener('mousemove', this.handlePointerMove);
     window.addEventListener('mouseup', this.handlePointerUp);
     window.addEventListener('resize', this.handleWindowResize);
+  }
+
+  setMapManager(mapManager) {
+    this.mapManager = mapManager;
+    this.clearSelection();
+    this.updateStatus();
   }
 
   handleKeyDown(e) {
@@ -186,6 +202,16 @@ export class LevelEditor {
     this.selectedNpcId = npcId;
     if (options.label) {
       this.selectedNpcLabel = options.label;
+    } else if (this.palette && this.palette.npcItems instanceof Map) {
+      const entry = this.palette.npcItems.get(npcId);
+      if (entry && entry.npc && entry.npc.label) {
+        this.selectedNpcLabel = entry.npc.label;
+      } else {
+        this.selectedNpcLabel = String(npcId);
+      }
+    }
+    if (!options.label && (!this.selectedNpcLabel || this.selectedNpcLabel.length === 0)) {
+      this.selectedNpcLabel = String(npcId);
     }
     if (this.palette && !options.silent) {
       this.palette.setSelectedNpc(npcId, { silent: true });
@@ -356,8 +382,15 @@ export class LevelEditor {
       return;
     }
 
-    const result = this.mapManager.toggleNpcInCurrentRoom(cell.row, cell.col);
-    if (result === 'added' || result === 'removed') {
+    const npcId = (typeof this.selectedNpcId === 'string' && this.selectedNpcId !== '' && this.selectedNpcId !== 'default')
+      ? this.selectedNpcId
+      : null;
+    const npcInfo = {
+      id: npcId,
+      label: this.selectedNpcLabel,
+    };
+    const result = this.mapManager.toggleNpcInCurrentRoom(cell.row, cell.col, npcInfo);
+    if (result === 'added' || result === 'removed' || result === 'updated') {
       this.updateCallback();
       this.updateStatus();
     } else if (result === 'limit') {
