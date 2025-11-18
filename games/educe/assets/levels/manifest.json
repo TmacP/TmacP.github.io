@@ -1,6 +1,20 @@
 {
   "levels": [
-    { "id": "level-1", "path": "./level-1.json" },
-    { "id": "level-2", "path": "./level-2.json" }
+    {
+      "id": "level-1",
+      "path": "./level-1.json"
+    },
+    {
+      "id": "level-2",
+      "path": "./level-2.json"
+    },
+    {
+      "id": "level-3",
+      "path": "./level-3.json",
+      "meta": {
+        "screensWide": 1,
+        "screensTall": 1
+      }
+    }
   ]
 }

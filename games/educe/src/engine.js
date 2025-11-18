@@ -18,6 +18,7 @@ export function createJsEngine({
 
   // Wrapper API that matches old WASM interface
   const api = {
+    __educeEngine: engine,
     WebInit(w, h) {
       engine.config.gameWidth = w | 0;
       engine.config.gameHeight = h | 0;
@@ -48,6 +49,10 @@ export function createJsEngine({
       engine.config.roomCols = cols | 0;
       engine.config.roomRows = rows | 0;
       engine.setTileGrid(flatTiles);
+    },
+
+    SetWorldBounds(widthRooms, heightRooms) {
+      engine.setWorldBounds(widthRooms | 0, heightRooms | 0);
     },
 
     GetTileAt(col, row) {
@@ -116,7 +121,7 @@ export function createJsEngine({
 
     GetNpcFrame(index) {
       const npc = engine.getNpc(index | 0);
-      return npc ? (npc.frame || 0) : 0;
+      return npc ? (npc.currentFrame || 0) : 0;
     },
 
     GetNpcType(index) {
@@ -127,6 +132,27 @@ export function createJsEngine({
     GetNpcFacing(index) {
       const npc = engine.getNpc(index | 0);
       return npc ? (npc.facing || 1) : 1;
+    },
+
+    // Debug probes
+    GetDebugSamples() {
+      if (typeof engine.getDebugSamples === 'function') {
+        return engine.getDebugSamples();
+      }
+      return { horiz: [], vert: [] };
+    },
+
+    // Collider APIs
+    GetPlayerCollider() {
+      if (typeof engine.getPlayerColliderRect === 'function') {
+        return engine.getPlayerColliderRect();
+      }
+      return { x: engine.player.x, y: engine.player.y, width: engine.player.width, height: engine.player.height };
+    },
+    SetPlayerCollider(w, h, ox, oy) {
+      if (typeof engine.setPlayerCollider === 'function') {
+        engine.setPlayerCollider(w, h, ox, oy);
+      }
     },
   };
 

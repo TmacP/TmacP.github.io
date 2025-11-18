@@ -62,6 +62,9 @@ const PLAYER_TYPE_TO_ANIMATION = [
   'player_walk_left',
   'mouse',
 ];
+
+// Debug flags
+let DEBUG_COLLISION = false;
 const ANIMATION_TO_PLAYER_TYPE = {
   blob: PLAYER_TYPE.BLOB,
   player_walk_left: PLAYER_TYPE.WALKER,
@@ -236,7 +239,6 @@ function extractNpcDefinitions(atlas) {
 
   return Object.entries(atlas)
     .filter(([key, frames]) => key !== 'tiles' && Array.isArray(frames) && frames.length > 0)
-    .filter(([key]) => key === NPC_ANIMATION || key === PLAYER_ANIMATION || !key.startsWith('player_'))
     .map(([key, frames]) => {
       const frame = frames[0] ?? {};
       const x = Number(frame.x);
@@ -295,6 +297,14 @@ const keyMap = {
 };
 
 document.addEventListener('keydown', (e) => {
+  // Toggle collision debug with 'C'
+  if (e.code === 'KeyC' && DEV_TOOLS_ENABLED) {
+    DEBUG_COLLISION = !DEBUG_COLLISION;
+    console.log(`Collision debug: ${DEBUG_COLLISION ? 'ON' : 'OFF'}`);
+    e.preventDefault();
+    return;
+  }
+
   // Handle Ctrl+S for saving in editor mode
   if(e.ctrlKey && e.key === 's') {
     if(DEV_TOOLS_ENABLED && levelEditor && levelEditor.isEditorMode) {
@@ -1148,6 +1158,12 @@ async function initCanvas2D() {
       }
 
       applyWorldData(worldData, { source: null });
+      // Provide world bounds to engine when using embedded/fallback data
+      if (wasm && typeof wasm.SetWorldBounds === 'function') {
+        const w = Math.max(1, Number(worldData?.worldWidth) || MAX_LEVEL_SCREENS_WIDE);
+        const h = Math.max(1, Number(worldData?.worldHeight) || MAX_LEVEL_SCREENS_TALL);
+        wasm.SetWorldBounds(w, h);
+      }
     }
 
     await initializeDevTools();
@@ -1324,7 +1340,7 @@ function sendCurrentRoomNpcData() {
   }
 
   const currentMap = mapManager.getCurrentMap();
-  if (!currentMap || !currentMap.npcData) {
+  if (!currentMap || !currentMap.npcData || currentMap.npcData.length === 0) {
     if (typeof wasm.SetNpcs === 'function') {
       wasm.SetNpcs([]);
     }
@@ -1333,13 +1349,22 @@ function sendCurrentRoomNpcData() {
     return;
   }
 
-  const npcs = currentMap.npcData.map((npc, i) => ({
-    x: npc.col * TILE_WIDTH,
-    y: npc.row * TILE_HEIGHT,
-    type: npc.type || 0,
-    frame: 0,
-    facing: 1,
-  }));
+  const npcs = currentMap.npcData.map((npc, i) => {
+    // Map NPC id to type number
+    let type = PLAYER_TYPE.BLOB; // default
+    if (npc.id && ANIMATION_TO_PLAYER_TYPE[npc.id] !== undefined) {
+      type = ANIMATION_TO_PLAYER_TYPE[npc.id];
+    }
+    
+    return {
+      x: npc.col * TILE_WIDTH,
+      y: npc.row * TILE_HEIGHT,
+      type: type,
+      id: npc.id,
+      frame: 0,
+      facing: 1,
+    };
+  });
 
   if (typeof wasm.SetNpcs === 'function') {
     wasm.SetNpcs(npcs);
@@ -1523,6 +1548,13 @@ async function loadLevelByIndex(index, { resetPlayer = true } = {}) {
   }
   applyWorldData(record.data, { source: descriptor });
 
+  // Inform engine of world bounds (in rooms) for the loaded level
+  if (wasm && typeof wasm.SetWorldBounds === 'function') {
+    const w = Math.max(1, Number(record.data?.worldWidth) || MAX_LEVEL_SCREENS_WIDE);
+    const h = Math.max(1, Number(record.data?.worldHeight) || MAX_LEVEL_SCREENS_TALL);
+    wasm.SetWorldBounds(w, h);
+  }
+
   if (resetPlayer) {
     const spawn = currentLevelSpawn || getLevelSpawnPoint(currentWorldData);
     currentRoomX = spawn.roomX;
@@ -1623,17 +1655,42 @@ function getSizeForPlayerType(type) {
   return { width, height };
 }
 
+function alignRectToCollider(collider, width, height) {
+  if (!collider || !Number.isFinite(collider.x) || !Number.isFinite(collider.y)) {
+    return null;
+  }
+  const colliderWidth = Number.isFinite(collider.width) ? collider.width : width;
+  const colliderHeight = Number.isFinite(collider.height) ? collider.height : height;
+  return {
+    x: collider.x - (width - colliderWidth) * 0.5,
+    y: collider.y + colliderHeight - height,
+  };
+}
+
 function getPlayerBounds() {
+  if (!wasm) {
+    return {
+      x: 0,
+      y: 0,
+      width: playerFrameWidth,
+      height: playerFrameHeight,
+      type: PLAYER_TYPE.BLOB,
+      collider: null,
+    };
+  }
   const playerX = typeof wasm.GetPlayerX === 'function' ? wasm.GetPlayerX() : 0;
   const playerY = typeof wasm.GetPlayerY === 'function' ? wasm.GetPlayerY() : 0;
   const typeIndex = typeof wasm.GetPlayerType === 'function' ? wasm.GetPlayerType() : PLAYER_TYPE.BLOB;
   const { width, height } = getSizeForPlayerType(typeIndex);
+  const collider = (typeof wasm.GetPlayerCollider === 'function') ? wasm.GetPlayerCollider() : null;
+  const aligned = alignRectToCollider(collider, width, height);
   return {
-    x: playerX,
-    y: playerY,
+    x: aligned ? aligned.x : playerX,
+    y: aligned ? aligned.y : playerY,
     width,
     height,
     type: typeIndex,
+    collider: collider && Number.isFinite(collider.x) ? collider : null,
   };
 }
 
@@ -1660,6 +1717,25 @@ function getPreviousPlayerType(type) {
 function setPlayerType(type) {
   if (typeof wasm.SetPlayerType === 'function') {
     wasm.SetPlayerType(type);
+  }
+  // Update sprite dimensions when type changes
+  const { width, height } = getSizeForPlayerType(type);
+  if (wasm && typeof wasm.SetPlayerPosition === 'function') {
+    // Store current collider bottom
+    const oldCollider = (typeof wasm.GetPlayerCollider === 'function') ? wasm.GetPlayerCollider() : null;
+    const oldBottom = oldCollider ? (oldCollider.y + oldCollider.height) : null;
+    // Update engine sprite dimensions so collider rescales
+    if (wasm.__educeEngine) {
+      wasm.__educeEngine.player.width = width;
+      wasm.__educeEngine.player.height = height;
+      wasm.__educeEngine.setPlayerType(type);
+      // Keep collider bottom at same position after resize
+      if (oldBottom !== null) {
+        const newCollider = wasm.__educeEngine.getPlayerColliderRect();
+        const yAdjust = oldBottom - (newCollider.y + newCollider.height);
+        wasm.__educeEngine.player.y += yAdjust;
+      }
+    }
   }
 }
 
@@ -1828,7 +1904,11 @@ function getLevelSpawnPoint(worldData) {
     if (spawnConfig.y !== undefined) {
       spawnY = Number(spawnConfig.y);
     } else if (spawnConfig.row !== undefined) {
-      spawnY = (Number(spawnConfig.row) + 1) * TILE_HEIGHT;
+      const spriteHeight = Number.isFinite(playerFrameHeight) && playerFrameHeight > 0
+        ? playerFrameHeight
+        : TILE_HEIGHT * 4;
+      // Align sprite bottom to the tile row so the collider rests on the floor
+      spawnY = Number(spawnConfig.row) * TILE_HEIGHT - spriteHeight;
     }
   }
 
@@ -2633,9 +2713,10 @@ function checkRoomChange() {
 function renderScene() {
   if (!atlasLoaded || !wasm || !ctx2d) return;
 
-  const playerTypeIndex = typeof wasm.GetPlayerType === 'function'
+  const playerBounds = getPlayerBounds();
+  const playerTypeIndex = playerBounds.type ?? (typeof wasm.GetPlayerType === 'function'
     ? wasm.GetPlayerType()
-    : PLAYER_TYPE.BLOB;
+    : PLAYER_TYPE.BLOB);
   const playerAnimationKey = PLAYER_TYPE_TO_ANIMATION[playerTypeIndex] ?? PLAYER_ANIMATION;
   const playerFrames = atlasData[playerAnimationKey] || atlasData[PLAYER_ANIMATION];
   if (!Array.isArray(playerFrames) || playerFrames.length === 0) return;
@@ -2677,10 +2758,11 @@ function renderScene() {
   const playerFrameIndex = wasm.GetCurrentFrame();
   const playerFrame = playerFrames[playerFrameIndex % playerFrames.length];
   characters.push({
-    x: wasm.GetPlayerX(),
-    y: wasm.GetPlayerY(),
+    x: playerBounds.x,
+    y: playerBounds.y,
     facing: wasm.GetPlayerFacing(),
-    frame: playerFrame
+    frame: playerFrame,
+    collider: playerBounds.collider || null,
   });
 
   // Clear background
@@ -2710,15 +2792,91 @@ function renderScene() {
     const f = c.frame;
     if (!f) continue;
     const facing = Number.isFinite(c.facing) ? c.facing : 1;
+    const spriteWidth = Number.isFinite(f.width) ? f.width : playerFrameWidth;
+    const spriteHeight = Number.isFinite(f.height) ? f.height : playerFrameHeight;
+    let drawX = c.x;
+    let drawY = c.y;
+    if (c.collider) {
+      const colliderWidth = Number.isFinite(c.collider.width) ? c.collider.width : spriteWidth;
+      const colliderHeight = Number.isFinite(c.collider.height) ? c.collider.height : spriteHeight;
+      drawX = c.collider.x - (spriteWidth - colliderWidth) * 0.5;
+      drawY = c.collider.y + colliderHeight - spriteHeight;
+    }
     if (facing < 0) {
       ctx2d.save();
       ctx2d.translate(0, 0);
       ctx2d.scale(-1, 1);
-      // When flipped, draw at mirrored x
-      ctx2d.drawImage(atlasBitmap, f.x, f.y, f.width, f.height, -Math.round(c.x) - f.width, Math.round(c.y), f.width, f.height);
+      ctx2d.drawImage(atlasBitmap, f.x, f.y, spriteWidth, spriteHeight, -Math.round(drawX) - spriteWidth, Math.round(drawY), spriteWidth, spriteHeight);
       ctx2d.restore();
     } else {
-      ctx2d.drawImage(atlasBitmap, f.x, f.y, f.width, f.height, Math.round(c.x), Math.round(c.y), f.width, f.height);
+      ctx2d.drawImage(atlasBitmap, f.x, f.y, spriteWidth, spriteHeight, Math.round(drawX), Math.round(drawY), spriteWidth, spriteHeight);
+    }
+  }
+
+  // Debug: draw player collision box and overlapped tiles
+  if (DEBUG_COLLISION) {
+    try {
+      const px = playerBounds.x;
+      const py = playerBounds.y;
+      const pw = playerBounds.width;
+      const ph = playerBounds.height;
+
+      // Collider rect from engine
+      const collider = playerBounds.collider || (typeof wasm.GetPlayerCollider === 'function' ? wasm.GetPlayerCollider() : { x: px, y: py, width: pw, height: ph });
+
+      // Sprite AABB (red dashed)
+      ctx2d.save();
+      ctx2d.strokeStyle = 'rgba(255,0,0,0.9)';
+      ctx2d.lineWidth = 1;
+      ctx2d.setLineDash([4,2]);
+      ctx2d.strokeRect(Math.round(px) + 0.5, Math.round(py) + 0.5, pw, ph);
+      ctx2d.setLineDash([]);
+
+      // Collider AABB (cyan)
+      ctx2d.strokeStyle = 'rgba(0,255,255,0.9)';
+      ctx2d.strokeRect(Math.round(collider.x) + 0.5, Math.round(collider.y) + 0.5, collider.width, collider.height);
+
+      // Highlight overlapped tiles for collider
+      const leftCol = Math.floor(collider.x / TILE_WIDTH);
+      const rightCol = Math.floor((collider.x + collider.width - 1) / TILE_WIDTH);
+      const topRow = Math.floor(collider.y / TILE_HEIGHT);
+      const bottomRow = Math.floor((collider.y + collider.height - 1) / TILE_HEIGHT);
+      ctx2d.strokeStyle = 'rgba(255,255,0,0.8)';
+      for (let row = topRow; row <= bottomRow; row++) {
+        for (let col = leftCol; col <= rightCol; col++) {
+          const rx = col * TILE_WIDTH;
+          const ry = row * TILE_HEIGHT;
+          ctx2d.strokeRect(rx + 0.5, ry + 0.5, TILE_WIDTH, TILE_HEIGHT);
+        }
+      }
+
+      // Draw engine probe cells
+      if (typeof wasm.GetDebugSamples === 'function') {
+        const samples = wasm.GetDebugSamples();
+        const drawCell = (col, row, color) => {
+          const rx = col * TILE_WIDTH;
+          const ry = row * TILE_HEIGHT;
+          ctx2d.strokeStyle = color;
+          ctx2d.strokeRect(rx + 0.5, ry + 0.5, TILE_WIDTH, TILE_HEIGHT);
+        };
+        // Horizontal probes: green = clear, red = hit
+        const horiz = Array.isArray(samples?.horiz) ? samples.horiz : [];
+        for (const s of horiz) {
+          drawCell(s.col|0, s.row|0, s.hit ? 'rgba(255,0,0,0.6)' : 'rgba(0,255,0,0.6)');
+        }
+        // Vertical probes
+        const vert = Array.isArray(samples?.vert) ? samples.vert : [];
+        for (const s of vert) {
+          drawCell(s.col|0, s.row|0, s.hit ? 'rgba(255,0,0,0.6)' : 'rgba(0,255,0,0.6)');
+        }
+      }
+
+      ctx2d.restore();
+    } catch (err) {
+      // Swallow debug draw errors
+      if (DEV_TOOLS_ENABLED) {
+        console.warn('Debug collision draw failed', err);
+      }
     }
   }
 

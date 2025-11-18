@@ -125,10 +125,25 @@ export class MapManager {
   getCurrentMap() {
     const width = Math.min(this.world.roomWidth, ROOM_TILE_COLS);
     const height = Math.min(this.world.roomHeight, ROOM_TILE_ROWS);
+    
+    // Ensure rooms array exists and has the current room
+    if (!this.world.rooms || 
+        !this.world.rooms[this.currentRoomY] || 
+        !this.world.rooms[this.currentRoomY][this.currentRoomX]) {
+      console.warn(`Room (${this.currentRoomX}, ${this.currentRoomY}) does not exist, returning empty map`);
+      return {
+        width,
+        height,
+        tileData: Array.from({ length: height }, () => Array.from({ length: width }, () => 0)),
+        npcData: []
+      };
+    }
+    
     return {
       width,
       height,
-      tileData: this.world.rooms[this.currentRoomY][this.currentRoomX]
+      tileData: this.world.rooms[this.currentRoomY][this.currentRoomX],
+      npcData: this.ensureNpcList(this.currentRoomX, this.currentRoomY)
     };
   }
 
