@@ -1,7 +1,7 @@
 // Compatibility wrapper around the new Educe Engine
 // Maintains the old WASM-like API for backward compatibility
 
-import { Engine } from '../educe/Engine.js';
+import { Engine } from './educe/Engine.js';
 
 export function createJsEngine({
   roomCols,

@@ -3,7 +3,7 @@
  * Built on the Educe engine
  */
 
-import { Engine } from '../educe/Engine.js';
+import { Engine } from './educe/Engine.js';
 
 export const PLAYER_TYPE = {
   BLOB: 0,

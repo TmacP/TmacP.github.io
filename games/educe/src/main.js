@@ -43,15 +43,15 @@ if (!horizontalAligned || verticalRemainder !== 0) {
   console.warn(`Game resolution leaves ${verticalRemainder}px extra vertically; rendering will anchor tiles to the top and leave the remainder at the bottom.`);
 }
 
-const ATLAS_IMAGE_URL = new URL('../../assets/assets.png', import.meta.url);
-const ATLAS_DATA_URL = new URL('../../assets/atlas.json', import.meta.url);
-const WORLD_EDITOR_URL = new URL('../../assets/world.json', import.meta.url);
+const ATLAS_IMAGE_URL = new URL('../assets/assets.png', import.meta.url);
+const ATLAS_DATA_URL = new URL('../assets/atlas.json', import.meta.url);
+const WORLD_EDITOR_URL = new URL('../assets/world.json', import.meta.url);
 const MAX_NPCS_PER_ROOM = 16;
 const MAX_CHARACTERS = MAX_NPCS_PER_ROOM + 1;
 const PLAYER_ANIMATION = 'blob';
 const NPC_ANIMATION = 'player_walk_left';
 const EXIT_TILE_ID = 250;
-const LEVEL_MANIFEST_URL = new URL('../../assets/levels/manifest.json', import.meta.url);
+const LEVEL_MANIFEST_URL = new URL('../assets/levels/manifest.json', import.meta.url);
 const PLAYER_TYPE = {
   BLOB: 0,
   WALKER: 1,

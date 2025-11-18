@@ -14,7 +14,7 @@ function clampInt(value, min, max) {
 const MAX_NPCS_PER_ROOM = 16;
 const DEFAULT_NPC_ID = 'player_walk_left';
 
-const WORLD_FILE_URL = new URL('../../assets/world.json', import.meta.url);
+const WORLD_FILE_URL = new URL('../assets/world.json', import.meta.url);
 
 export class MapManager {
   constructor(worldData, options = {}) {
