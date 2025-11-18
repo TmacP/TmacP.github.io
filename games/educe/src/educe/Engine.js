@@ -14,6 +14,8 @@ export class Engine {
       gameHeight: config.gameHeight || 256,
       gravity: config.gravity || 900,
       maxFallSpeed: config.maxFallSpeed || 900,
+      playerWidth: config.playerWidth || 6,
+      playerHeight: config.playerHeight || 6,
       ...config
     };
 
@@ -24,8 +26,8 @@ export class Engine {
       vy: 0,
       roomX: 0,
       roomY: 0,
-      width: 24,
-      height: 24,
+      width: this.config.playerWidth,
+      height: this.config.playerHeight,
       facing: 1,
       type: 0,
       onGround: false,
@@ -44,6 +46,19 @@ export class Engine {
 
     this.tiles = new Int32Array(this.config.roomCols * this.config.roomRows);
     this.npcs = [];
+  }
+
+  // NPC management
+  setNpcs(npcs) {
+    this.npcs = npcs || [];
+  }
+
+  getNpc(index) {
+    return this.npcs[index] || null;
+  }
+
+  getNpcCount() {
+    return this.npcs.length;
   }
 
   // Tile queries

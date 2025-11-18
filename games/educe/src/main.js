@@ -1323,10 +1323,30 @@ function sendCurrentRoomNpcData() {
     return;
   }
 
-  // JS engine currently doesn't simulate NPCs (returns count=0)
-  // NPCs are managed and rendered by the game layer
+  const currentMap = mapManager.getCurrentMap();
+  if (!currentMap || !currentMap.npcData) {
+    if (typeof wasm.SetNpcs === 'function') {
+      wasm.SetNpcs([]);
+    }
+    lastRoomSent = `${currentRoomX},${currentRoomY}`;
+    lastNpcCount = 0;
+    return;
+  }
+
+  const npcs = currentMap.npcData.map((npc, i) => ({
+    x: npc.col * TILE_WIDTH,
+    y: npc.row * TILE_HEIGHT,
+    type: npc.type || 0,
+    frame: 0,
+    facing: 1,
+  }));
+
+  if (typeof wasm.SetNpcs === 'function') {
+    wasm.SetNpcs(npcs);
+  }
+
   lastRoomSent = `${currentRoomX},${currentRoomY}`;
-  lastNpcCount = 0;
+  lastNpcCount = npcs.length;
 }
 
 async function ensureLevelManifestLoaded() {
@@ -2728,6 +2748,8 @@ async function init() {
       roomRows: ROOM_TILE_ROWS,
       tileWidth: TILE_WIDTH,
       tileHeight: TILE_HEIGHT,
+      playerWidth: 6,
+      playerHeight: 6,
     });
     globalThis.__educeWasm = wasm;
     wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);

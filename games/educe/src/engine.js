@@ -95,24 +95,38 @@ export function createJsEngine({
       engine.resetPlayer(roomX, roomY, x, y);
     },
 
-    // NPC interfaces (no-op for now)
+    // NPC interfaces
+    SetNpcs(npcs) {
+      engine.setNpcs(npcs);
+    },
+
     GetNpcCount() {
-      return 0;
+      return engine.getNpcCount();
     },
-    GetNpcX() {
-      return 0;
+
+    GetNpcX(index) {
+      const npc = engine.getNpc(index | 0);
+      return npc ? npc.x : 0;
     },
-    GetNpcY() {
-      return 0;
+
+    GetNpcY(index) {
+      const npc = engine.getNpc(index | 0);
+      return npc ? npc.y : 0;
     },
-    GetNpcFrame() {
-      return 0;
+
+    GetNpcFrame(index) {
+      const npc = engine.getNpc(index | 0);
+      return npc ? (npc.frame || 0) : 0;
     },
-    GetNpcType() {
-      return 0;
+
+    GetNpcType(index) {
+      const npc = engine.getNpc(index | 0);
+      return npc ? (npc.type || 0) : 0;
     },
-    GetNpcFacing() {
-      return 1;
+
+    GetNpcFacing(index) {
+      const npc = engine.getNpc(index | 0);
+      return npc ? (npc.facing || 1) : 1;
     },
   };
 
