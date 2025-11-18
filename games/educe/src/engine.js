@@ -1,7 +1,7 @@
 // Compatibility wrapper around the new Educe Engine
 // Maintains the old WASM-like API for backward compatibility
 
-import { Engine } from './educe/Engine.js';
+import { Engine } from '/educe/Engine.js';
 
 export function createJsEngine({
   roomCols,
@@ -18,7 +18,6 @@ export function createJsEngine({
 
   // Wrapper API that matches old WASM interface
   const api = {
-    __educeEngine: engine,
     WebInit(w, h) {
       engine.config.gameWidth = w | 0;
       engine.config.gameHeight = h | 0;
@@ -89,6 +88,12 @@ export function createJsEngine({
 
     SetPlayerType(t) {
       engine.setPlayerType(t | 0);
+    },
+
+    SetPlayerSpriteSize(width, height, preserveBottom = true) {
+      if (typeof engine.setPlayerSpriteSize === 'function') {
+        engine.setPlayerSpriteSize(width, height, { preserveBottom });
+      }
     },
 
     SetPlayerPosition(x, y) {

@@ -1718,24 +1718,9 @@ function setPlayerType(type) {
   if (typeof wasm.SetPlayerType === 'function') {
     wasm.SetPlayerType(type);
   }
-  // Update sprite dimensions when type changes
   const { width, height } = getSizeForPlayerType(type);
-  if (wasm && typeof wasm.SetPlayerPosition === 'function') {
-    // Store current collider bottom
-    const oldCollider = (typeof wasm.GetPlayerCollider === 'function') ? wasm.GetPlayerCollider() : null;
-    const oldBottom = oldCollider ? (oldCollider.y + oldCollider.height) : null;
-    // Update engine sprite dimensions so collider rescales
-    if (wasm.__educeEngine) {
-      wasm.__educeEngine.player.width = width;
-      wasm.__educeEngine.player.height = height;
-      wasm.__educeEngine.setPlayerType(type);
-      // Keep collider bottom at same position after resize
-      if (oldBottom !== null) {
-        const newCollider = wasm.__educeEngine.getPlayerColliderRect();
-        const yAdjust = oldBottom - (newCollider.y + newCollider.height);
-        wasm.__educeEngine.player.y += yAdjust;
-      }
-    }
+  if (typeof wasm.SetPlayerSpriteSize === 'function') {
+    wasm.SetPlayerSpriteSize(width, height, true);
   }
 }
 
