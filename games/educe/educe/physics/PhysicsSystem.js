@@ -76,7 +76,9 @@ export function movePlayerWithCollision(engine, dx, dy) {
   if (dy !== 0) {
     let remaining = dy;
     const maxStep = Math.max(1, Math.floor(tileHeight - 1));
-    player.onGround = false;
+    if (dy < 0) {
+      player.onGround = false;
+    }
     while (Math.abs(remaining) > 0.0001) {
       const step = Math.abs(remaining) > maxStep ? Math.sign(remaining) * maxStep : remaining;
       const cx = player.x + offX;
