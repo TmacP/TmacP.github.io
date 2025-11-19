@@ -2798,6 +2798,11 @@ function renderScene() {
     }
   }
 
+  // Particles
+  if (typeof wasm.RenderParticles === 'function') {
+    wasm.RenderParticles(ctx2d);
+  }
+
   // Debug: draw player collision box and overlapped tiles
   if (DEBUG_COLLISION) {
     try {

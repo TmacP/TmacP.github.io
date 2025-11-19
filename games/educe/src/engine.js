@@ -159,6 +159,13 @@ export function createJsEngine({
         engine.setPlayerCollider(w, h, ox, oy);
       }
     },
+
+    // Particles rendering
+    RenderParticles(ctx) {
+      if (typeof engine.renderParticles === 'function') {
+        engine.renderParticles(ctx);
+      }
+    },
   };
 
   return api;

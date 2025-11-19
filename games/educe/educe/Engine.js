@@ -1,6 +1,7 @@
 import { createPlayerState, setPlayerType as applyPlayerType, setPlayerSpriteSize as applyPlayerSpriteSize } from './player/PlayerState.js';
 import { movePlayerWithCollision } from './physics/PhysicsSystem.js';
 import { handleRoomTransition as transitionRooms } from './world/RoomTransitions.js';
+import { ParticleSystem } from './particles/ParticleSystem.js';
 
 /**
  * Educe Engine - Core platformer engine
@@ -45,6 +46,9 @@ export class Engine {
     this.worldWidthRooms = 1;
     this.worldHeightRooms = 1;
     this._debug = { horiz: [], vert: [] };
+
+    // FX
+    this.particles = new ParticleSystem();
   }
 
   setNpcs(npcs) {
@@ -136,6 +140,11 @@ export class Engine {
     if (this.input.jump && this.player.onGround) {
       this.player.vy = jumpVel;
       this.player.onGround = false;
+      // Emit a small burst at feet on jump
+      const c = this.getPlayerColliderRect();
+      const fxX = c.x + c.width * 0.5;
+      const fxY = c.y + c.height - 1;
+      this.particles.emitBurst(fxX, fxY, { hue: 200, saturation: 80, lightness: 70, gravity: 900, count: 18, speedMin: 60, speedMax: 180 });
     }
 
     if (this.player.onGround && this.player.vy >= 0) {
@@ -148,6 +157,9 @@ export class Engine {
     this.moveAndCollide(0, this.player.vy * dt);
 
     this.handleRoomTransition();
+
+    // Update FX
+    this.particles.update(dt);
 
     this.player.frameTime += dt;
     if (this.player.frameTime >= 0.12) {
@@ -194,5 +206,11 @@ export class Engine {
     if (Number.isFinite(height) && height > 0) this.player.colliderHeight = height | 0;
     if (Number.isFinite(offsetX)) this.player.colliderOffsetX = offsetX | 0;
     if (Number.isFinite(offsetY)) this.player.colliderOffsetY = offsetY | 0;
+  }
+
+  // Rendering helpers
+  renderParticles(ctx) {
+    if (!ctx || !this.particles) return;
+    this.particles.render(ctx);
   }
 }
