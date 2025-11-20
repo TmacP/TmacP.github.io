@@ -53,6 +53,7 @@ const NPC_MEMORY_OFFSET = 600 * 1024;
 const PLAYER_ANIMATION = 'blob';
 const NPC_ANIMATION = 'player_walk_left';
 const EXIT_TILE_ID = 250;
+const SPAWN_TILE_ID = 251;
 const LEVEL_MANIFEST_URL = new URL('../../assets/levels/manifest.json', import.meta.url);
 const PLAYER_TYPE = {
   BLOB: 0,
@@ -1506,12 +1507,19 @@ function rebuildCurrentRoomTiles() {
   // Build instance data: each tile is 6 floats (x, y, frameX, frameY, frameW, frameH)
   const instances = [];
 
+  const inEditorMode = levelEditor && levelEditor.isEditorMode;
+
   const maxRows = Math.min(tileData.length, ROOM_TILE_ROWS);
   for (let row = 0; row < maxRows; row++) {
     const maxCols = Math.min(tileData[row].length, ROOM_TILE_COLS);
     for (let col = 0; col < maxCols; col++) {
       const tileId = tileData[row][col];
       if (tileId === 0) continue; // Skip empty tiles
+
+      // Skip spawn tile during gameplay, but render it in editor mode
+      if (tileId === SPAWN_TILE_ID && !inEditorMode) {
+        continue;
+      }
 
       const tileInfo = tileLookup.get(tileId);
       if (!tileInfo) continue;
@@ -2060,6 +2068,35 @@ function clampValue(value, min, max) {
   return numeric;
 }
 
+function findSpawnTileInRoom() {
+  if (!mapManager) {
+    return null;
+  }
+
+  const map = mapManager.getCurrentMap();
+  if (!map || !Array.isArray(map.tileData)) {
+    return null;
+  }
+
+  // Scan all tiles in the current room for the spawn tile
+  for (let row = 0; row < map.tileData.length && row < ROOM_TILE_ROWS; row++) {
+    for (let col = 0; col < map.tileData[row].length && col < ROOM_TILE_COLS; col++) {
+      const tileId = map.tileData[row][col];
+      if (tileId === SPAWN_TILE_ID) {
+        // Found spawn tile - convert to pixel coordinates (center of tile)
+        return {
+          row,
+          col,
+          x: (col + 0.5) * TILE_WIDTH,
+          y: (row + 1) * TILE_HEIGHT, // Bottom of tile
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 function getLevelSpawnPoint(worldData) {
   if (!worldData || typeof worldData !== 'object') {
     return {
@@ -2067,6 +2104,17 @@ function getLevelSpawnPoint(worldData) {
       roomY: 0,
       x: clampValue(GAME_WIDTH * 0.5, 0, GAME_WIDTH),
       y: clampValue(GAME_HEIGHT - TILE_HEIGHT * 2, 0, GAME_HEIGHT),
+    };
+  }
+
+  // Check for spawn tile first - this takes priority over other spawn methods
+  const spawnTile = findSpawnTileInRoom();
+  if (spawnTile) {
+    return {
+      roomX: currentRoomX,
+      roomY: currentRoomY,
+      x: spawnTile.x,
+      y: spawnTile.y,
     };
   }
 
