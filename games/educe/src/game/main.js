@@ -3,7 +3,6 @@
 */
 
 import { MapManager } from './map-manager.js';
-import { createJsEngine } from './engine.js';
 import {
   playMidiSong,
   stopMidiSong,
@@ -43,15 +42,18 @@ if (!horizontalAligned || verticalRemainder !== 0) {
   console.warn(`Game resolution leaves ${verticalRemainder}px extra vertically; rendering will anchor tiles to the top and leave the remainder at the bottom.`);
 }
 
-const ATLAS_IMAGE_URL = new URL('../assets/assets.png', import.meta.url);
-const ATLAS_DATA_URL = new URL('../assets/atlas.json', import.meta.url);
-const WORLD_EDITOR_URL = new URL('../assets/world.json', import.meta.url);
+const SHADER_URL = new URL('./shaders/shader.wgsl', import.meta.url);
+const ATLAS_IMAGE_URL = new URL('../../assets/assets.png', import.meta.url);
+const ATLAS_DATA_URL = new URL('../../assets/atlas.json', import.meta.url);
+const WORLD_EDITOR_URL = new URL('../../assets/world.json', import.meta.url);
+const WASM_URL = new URL('../../dist/main.wasm', import.meta.url);
 const MAX_NPCS_PER_ROOM = 16;
 const MAX_CHARACTERS = MAX_NPCS_PER_ROOM + 1;
+const NPC_MEMORY_OFFSET = 600 * 1024;
 const PLAYER_ANIMATION = 'blob';
 const NPC_ANIMATION = 'player_walk_left';
 const EXIT_TILE_ID = 250;
-const LEVEL_MANIFEST_URL = new URL('../assets/levels/manifest.json', import.meta.url);
+const LEVEL_MANIFEST_URL = new URL('../../assets/levels/manifest.json', import.meta.url);
 const PLAYER_TYPE = {
   BLOB: 0,
   WALKER: 1,
@@ -62,9 +64,6 @@ const PLAYER_TYPE_TO_ANIMATION = [
   'player_walk_left',
   'mouse',
 ];
-
-// Debug flags
-let DEBUG_COLLISION = false;
 const ANIMATION_TO_PLAYER_TYPE = {
   blob: PLAYER_TYPE.BLOB,
   player_walk_left: PLAYER_TYPE.WALKER,
@@ -75,6 +74,7 @@ const PLAYER_EVOLUTION_ORDER = [
   PLAYER_TYPE.WALKER,
   PLAYER_TYPE.MOUSE,
 ];
+const characterUniformData = new Float32Array(12);
 let playerFrameWidth = 32;
 let playerFrameHeight = 32;
 let npcFrameWidth = 32;
@@ -83,15 +83,24 @@ let npcFrameHeight = 32;
 // Setup canvas
 const canvas = document.getElementById('screen');
 
-// Engine instance
+// WASM instance and exports
 let wasm = null;
+let memory = null;
 
-// Canvas 2D renderer state
+// WebGPU state
+let device = null;
+let gpuContext = null;
+let pipeline = null;
+let tilePipeline = null;
+let tileBindGroup = null;
+let characterUniformBuffers = [];
+let characterBindGroups = [];
+let tileGlobalsBuffer = null;
+let tileInstanceBuffer = null;
 let atlasWidth = 0;
 let atlasHeight = 0;
-let ctx2d = null;
-let atlasBitmap = null;
-let tileInstances = null; // Float32Array of [x, y, sx, sy, sw, sh] per tile
+let spriteSampler = null;
+let spriteTextureView = null;
 
 // Sprite/Atlas system
 let atlasData = null;
@@ -239,6 +248,7 @@ function extractNpcDefinitions(atlas) {
 
   return Object.entries(atlas)
     .filter(([key, frames]) => key !== 'tiles' && Array.isArray(frames) && frames.length > 0)
+    .filter(([key]) => key === NPC_ANIMATION || key === PLAYER_ANIMATION || !key.startsWith('player_'))
     .map(([key, frames]) => {
       const frame = frames[0] ?? {};
       const x = Number(frame.x);
@@ -297,14 +307,6 @@ const keyMap = {
 };
 
 document.addEventListener('keydown', (e) => {
-  // Toggle collision debug with 'C'
-  if (e.code === 'KeyC' && DEV_TOOLS_ENABLED) {
-    DEBUG_COLLISION = !DEBUG_COLLISION;
-    console.log(`Collision debug: ${DEBUG_COLLISION ? 'ON' : 'OFF'}`);
-    e.preventDefault();
-    return;
-  }
-
   // Handle Ctrl+S for saving in editor mode
   if(e.ctrlKey && e.key === 's') {
     if(DEV_TOOLS_ENABLED && levelEditor && levelEditor.isEditorMode) {
@@ -1063,8 +1065,8 @@ function gameLoop(currentTime) {
     checkNpcMergeTrigger();
   }
   
-  // Render with Canvas 2D
-  if (ctx2d) {
+  // Render with WebGPU
+  if (device) {
     renderScene();
   }
 }
@@ -1073,18 +1075,60 @@ function gameLoop(currentTime) {
 // WebGPU Rendering
 //
 
-async function initCanvas2D() {
+async function initWebGPU() {
   try {
-    // Canvas 2D context
-    ctx2d = canvas.getContext('2d');
-    if (!ctx2d) {
-      console.error('Canvas 2D not available');
+    // Request WebGPU adapter and device
+    const adapter = await navigator.gpu?.requestAdapter();
+    device = await adapter?.requestDevice();
+    if (!device) {
+      console.error('WebGPU not supported');
       return false;
     }
-    ctx2d.imageSmoothingEnabled = false;
 
-    // Load sprite atlas and metadata
-    const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
+    // Configure canvas context for WebGPU
+    gpuContext = canvas.getContext('webgpu');
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+    gpuContext.configure({
+      device,
+      format: presentationFormat,
+    });
+
+  // Load shader code
+  const shaderCode = await fetch(SHADER_URL).then(res => res.text());
+    
+    const module = device.createShaderModule({
+      label: 'sprite shader',
+      code: shaderCode,
+    });
+
+    // Create sprite rendering pipeline
+    pipeline = device.createRenderPipeline({
+      label: 'sprite pipeline',
+      layout: 'auto',
+      vertex: { entryPoint: 'vs', module },
+      fragment: {
+        entryPoint: 'fs',
+        module,
+        targets: [{
+          format: presentationFormat,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+          },
+        }],
+      },
+    });
+
+  // Load sprite atlas
+  const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
   atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
   normalizedTileDefinitions = extractTileDefinitions(atlasData);
   npcPaletteDefinitions = extractNpcDefinitions(atlasData);
@@ -1106,10 +1150,115 @@ async function initCanvas2D() {
     npcFrameWidth = npcFrames[0].width ?? npcFrameWidth;
     npcFrameHeight = npcFrames[0].height ?? npcFrameHeight;
   }
-    atlasBitmap = imgBitmap;
+    
     atlasWidth = imgBitmap.width;
     atlasHeight = imgBitmap.height;
     console.log('Atlas loaded:', atlasWidth, 'x', atlasHeight);
+
+    // Create texture from atlas
+    const texture = device.createTexture({
+      size: [imgBitmap.width, imgBitmap.height],
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
+    device.queue.copyExternalImageToTexture(
+      { source: imgBitmap },
+      { texture: texture },
+      [imgBitmap.width, imgBitmap.height]
+    );
+
+    // Create sampler
+    spriteSampler = device.createSampler({
+      magFilter: 'nearest',
+      minFilter: 'nearest',
+    });
+
+    spriteTextureView = texture.createView();
+
+    const uniformBufferSize = 12 * 4;
+    characterUniformBuffers = Array.from({ length: MAX_CHARACTERS }, () =>
+      device.createBuffer({
+        size: uniformBufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      })
+    );
+
+    characterBindGroups = characterUniformBuffers.map((buffer) =>
+      device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: spriteSampler },
+          { binding: 1, resource: spriteTextureView },
+          { binding: 2, resource: { buffer } },
+        ],
+      })
+    );
+
+    // Create tile rendering pipeline
+    tilePipeline = device.createRenderPipeline({
+      label: 'tile pipeline',
+      layout: 'auto',
+      vertex: {
+        entryPoint: 'tile_vs',
+        module,
+        buffers: [
+          {
+            arrayStride: 24, // 6 floats: tilePos(2) + frameRect(4)
+            stepMode: 'instance',
+            attributes: [
+              { shaderLocation: 0, offset: 0, format: 'float32x2' }, // tile position
+              { shaderLocation: 1, offset: 8, format: 'float32x4' }, // frame rect
+            ],
+          },
+        ],
+      },
+      fragment: {
+        entryPoint: 'tile_fs',
+        module,
+        targets: [{
+          format: presentationFormat,
+          blend: {
+            color: {
+              srcFactor: 'src-alpha',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+            alpha: {
+              srcFactor: 'one',
+              dstFactor: 'one-minus-src-alpha',
+              operation: 'add',
+            },
+          },
+        }],
+      },
+    });
+
+    // Create tile globals uniform buffer
+    tileGlobalsBuffer = device.createBuffer({
+      size: 48, // 12 floats minimum for WebGPU
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    
+    const tileGlobals = new Float32Array(12);
+    tileGlobals[0] = atlasWidth;
+    tileGlobals[1] = atlasHeight;
+    tileGlobals[2] = GAME_WIDTH;
+    tileGlobals[3] = GAME_HEIGHT;
+    for (let i = 4; i < 12; i++) {
+      tileGlobals[i] = 0.0;
+    }
+    device.queue.writeBuffer(tileGlobalsBuffer, 0, tileGlobals);
+
+    // Create tile bind group
+    tileBindGroup = device.createBindGroup({
+      layout: tilePipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: spriteSampler },
+        { binding: 1, resource: spriteTextureView },
+        { binding: 2, resource: { buffer: tileGlobalsBuffer } },
+      ],
+    });
 
     let usedManifest = false;
     await ensureLevelManifestLoaded();
@@ -1137,20 +1286,9 @@ async function initCanvas2D() {
       }
 
       if (!worldData) {
-        // Build a minimal single-room world as a fallback in JS-only mode
-        worldData = {
-          worldWidth: 1,
-          worldHeight: 1,
-          roomWidth: ROOM_TILE_COLS,
-          roomHeight: ROOM_TILE_ROWS,
-          startRoomX: 0,
-          startRoomY: 0,
-          rooms: [
-            [Array.from({ length: ROOM_TILE_ROWS }, () => Array.from({ length: ROOM_TILE_COLS }, () => 0))]
-          ],
-          npcs: [],
-          playerSpawn: { roomX: 0, roomY: 0, x: TILE_WIDTH * 2, y: TILE_HEIGHT * 2 },
-        };
+        worldData = loadWorldFromWasm();
+      } else {
+        worldData = reconcileWithEmbeddedWorld(worldData);
       }
 
       if (!Array.isArray(worldData.npcs)) {
@@ -1158,21 +1296,15 @@ async function initCanvas2D() {
       }
 
       applyWorldData(worldData, { source: null });
-      // Provide world bounds to engine when using embedded/fallback data
-      if (wasm && typeof wasm.SetWorldBounds === 'function') {
-        const w = Math.max(1, Number(worldData?.worldWidth) || MAX_LEVEL_SCREENS_WIDE);
-        const h = Math.max(1, Number(worldData?.worldHeight) || MAX_LEVEL_SCREENS_TALL);
-        wasm.SetWorldBounds(w, h);
-      }
     }
 
     await initializeDevTools();
 
     atlasLoaded = true;
-    console.log('Canvas renderer initialized');
+    console.log('WebGPU initialized');
     return true;
   } catch(error) {
-    console.error('Canvas initialization failed:', error);
+    console.error('WebGPU initialization failed:', error);
     return false;
   }
 }
@@ -1257,7 +1389,7 @@ async function initializeDevTools() {
 
 // Build tile instance buffer for current room
 function rebuildCurrentRoomTiles() {
-  if (!mapManager || !atlasData) return;
+  if (!mapManager || !device || !atlasData) return;
 
   const map = mapManager.getCurrentMap();
   if (!map || !Array.isArray(map.tileData)) {
@@ -1270,15 +1402,28 @@ function rebuildCurrentRoomTiles() {
     : (Array.isArray(atlasData?.tiles) ? atlasData.tiles : []);
   const tileLookup = new Map(tiles.map((t) => [t.id, t]));
 
-  // Send tile data to engine for collision detection
-  if (wasm && typeof wasm.SetTileGrid === 'function') {
+  // Send tile data to WASM for collision detection
+  if (wasm && wasm.SetTileData) {
+    // Flatten the 2D array into a 1D array
     const flatTiles = new Int32Array(ROOM_TILE_COLS * ROOM_TILE_ROWS);
     for (let row = 0; row < tileData.length && row < ROOM_TILE_ROWS; row++) {
       for (let col = 0; col < tileData[row].length && col < ROOM_TILE_COLS; col++) {
         flatTiles[row * ROOM_TILE_COLS + col] = tileData[row][col];
       }
     }
-    wasm.SetTileGrid(flatTiles, ROOM_TILE_COLS, ROOM_TILE_ROWS);
+
+    // Allocate memory in WASM, copy data, call function
+    // Use a safe memory offset that won't conflict with game memory
+    const memOffset = 512 * 1024; // 512KB offset
+    const tilePtr = memOffset;
+    const memory = new Int32Array(wasm.memory.buffer);
+    for (let i = 0; i < flatTiles.length; i++) {
+      memory[(tilePtr / 4) + i] = flatTiles[i];
+    }
+
+    wasm.SetTileData(tilePtr, ROOM_TILE_COLS, ROOM_TILE_ROWS);
+
+    // Debug: Verify tiles were received correctly in WASM
   }
 
   sendCurrentRoomNpcData();
@@ -1329,49 +1474,87 @@ function rebuildCurrentRoomTiles() {
   }
   
   tileInstanceCount = instances.length / 6;
-  tileInstances = tileInstanceCount > 0 ? new Float32Array(instances) : null;
+  
+  if (tileInstanceCount > 0) {
+    const instanceData = new Float32Array(instances);
+    
+    if (tileInstanceBuffer) {
+      tileInstanceBuffer.destroy();
+    }
+    
+    tileInstanceBuffer = device.createBuffer({
+      size: instanceData.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    
+    device.queue.writeBuffer(tileInstanceBuffer, 0, instanceData);
+  }
   
   updateEditorStatus();
 }
 
 function sendCurrentRoomNpcData() {
-  if (!mapManager || !wasm) {
+  if (!mapManager || !wasm || !wasm.SetNpcData) {
     return;
   }
 
-  const currentMap = mapManager.getCurrentMap();
-  if (!currentMap || !currentMap.npcData || currentMap.npcData.length === 0) {
-    if (typeof wasm.SetNpcs === 'function') {
-      wasm.SetNpcs([]);
-    }
-    lastRoomSent = `${currentRoomX},${currentRoomY}`;
-    lastNpcCount = 0;
+  if (!wasm.memory || !wasm.memory.buffer) {
     return;
   }
 
-  const npcs = currentMap.npcData.map((npc, i) => {
-    // Map NPC id to type number
-    let type = PLAYER_TYPE.BLOB; // default
-    if (npc.id && ANIMATION_TO_PLAYER_TYPE[npc.id] !== undefined) {
-      type = ANIMATION_TO_PLAYER_TYPE[npc.id];
-    }
-    
-    return {
-      x: npc.col * TILE_WIDTH,
-      y: npc.row * TILE_HEIGHT,
-      type: type,
-      id: npc.id,
-      frame: 0,
-      facing: 1,
-    };
-  });
-
-  if (typeof wasm.SetNpcs === 'function') {
-    wasm.SetNpcs(npcs);
+  const npcList = mapManager.getCurrentNpcs ? mapManager.getCurrentNpcs() : [];
+  const count = Math.min(npcList.length, MAX_NPCS_PER_ROOM);
+  if (npcList.length > MAX_NPCS_PER_ROOM) {
+    console.warn(`NPC list truncated to ${MAX_NPCS_PER_ROOM} entries for room (${currentRoomX}, ${currentRoomY}).`);
   }
 
+  const NPC_DATA_STRIDE = 5;
+  const npcBuffer = new Int32Array(wasm.memory.buffer, NPC_MEMORY_OFFSET, MAX_NPCS_PER_ROOM * NPC_DATA_STRIDE);
+  npcBuffer.fill(0);
+
+  const fallbackNpcFrames = npcFrameLookup.get(NPC_ANIMATION);
+  const fallbackFrameSet = Array.isArray(fallbackNpcFrames) && fallbackNpcFrames.length > 0
+    ? fallbackNpcFrames
+    : (Array.isArray(atlasData?.[PLAYER_ANIMATION]) ? atlasData[PLAYER_ANIMATION] : []);
+
+  for (let i = 0; i < count; i++) {
+    const spawn = npcList[i] || { col: 0, row: 0 };
+    const animationKey = (spawn && typeof spawn.id === 'string' && spawn.id.length > 0)
+      ? spawn.id
+      : NPC_ANIMATION;
+
+    const frameSet = (() => {
+      const frames = npcFrameLookup.get(animationKey);
+      if (Array.isArray(frames) && frames.length > 0) {
+        return frames;
+      }
+      return fallbackFrameSet;
+    })();
+
+    const typeIndex = ANIMATION_TO_PLAYER_TYPE[animationKey] ?? PLAYER_TYPE.WALKER;
+
+    const referenceFrame = frameSet && frameSet.length > 0 ? frameSet[0] : null;
+    const width = Math.max(1, Math.round(referenceFrame?.width ?? npcFrameWidth));
+    const height = Math.max(1, Math.round(referenceFrame?.height ?? npcFrameHeight));
+
+    const baseIndex = i * NPC_DATA_STRIDE;
+    npcBuffer[baseIndex] = spawn.col ?? 0;
+    npcBuffer[baseIndex + 1] = spawn.row ?? 0;
+    npcBuffer[baseIndex + 2] = width;
+    npcBuffer[baseIndex + 3] = height;
+    npcBuffer[baseIndex + 4] = typeIndex;
+  }
+
+  wasm.SetNpcData(currentRoomX, currentRoomY, NPC_MEMORY_OFFSET, count);
   lastRoomSent = `${currentRoomX},${currentRoomY}`;
-  lastNpcCount = npcs.length;
+  lastNpcCount = count;
+  if (DEV_TOOLS_ENABLED) {
+    let wasmCount = -1;
+    if (typeof __educeWasm !== 'undefined' && __educeWasm.GetNpcCount) {
+      wasmCount = __educeWasm.GetNpcCount();
+    }
+    console.log(`Sent ${count} NPC spawns to WASM for room (${currentRoomX}, ${currentRoomY}) -> wasm reports ${wasmCount}`);
+  }
 }
 
 async function ensureLevelManifestLoaded() {
@@ -1512,20 +1695,10 @@ async function loadLevelByIndex(index, { resetPlayer = true } = {}) {
 
   const record = await loadLevelEntry(entry);
   if (!record || !record.data) {
-    console.warn('Level load failed; using minimal fallback world.');
-    applyWorldData({
-      worldWidth: 1,
-      worldHeight: 1,
-      roomWidth: ROOM_TILE_COLS,
-      roomHeight: ROOM_TILE_ROWS,
-      startRoomX: 0,
-      startRoomY: 0,
-      rooms: [
-        [Array.from({ length: ROOM_TILE_ROWS }, () => Array.from({ length: ROOM_TILE_COLS }, () => 0))]
-      ],
-      npcs: [],
-      playerSpawn: { roomX: 0, roomY: 0, x: TILE_WIDTH * 2, y: TILE_HEIGHT * 2 },
-    }, { source: null });
+    console.warn('Falling back to embedded world data; level load failed.');
+    const embedded = loadWorldFromWasm();
+    currentLevelDescriptor = null;
+    applyWorldData(embedded, { source: null });
     return false;
   }
 
@@ -1547,13 +1720,6 @@ async function loadLevelByIndex(index, { resetPlayer = true } = {}) {
     descriptor.requestPath = entry.path || null;
   }
   applyWorldData(record.data, { source: descriptor });
-
-  // Inform engine of world bounds (in rooms) for the loaded level
-  if (wasm && typeof wasm.SetWorldBounds === 'function') {
-    const w = Math.max(1, Number(record.data?.worldWidth) || MAX_LEVEL_SCREENS_WIDE);
-    const h = Math.max(1, Number(record.data?.worldHeight) || MAX_LEVEL_SCREENS_TALL);
-    wasm.SetWorldBounds(w, h);
-  }
 
   if (resetPlayer) {
     const spawn = currentLevelSpawn || getLevelSpawnPoint(currentWorldData);
@@ -1655,42 +1821,17 @@ function getSizeForPlayerType(type) {
   return { width, height };
 }
 
-function alignRectToCollider(collider, width, height) {
-  if (!collider || !Number.isFinite(collider.x) || !Number.isFinite(collider.y)) {
-    return null;
-  }
-  const colliderWidth = Number.isFinite(collider.width) ? collider.width : width;
-  const colliderHeight = Number.isFinite(collider.height) ? collider.height : height;
-  return {
-    x: collider.x - (width - colliderWidth) * 0.5,
-    y: collider.y + colliderHeight - height,
-  };
-}
-
 function getPlayerBounds() {
-  if (!wasm) {
-    return {
-      x: 0,
-      y: 0,
-      width: playerFrameWidth,
-      height: playerFrameHeight,
-      type: PLAYER_TYPE.BLOB,
-      collider: null,
-    };
-  }
   const playerX = typeof wasm.GetPlayerX === 'function' ? wasm.GetPlayerX() : 0;
   const playerY = typeof wasm.GetPlayerY === 'function' ? wasm.GetPlayerY() : 0;
   const typeIndex = typeof wasm.GetPlayerType === 'function' ? wasm.GetPlayerType() : PLAYER_TYPE.BLOB;
   const { width, height } = getSizeForPlayerType(typeIndex);
-  const collider = (typeof wasm.GetPlayerCollider === 'function') ? wasm.GetPlayerCollider() : null;
-  const aligned = alignRectToCollider(collider, width, height);
   return {
-    x: aligned ? aligned.x : playerX,
-    y: aligned ? aligned.y : playerY,
+    x: playerX,
+    y: playerY,
     width,
     height,
     type: typeIndex,
-    collider: collider && Number.isFinite(collider.x) ? collider : null,
   };
 }
 
@@ -1717,10 +1858,6 @@ function getPreviousPlayerType(type) {
 function setPlayerType(type) {
   if (typeof wasm.SetPlayerType === 'function') {
     wasm.SetPlayerType(type);
-  }
-  const { width, height } = getSizeForPlayerType(type);
-  if (typeof wasm.SetPlayerSpriteSize === 'function') {
-    wasm.SetPlayerSpriteSize(width, height, true);
   }
 }
 
@@ -1889,11 +2026,7 @@ function getLevelSpawnPoint(worldData) {
     if (spawnConfig.y !== undefined) {
       spawnY = Number(spawnConfig.y);
     } else if (spawnConfig.row !== undefined) {
-      const spriteHeight = Number.isFinite(playerFrameHeight) && playerFrameHeight > 0
-        ? playerFrameHeight
-        : TILE_HEIGHT * 4;
-      // Align sprite bottom to the tile row so the collider rests on the floor
-      spawnY = Number(spawnConfig.row) * TILE_HEIGHT - spriteHeight;
+      spawnY = (Number(spawnConfig.row) + 1) * TILE_HEIGHT;
     }
   }
 
@@ -2580,6 +2713,136 @@ async function setupLevelSelector(container) {
   }
 }
 
+function loadWorldFromWasm() {
+  if (!wasm || !memory) {
+    throw new Error('WASM module not initialized before loading world data.');
+  }
+  if (typeof wasm.GetWorldDataHeaderPointer !== 'function' ||
+      typeof wasm.GetWorldTileDataPointer !== 'function') {
+    throw new Error('Current WASM build does not expose world data accessors.');
+  }
+
+  const headerPtr = wasm.GetWorldDataHeaderPointer();
+  const headerView = new Uint16Array(memory.buffer, headerPtr, 6);
+  const [
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX,
+    startRoomY
+  ] = headerView;
+
+  const expectedTiles = worldWidth * worldHeight * roomWidth * roomHeight;
+  const tilePtr = wasm.GetWorldTileDataPointer();
+  const reportedCount = (typeof wasm.GetWorldTileCount === 'function')
+    ? wasm.GetWorldTileCount()
+    : expectedTiles;
+  const actualCount = Math.min(reportedCount, expectedTiles);
+  const tileView = new Uint16Array(memory.buffer, tilePtr, actualCount);
+
+  const rooms = [];
+  let cursor = 0;
+  for (let roomY = 0; roomY < worldHeight; roomY++) {
+    const roomRow = [];
+    for (let roomX = 0; roomX < worldWidth; roomX++) {
+      const room = [];
+      for (let tileRow = 0; tileRow < roomHeight; tileRow++) {
+        const rowData = new Array(roomWidth);
+        for (let tileCol = 0; tileCol < roomWidth; tileCol++, cursor++) {
+          rowData[tileCol] = cursor < actualCount ? tileView[cursor] : 0;
+        }
+        room.push(rowData);
+      }
+      roomRow.push(room);
+    }
+    rooms.push(roomRow);
+  }
+
+  if (cursor < expectedTiles && DEV_TOOLS_ENABLED) {
+    console.warn(`World tile data truncated: expected ${expectedTiles}, got ${actualCount}`);
+  }
+
+  return {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX,
+    startRoomY,
+    rooms,
+    playerSpawn: {
+      roomX: startRoomX,
+      roomY: startRoomY,
+      col: Math.floor(roomWidth / 2),
+      row: Math.max(0, roomHeight - 3),
+    }
+  };
+}
+
+function reconcileWithEmbeddedWorld(editorWorld) {
+  let embedded;
+  try {
+    embedded = loadWorldFromWasm();
+  } catch (err) {
+    console.warn('Unable to load embedded world metadata; using editor JSON as-is.', err);
+    return editorWorld;
+  }
+
+  const {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX: embeddedStartX = 0,
+    startRoomY: embeddedStartY = 0,
+    rooms: baselineRooms
+  } = embedded;
+
+  const normalizedRooms = [];
+  const sourceRooms = Array.isArray(editorWorld.rooms) ? editorWorld.rooms : [];
+
+  for (let roomY = 0; roomY < worldHeight; roomY++) {
+    const sourceRow = Array.isArray(sourceRooms[roomY]) ? sourceRooms[roomY] : [];
+    const normalizedRow = [];
+    for (let roomX = 0; roomX < worldWidth; roomX++) {
+      const sourceRoom = Array.isArray(sourceRow[roomX]) ? sourceRow[roomX] : [];
+      const normalizedRoom = [];
+      for (let tileRow = 0; tileRow < roomHeight; tileRow++) {
+        const sourceTileRow = Array.isArray(sourceRoom[tileRow]) ? sourceRoom[tileRow] : [];
+        const rowData = new Array(roomWidth);
+        for (let tileCol = 0; tileCol < roomWidth; tileCol++) {
+          const value = sourceTileRow[tileCol];
+          rowData[tileCol] = Number.isInteger(value) ? value : baselineRooms[roomY][roomX][tileRow][tileCol];
+        }
+        normalizedRoom.push(rowData);
+      }
+      normalizedRow.push(normalizedRoom);
+    }
+    normalizedRooms.push(normalizedRow);
+  }
+
+  const normalized = {
+    worldWidth,
+    worldHeight,
+    roomWidth,
+    roomHeight,
+    startRoomX: Number.isInteger(editorWorld.startRoomX) ? editorWorld.startRoomX : embeddedStartX,
+    startRoomY: Number.isInteger(editorWorld.startRoomY) ? editorWorld.startRoomY : embeddedStartY,
+    rooms: normalizedRooms
+  };
+
+  if (Array.isArray(editorWorld.npcs)) {
+    normalized.npcs = editorWorld.npcs;
+  }
+
+  if (editorWorld && typeof editorWorld.playerSpawn === 'object') {
+    normalized.playerSpawn = editorWorld.playerSpawn;
+  }
+
+  return normalized;
+}
+
 function handleNpcEditorClick({ worldX, worldY }) {
   if (!mapManager || !wasm) {
     return false;
@@ -2696,12 +2959,11 @@ function checkRoomChange() {
 }
 
 function renderScene() {
-  if (!atlasLoaded || !wasm || !ctx2d) return;
+  if (!atlasLoaded || !wasm || !device) return;
 
-  const playerBounds = getPlayerBounds();
-  const playerTypeIndex = playerBounds.type ?? (typeof wasm.GetPlayerType === 'function'
+  const playerTypeIndex = typeof wasm.GetPlayerType === 'function'
     ? wasm.GetPlayerType()
-    : PLAYER_TYPE.BLOB);
+    : PLAYER_TYPE.BLOB;
   const playerAnimationKey = PLAYER_TYPE_TO_ANIMATION[playerTypeIndex] ?? PLAYER_ANIMATION;
   const playerFrames = atlasData[playerAnimationKey] || atlasData[PLAYER_ANIMATION];
   if (!Array.isArray(playerFrames) || playerFrames.length === 0) return;
@@ -2743,134 +3005,65 @@ function renderScene() {
   const playerFrameIndex = wasm.GetCurrentFrame();
   const playerFrame = playerFrames[playerFrameIndex % playerFrames.length];
   characters.push({
-    x: playerBounds.x,
-    y: playerBounds.y,
+    x: wasm.GetPlayerX(),
+    y: wasm.GetPlayerY(),
     facing: wasm.GetPlayerFacing(),
-    frame: playerFrame,
-    collider: playerBounds.collider || null,
+    frame: playerFrame
   });
 
-  // Clear background
-  ctx2d.save();
-  ctx2d.setTransform(1, 0, 0, 1, 0, 0);
-  ctx2d.fillStyle = 'rgb(100,148,237)';
-  ctx2d.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-  ctx2d.imageSmoothingEnabled = false;
+  const encoder = device.createCommandEncoder({ label: 'render-encoder' });
+  const pass = encoder.beginRenderPass({
+    label: 'render-pass',
+    colorAttachments: [
+      {
+        view: gpuContext.getCurrentTexture().createView(),
+        loadOp: 'clear',
+        clearValue: [0.39, 0.58, 0.93, 1],
+        storeOp: 'store',
+      },
+    ],
+  });
 
-  // Draw tiles
-  if (tileInstanceCount > 0 && tileInstances && atlasBitmap) {
-    for (let i = 0; i < tileInstanceCount; i++) {
-      const base = i * 6;
-      const x = tileInstances[base + 0];
-      const y = tileInstances[base + 1];
-      const sx = tileInstances[base + 2];
-      const sy = tileInstances[base + 3];
-      const sw = tileInstances[base + 4];
-      const sh = tileInstances[base + 5];
-      ctx2d.drawImage(atlasBitmap, sx, sy, sw, sh, x, y, sw, sh);
+  if (tileInstanceCount > 0 && tileInstanceBuffer) {
+    pass.setPipeline(tilePipeline);
+    pass.setBindGroup(0, tileBindGroup);
+    pass.setVertexBuffer(0, tileInstanceBuffer);
+    pass.draw(6, tileInstanceCount);
+  }
+
+  if (characters.length > 0) {
+    pass.setPipeline(pipeline);
+    const maxRenderable = Math.min(characters.length, characterBindGroups.length);
+    if (characters.length > maxRenderable && DEV_TOOLS_ENABLED) {
+      console.warn(`Character render capped at ${maxRenderable} instances (have ${characters.length})`);
+    }
+
+    for (let i = 0; i < maxRenderable; i++) {
+      const character = characters[i];
+      const frame = character.frame;
+      if (!frame) continue;
+
+      characterUniformData[0] = frame.x;
+      characterUniformData[1] = frame.y;
+      characterUniformData[2] = frame.width;
+      characterUniformData[3] = frame.height;
+      characterUniformData[4] = atlasWidth;
+      characterUniformData[5] = atlasHeight;
+      characterUniformData[6] = character.x;
+      characterUniformData[7] = character.y;
+      characterUniformData[8] = GAME_WIDTH;
+      characterUniformData[9] = GAME_HEIGHT;
+      characterUniformData[10] = character.facing;
+      characterUniformData[11] = 0.0;
+
+      device.queue.writeBuffer(characterUniformBuffers[i], 0, characterUniformData);
+      pass.setBindGroup(0, characterBindGroups[i]);
+      pass.draw(6);
     }
   }
 
-  // Draw characters
-  for (let i = 0; i < characters.length; i++) {
-    const c = characters[i];
-    const f = c.frame;
-    if (!f) continue;
-    const facing = Number.isFinite(c.facing) ? c.facing : 1;
-    const spriteWidth = Number.isFinite(f.width) ? f.width : playerFrameWidth;
-    const spriteHeight = Number.isFinite(f.height) ? f.height : playerFrameHeight;
-    let drawX = c.x;
-    let drawY = c.y;
-    if (c.collider) {
-      const colliderWidth = Number.isFinite(c.collider.width) ? c.collider.width : spriteWidth;
-      const colliderHeight = Number.isFinite(c.collider.height) ? c.collider.height : spriteHeight;
-      drawX = c.collider.x - (spriteWidth - colliderWidth) * 0.5;
-      drawY = c.collider.y + colliderHeight - spriteHeight;
-    }
-    if (facing < 0) {
-      ctx2d.save();
-      ctx2d.translate(0, 0);
-      ctx2d.scale(-1, 1);
-      ctx2d.drawImage(atlasBitmap, f.x, f.y, spriteWidth, spriteHeight, -Math.round(drawX) - spriteWidth, Math.round(drawY), spriteWidth, spriteHeight);
-      ctx2d.restore();
-    } else {
-      ctx2d.drawImage(atlasBitmap, f.x, f.y, spriteWidth, spriteHeight, Math.round(drawX), Math.round(drawY), spriteWidth, spriteHeight);
-    }
-  }
-
-  // Particles
-  if (typeof wasm.RenderParticles === 'function') {
-    wasm.RenderParticles(ctx2d);
-  }
-
-  // Debug: draw player collision box and overlapped tiles
-  if (DEBUG_COLLISION) {
-    try {
-      const px = playerBounds.x;
-      const py = playerBounds.y;
-      const pw = playerBounds.width;
-      const ph = playerBounds.height;
-
-      // Collider rect from engine
-      const collider = playerBounds.collider || (typeof wasm.GetPlayerCollider === 'function' ? wasm.GetPlayerCollider() : { x: px, y: py, width: pw, height: ph });
-
-      // Sprite AABB (red dashed)
-      ctx2d.save();
-      ctx2d.strokeStyle = 'rgba(255,0,0,0.9)';
-      ctx2d.lineWidth = 1;
-      ctx2d.setLineDash([4,2]);
-      ctx2d.strokeRect(Math.round(px) + 0.5, Math.round(py) + 0.5, pw, ph);
-      ctx2d.setLineDash([]);
-
-      // Collider AABB (cyan)
-      ctx2d.strokeStyle = 'rgba(0,255,255,0.9)';
-      ctx2d.strokeRect(Math.round(collider.x) + 0.5, Math.round(collider.y) + 0.5, collider.width, collider.height);
-
-      // Highlight overlapped tiles for collider
-      const leftCol = Math.floor(collider.x / TILE_WIDTH);
-      const rightCol = Math.floor((collider.x + collider.width - 1) / TILE_WIDTH);
-      const topRow = Math.floor(collider.y / TILE_HEIGHT);
-      const bottomRow = Math.floor((collider.y + collider.height - 1) / TILE_HEIGHT);
-      ctx2d.strokeStyle = 'rgba(255,255,0,0.8)';
-      for (let row = topRow; row <= bottomRow; row++) {
-        for (let col = leftCol; col <= rightCol; col++) {
-          const rx = col * TILE_WIDTH;
-          const ry = row * TILE_HEIGHT;
-          ctx2d.strokeRect(rx + 0.5, ry + 0.5, TILE_WIDTH, TILE_HEIGHT);
-        }
-      }
-
-      // Draw engine probe cells
-      if (typeof wasm.GetDebugSamples === 'function') {
-        const samples = wasm.GetDebugSamples();
-        const drawCell = (col, row, color) => {
-          const rx = col * TILE_WIDTH;
-          const ry = row * TILE_HEIGHT;
-          ctx2d.strokeStyle = color;
-          ctx2d.strokeRect(rx + 0.5, ry + 0.5, TILE_WIDTH, TILE_HEIGHT);
-        };
-        // Horizontal probes: green = clear, red = hit
-        const horiz = Array.isArray(samples?.horiz) ? samples.horiz : [];
-        for (const s of horiz) {
-          drawCell(s.col|0, s.row|0, s.hit ? 'rgba(255,0,0,0.6)' : 'rgba(0,255,0,0.6)');
-        }
-        // Vertical probes
-        const vert = Array.isArray(samples?.vert) ? samples.vert : [];
-        for (const s of vert) {
-          drawCell(s.col|0, s.row|0, s.hit ? 'rgba(255,0,0,0.6)' : 'rgba(0,255,0,0.6)');
-        }
-      }
-
-      ctx2d.restore();
-    } catch (err) {
-      // Swallow debug draw errors
-      if (DEV_TOOLS_ENABLED) {
-        console.warn('Debug collision draw failed', err);
-      }
-    }
-  }
-
-  ctx2d.restore();
+  pass.end();
+  device.queue.submit([encoder.finish()]);
 }
 
 //
@@ -2890,23 +3083,24 @@ async function init() {
       console.log("Poki SDK initialization failed, continuing anyway", error);
     }
     
-    // Initialize JS engine (WASM removed)
-    wasm = createJsEngine({
-      roomCols: ROOM_TILE_COLS,
-      roomRows: ROOM_TILE_ROWS,
-      tileWidth: TILE_WIDTH,
-      tileHeight: TILE_HEIGHT,
-      playerWidth: 6,
-      playerHeight: 6,
-    });
-    globalThis.__educeWasm = wasm;
-    wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);
-    console.log('JS engine initialized');
+    console.log('Loading WASM...');
     
-    // Initialize Canvas 2D renderer
-    const canvasOk = await initCanvas2D();
-    if (!canvasOk) {
-      throw new Error('Canvas 2D not available');
+  const response = await fetch(WASM_URL);
+    const { instance } = await WebAssembly.instantiateStreaming(response);
+    
+  wasm = instance.exports;
+  globalThis.__educeWasm = wasm;
+    memory = wasm.memory;
+    
+    console.log('WASM loaded');
+    
+    wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);
+    console.log('Game initialized');
+    
+    // Initialize WebGPU
+    const gpuOk = await initWebGPU();
+    if (!gpuOk) {
+      throw new Error('WebGPU required but not available');
     }
     
     lastTime = performance.now();

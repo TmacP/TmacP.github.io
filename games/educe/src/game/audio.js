@@ -11,9 +11,6 @@ let masterVolume = 0.3; // Global volume control
 let bgmVolume = 1.0;
 let sfxVolume = 1.0;
 
-// Current synth patch (user-definable)
-let currentSynthPatch = null;
-
 function getAudioContext() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -55,7 +52,7 @@ export function playMidiSong(loop = true) {
     
     const timeout = setTimeout(() => {
       if (!isPlaying) return;
-      playSynthNote(ctx, note.freq, note.dur, note.gain, currentSynthPatch);
+      playSnowflakeSynthNote(ctx, note.freq, note.dur, note.gain);
     }, note.start * 1000);
     
     scheduledTimeouts.push(timeout);
@@ -489,106 +486,106 @@ export function playDinoWandering() {
   osc.stop(now + 0.5);
 }
 
-// Allow external code to set the synth patch
-export function setSynthPatch(patchObject) {
-  // Basic validation
-  if (patchObject && typeof patchObject === 'object') {
-    currentSynthPatch = JSON.parse(JSON.stringify(patchObject));
-    console.log('Synth patch set:', currentSynthPatch?.name || '(unnamed)');
-  }
-}
-
-export async function loadSynthPatchFromUrl(url) {
-  const res = await fetch(url);
-  const json = await res.json();
-  setSynthPatch(json);
-}
-
-function playSynthNote(ctx, freq, dur, gain, patch) {
+function playSnowflakeSynthNote(ctx, freq, dur, gain) {
   const now = ctx.currentTime;
-  // Default patch mirrors previous "Snowflake" sound
-  const defaultPatch = {
-    name: 'DefaultSnowflake',
-    oscillators: [
-      { type: 'sawtooth', ratio: 1.0, gain: 0.35 },
-      { type: 'sine', ratio: 0.5, gain: 0.25 },
-      { type: 'sawtooth', ratio: 1.012, gain: 0.2 },
-      { type: 'triangle', ratio: 0.997, gain: 0.15 },
-    ],
-    filter: { type: 'lowpass', q: 8, freqMulStart: 4, freqMulMid: 2, freqMulEnd: 1.5 },
-    envelope: { attack: 0.08, decay: 0.15, sustain: 0.7, release: 0.4, gainScale: 0.4 },
-    vibrato: { enabled: true, freq: 5, depthRatio: 0.01, minDur: 0.5, targets: [0,2] },
-  };
-
-  const p = patch || defaultPatch;
-
-  // Build oscillators and premix
+  
+  // --- Multi-layer synth (Snowflake-inspired for rich sound) ---
+  
+  // Main oscillator - sawtooth for brightness
+  const osc1 = ctx.createOscillator();
+  osc1.type = 'sawtooth';
+  osc1.frequency.value = freq;
+  
+  // Sub oscillator - sine wave one octave down for warmth
+  const osc2 = ctx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.value = freq * 0.5;
+  
+  // Detune oscillator - slightly detuned sawtooth for chorus effect
+  const osc3 = ctx.createOscillator();
+  osc3.type = 'sawtooth';
+  osc3.frequency.value = freq * 1.012; // +12 cents
+  
+  // Triangle oscillator - slightly detuned down for richness
+  const osc4 = ctx.createOscillator();
+  osc4.type = 'triangle';
+  osc4.frequency.value = freq * 0.997; // -3 cents
+  
+  // Individual gain nodes for mixing
+  const g1 = ctx.createGain(); g1.gain.value = 0.35; // Main
+  const g2 = ctx.createGain(); g2.gain.value = 0.25; // Sub
+  const g3 = ctx.createGain(); g3.gain.value = 0.20; // Detune
+  const g4 = ctx.createGain(); g4.gain.value = 0.15; // Triangle
+  
+  // Connect oscillators to their gain nodes
+  osc1.connect(g1);
+  osc2.connect(g2);
+  osc3.connect(g3);
+  osc4.connect(g4);
+  
+  // Premix all oscillators
   const premix = ctx.createGain();
-  const oscNodes = [];
-  const gainNodes = [];
-  (p.oscillators || []).forEach((o) => {
-    const osc = ctx.createOscillator();
-    osc.type = o.type || 'sine';
-    osc.frequency.value = freq * (o.ratio || 1);
-    const g = ctx.createGain();
-    g.gain.value = Number.isFinite(o.gain) ? o.gain : 0.2;
-    osc.connect(g);
-    g.connect(premix);
-    oscNodes.push(osc);
-    gainNodes.push(g);
-  });
-
-  // Filter
+  g1.connect(premix);
+  g2.connect(premix);
+  g3.connect(premix);
+  g4.connect(premix);
+  
+  // Low-pass filter for warmth and anti-aliasing
   const filter = ctx.createBiquadFilter();
-  const ft = (p.filter && p.filter.type) || 'lowpass';
-  filter.type = ft;
-  const q = (p.filter && p.filter.q) || 0;
-  filter.Q.value = q;
-  const fmS = Math.min(8000, freq * ((p.filter && p.filter.freqMulStart) || 4));
-  const fmM = Math.min(8000, freq * ((p.filter && p.filter.freqMulMid) || 2));
-  const fmE = Math.min(8000, freq * ((p.filter && p.filter.freqMulEnd) || 1.5));
-  filter.frequency.setValueAtTime(fmS, now);
-  filter.frequency.exponentialRampToValueAtTime(fmM, now + dur * 0.3);
-  filter.frequency.exponentialRampToValueAtTime(fmE, now + dur);
+  filter.type = 'lowpass';
+  filter.frequency.value = Math.min(freq * 4, 8000); // Filter frequency based on note
+  filter.Q.value = 8; // Resonance for character
+  
+  // Filter frequency modulation for movement
+  filter.frequency.setValueAtTime(freq * 4, now);
+  filter.frequency.exponentialRampToValueAtTime(freq * 2, now + dur * 0.3);
+  filter.frequency.exponentialRampToValueAtTime(freq * 1.5, now + dur);
+  
   premix.connect(filter);
-
-  // Envelope
+  
+  // ADSR Envelope
   const env = ctx.createGain();
-  const atk = Math.min(dur * (p.envelope?.attack ?? 0.08), 0.5);
-  const dec = Math.min(dur * (p.envelope?.decay ?? 0.15), 0.6);
-  const sus = p.envelope?.sustain ?? 0.7;
-  const rel = Math.min(dur * (p.envelope?.release ?? 0.4), 1.2);
-  const peak = gain * (p.envelope?.gainScale ?? 0.4);
-  const susGain = peak * sus;
+  const attack = Math.min(dur * 0.08, 0.12);   // Quick attack
+  const decay = Math.min(dur * 0.15, 0.25);    // Short decay
+  const sustain = 0.7;                          // Sustain level
+  const release = Math.min(dur * 0.4, 0.6);    // Medium release
+  
+  const peakGain = gain * 0.4; // Scale down to prevent clipping
+  const sustainGain = peakGain * sustain;
+  
+  // Envelope automation
   env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(peak, now + atk);
-  env.gain.linearRampToValueAtTime(susGain, now + atk + dec);
-  env.gain.setValueAtTime(susGain, now + dur - rel);
+  env.gain.linearRampToValueAtTime(peakGain, now + attack);
+  env.gain.linearRampToValueAtTime(sustainGain, now + attack + decay);
+  env.gain.setValueAtTime(sustainGain, now + dur - release);
   env.gain.linearRampToValueAtTime(0, now + dur);
+  
+  // Connect filter through envelope to master gain
   filter.connect(env);
   env.connect(bgmGainNode);
-
-  // Vibrato
-  const vib = p.vibrato || {};
-  if (vib.enabled && dur > (vib.minDur ?? 0.5)) {
-    const vOsc = ctx.createOscillator();
-    const vGain = ctx.createGain();
-    vOsc.type = 'sine';
-    vOsc.frequency.value = vib.freq || 5;
-    vGain.gain.value = freq * (vib.depthRatio || 0.01);
-    vOsc.connect(vGain);
-    const targets = Array.isArray(vib.targets) ? vib.targets : [0];
-    targets.forEach((idx) => {
-      if (oscNodes[idx]) vGain.connect(oscNodes[idx].frequency);
-    });
-    vOsc.start(now + atk + dec);
-    vOsc.stop(now + dur);
+  
+  // Add subtle vibrato for expressiveness on longer notes
+  if (dur > 0.5) {
+    const vibrato = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    
+    vibrato.type = 'sine';
+    vibrato.frequency.value = 5; // 5 Hz vibrato
+    vibratoGain.gain.value = freq * 0.01; // 1% depth
+    
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(osc1.frequency);
+    vibratoGain.connect(osc3.frequency);
+    
+    vibrato.start(now + attack + decay);
+    vibrato.stop(now + dur);
   }
-
-  // Start/stop oscillators
-  oscNodes.forEach((osc) => {
+  
+  // Start and stop all oscillators
+  const oscillators = [osc1, osc2, osc3, osc4];
+  oscillators.forEach(osc => {
     osc.start(now);
-    osc.stop(now + dur + 0.1);
+    osc.stop(now + dur + 0.1); // Small extra time for envelope tail
   });
 }
 
