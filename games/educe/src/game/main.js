@@ -12,7 +12,7 @@ import {
   getBgmVolume,
   getSfxVolume,
 } from './audio.js';
-import { startConfetti, initConfetti, updateConfetti, drawConfetti, stopConfetti } from './confetti-webgpu.js';
+import { startConfetti, initConfetti, updateConfetti, drawConfetti, stopConfetti, isInitialized } from './confetti-webgpu.js';
 import {
   WIDTH as CONFIG_WIDTH,
   HEIGHT as CONFIG_HEIGHT,
@@ -3306,6 +3306,9 @@ function renderScene() {
   }
 
   // Draw Confetti (if active)
+  if (!isInitialized()) {
+    initConfetti(device, navigator.gpu.getPreferredCanvasFormat());
+  }
   updateConfetti(device);
   drawConfetti(pass);
 

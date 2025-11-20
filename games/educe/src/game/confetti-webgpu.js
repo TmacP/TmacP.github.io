@@ -16,7 +16,9 @@ export function initConfetti(device, format) {
     const shaderCode = /* wgsl */ `
 struct ConfettiUniforms {
   time : f32,
-  _pad : vec3<f32>,
+  pad1 : f32,
+  pad2 : f32,
+  pad3 : f32,
 };
 
 @group(0) @binding(0)
@@ -183,9 +185,16 @@ fn fs_main(@location(0) color : vec3<f32>) -> @location(0) vec4<f32> {
             cullMode: "none",
         },
     });
+
+    console.log("Confetti system initialized");
+}
+
+export function isInitialized() {
+    return !!pipeline;
 }
 
 export function startConfetti() {
+    console.log("Starting confetti");
     running = true;
     startTime = performance.now() / 1000;
 }
