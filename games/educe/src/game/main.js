@@ -2968,6 +2968,35 @@ async function setupLevelSelector(container) {
     wrapper.appendChild(statusBadge);
   }
 
+  let clearDataButton = document.getElementById('clear-player-data-button');
+  if (!clearDataButton) {
+    clearDataButton = document.createElement('button');
+    clearDataButton.type = 'button';
+    clearDataButton.id = 'clear-player-data-button';
+    clearDataButton.textContent = 'Clear Player Data';
+    clearDataButton.style.padding = '6px 10px';
+    clearDataButton.style.background = '#d32f2f';
+    clearDataButton.style.color = '#fff';
+    clearDataButton.style.border = 'none';
+    clearDataButton.style.borderRadius = '4px';
+    clearDataButton.style.cursor = 'pointer';
+    clearDataButton.style.fontSize = '12px';
+    clearDataButton.addEventListener('click', () => {
+      if (confirm('Clear all player progress and tutorial data? This will reset the game to level 1.')) {
+        try {
+          localStorage.removeItem(PROGRESS_STORAGE_KEY);
+          localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+          console.log('Player data cleared');
+          alert('Player data cleared! Reload the page to start fresh.');
+        } catch (err) {
+          console.error('Failed to clear player data', err);
+          alert('Failed to clear player data');
+        }
+      }
+    });
+    wrapper.appendChild(clearDataButton);
+  }
+
   select.innerHTML = '';
   if (levelManifest.length === 0) {
     const placeholder = document.createElement('option');
