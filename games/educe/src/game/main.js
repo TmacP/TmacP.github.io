@@ -742,6 +742,7 @@ function setupVictoryScreen() {
 // Tutorial System
 // Tutorial System
 const TUTORIAL_STORAGE_KEY = 'educe_tutorial_progress';
+const PROGRESS_STORAGE_KEY = 'educe_level_progress';
 let tutorialState = {
   movementShown: false,
   movementDismissed: false,
@@ -773,6 +774,31 @@ function loadTutorialProgress() {
       console.warn('Failed to load tutorial progress', err);
     }
   }
+}
+
+function saveLevelProgress(levelIndex) {
+  try {
+    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify({ currentLevel: levelIndex }));
+  } catch (err) {
+    if (DEV_TOOLS_ENABLED) {
+      console.warn('Failed to save level progress', err);
+    }
+  }
+}
+
+function loadLevelProgress() {
+  try {
+    const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return parsed.currentLevel ?? 0;
+    }
+  } catch (err) {
+    if (DEV_TOOLS_ENABLED) {
+      console.warn('Failed to load level progress', err);
+    }
+  }
+  return 0;
 }
 
 function saveTutorialProgress() {
@@ -809,18 +835,8 @@ function setupTutorialSystem() {
     return;
   }
 
-  // loadTutorialProgress(); // Force reset for now to ensure user sees it
-  // Resetting all for testing/consistency as requested
-  tutorialState.movementDismissed = false;
-  tutorialState.movementShown = false;
-  tutorialState.jumpDismissed = false;
-  tutorialState.jumpShown = false;
-  tutorialState.mergeDismissed = false;
-  tutorialState.mergeShown = false;
-  tutorialState.unmergeDismissed = false;
-  tutorialState.unmergeShown = false;
-  tutorialState.exitDismissed = false;
-  tutorialState.exitShown = false;
+  // Load saved tutorial progress
+  loadTutorialProgress();
 
   // Show movement tutorial if not dismissed and in Level 1 (index 0)
   if (currentLevelIndex === 0 && !tutorialState.movementDismissed) {
@@ -1463,7 +1479,9 @@ async function initWebGPU() {
     let usedManifest = false;
     await ensureLevelManifestLoaded();
     if (Array.isArray(levelManifest) && levelManifest.length > 0) {
-      currentLevelIndex = 0;
+      // Load saved progress or start from level 0
+      const savedLevel = loadLevelProgress();
+      currentLevelIndex = Math.min(savedLevel, levelManifest.length - 1);
       const loaded = await loadLevelByIndex(currentLevelIndex);
       if (loaded) {
         usedManifest = true;
@@ -1952,6 +1970,10 @@ async function loadLevelByIndex(index, { resetPlayer = true } = {}) {
     setupLevelSelector(editorContainer);
   }
   currentLevelIndex = index;
+  
+  // Save progress
+  saveLevelProgress(index);
+  
   return true;
 }
 

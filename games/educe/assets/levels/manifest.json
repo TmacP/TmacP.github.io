@@ -11,6 +11,38 @@
         "screensWide": 1,
         "screensTall": 1
       }
+    },
+    {
+      "id": "level-3",
+      "path": "./level-3.json"
+    },
+    {
+      "id": "level-4",
+      "path": "./level-4.json"
+    },
+    {
+      "id": "level-5",
+      "path": "./level-5.json"
+    },
+    {
+      "id": "level-6",
+      "path": "./level-6.json"
+    },
+    {
+      "id": "level-7",
+      "path": "./level-7.json"
+    },
+    {
+      "id": "level-8",
+      "path": "./level-8.json"
+    },
+    {
+      "id": "level-9",
+      "path": "./level-9.json"
+    },
+    {
+      "id": "level-10",
+      "path": "./level-10.json"
     }
   ]
 }

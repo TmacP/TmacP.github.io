@@ -264,12 +264,8 @@ export class LevelEditor {
     const scaleY = this.canvas.height / rect.height;
     const x = (event.clientX - rect.left) * scaleX;
     const y = (event.clientY - rect.top) * scaleY;
-    const col = Math.floor(x / this.tileSize);
-    const row = Math.floor(y / this.tileSize);
-
-    if (row < 0 || row >= map.height || col < 0 || col >= map.width) {
-      return null;
-    }
+    const col = Math.max(0, Math.min(Math.floor(x / this.tileSize), map.width - 1));
+    const row = Math.max(0, Math.min(Math.floor(y / this.tileSize), map.height - 1));
 
     return {
       row,
