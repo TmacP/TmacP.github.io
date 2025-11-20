@@ -824,12 +824,15 @@ let tutorialState = {
   mergeDismissed: false,
   unmergeShown: false,
   unmergeDismissed: false,
+  exitShown: false,
+  exitDismissed: false,
 };
 
 let tutorialMovementElement = null;
 let tutorialJumpElement = null;
 let tutorialMergeElement = null;
 let tutorialUnmergeElement = null;
+let tutorialExitElement = null;
 
 function loadTutorialProgress() {
   try {
@@ -870,6 +873,7 @@ function setupTutorialSystem() {
   tutorialJumpElement = document.getElementById('tutorial-jump');
   tutorialMergeElement = document.getElementById('tutorial-merge');
   tutorialUnmergeElement = document.getElementById('tutorial-unmerge');
+  tutorialExitElement = document.getElementById('tutorial-exit');
 
   if (!tutorialMovementElement || !tutorialJumpElement) {
     if (DEV_TOOLS_ENABLED) {
@@ -888,6 +892,8 @@ function setupTutorialSystem() {
   tutorialState.mergeShown = false;
   tutorialState.unmergeDismissed = false;
   tutorialState.unmergeShown = false;
+  tutorialState.exitDismissed = false;
+  tutorialState.exitShown = false;
 
   // Show movement tutorial if not dismissed and in Level 1 (index 0)
   if (currentLevelIndex === 0 && !tutorialState.movementDismissed) {
@@ -905,7 +911,7 @@ function updateTutorialProgress() {
     return;
   }
 
-  // --- Level 1 Tutorials: Movement & Jump ---
+  // --- Level 1 Tutorials: Movement & Jump & Exit ---
   if (currentLevelIndex === 0) {
     // Check if player has moved left or right
     if (tutorialState.movementShown && !tutorialState.movementDismissed) {
@@ -935,6 +941,14 @@ function updateTutorialProgress() {
         tutorialState.jumpDismissed = true;
         hideTutorialPrompt(tutorialJumpElement);
         saveTutorialProgress();
+
+        // Show exit tutorial after jump is mastered
+        setTimeout(() => {
+          if (!tutorialState.exitDismissed) {
+            tutorialState.exitShown = true;
+            showTutorialPrompt(tutorialExitElement);
+          }
+        }, 1500);
       }
     }
   }
@@ -2064,6 +2078,14 @@ function checkExitTileTrigger() {
       if (tileId === EXIT_TILE_ID) {
         levelTransitionInProgress = true;
         console.log(`Exit reached! Victory triggered at tile ${col},${row}`);
+
+        // Tutorial: Dismiss Exit
+        if (tutorialState.exitShown && !tutorialState.exitDismissed) {
+          tutorialState.exitDismissed = true;
+          hideTutorialPrompt(tutorialExitElement);
+          saveTutorialProgress();
+        }
+
         handleLevelVictory();
         return;
       }
