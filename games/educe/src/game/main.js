@@ -737,80 +737,7 @@ function setupVictoryScreen() {
   });
 }
 
-function setupHelpOverlay() {
-  const helpOverlay = document.getElementById('help-overlay');
-  const helpButton = document.getElementById('help-button');
-  const helpCloseBtn = document.getElementById('help-close-btn');
 
-  if (!helpOverlay) {
-    return;
-  }
-
-  let helpVisible = false;
-
-  const showHelp = () => {
-    helpVisible = true;
-    helpOverlay.classList.add('is-visible');
-    helpOverlay.setAttribute('aria-hidden', 'false');
-  };
-
-  const hideHelp = () => {
-    helpVisible = false;
-    helpOverlay.classList.remove('is-visible');
-    helpOverlay.setAttribute('aria-hidden', 'true');
-  };
-
-  const toggleHelp = () => {
-    if (helpVisible) {
-      hideHelp();
-    } else {
-      showHelp();
-    }
-  };
-
-  // Help button click
-  if (helpButton) {
-    helpButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleHelp();
-    });
-  }
-
-  // Close button click
-  if (helpCloseBtn) {
-    helpCloseBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      hideHelp();
-    });
-  }
-
-  // Click outside modal to close
-  helpOverlay.addEventListener('click', (e) => {
-    if (e.target === helpOverlay) {
-      hideHelp();
-    }
-  });
-
-  // Keyboard shortcut: H key to toggle help, ESC to close
-  window.addEventListener('keydown', (event) => {
-    // Don't interfere with editor mode
-    if (levelEditor && levelEditor.isEditorMode) {
-      return;
-    }
-
-    if (event.key === 'h' || event.key === 'H') {
-      event.preventDefault();
-      toggleHelp();
-    } else if (event.key === 'Escape' && helpVisible) {
-      event.preventDefault();
-      hideHelp();
-    }
-  });
-
-  console.log('Help overlay initialized (press H for help)');
-}
 
 // Tutorial System
 // Tutorial System
@@ -3355,9 +3282,19 @@ function renderScene() {
 
   const playerFrameIndex = wasm.GetCurrentFrame();
   const playerFrame = playerFrames[playerFrameIndex % playerFrames.length];
+
+  let renderX = wasm.GetPlayerX();
+  let renderY = wasm.GetPlayerY();
+
+  // Adjust rendering for smaller collision box of Blob (6x6 vs 8x8 sprite)
+  if (playerTypeIndex === PLAYER_TYPE.BLOB) {
+    renderX -= 1;
+    renderY -= 2;
+  }
+
   characters.push({
-    x: wasm.GetPlayerX(),
-    y: wasm.GetPlayerY(),
+    x: renderX,
+    y: renderY,
     facing: wasm.GetPlayerFacing(),
     frame: playerFrame
   });
@@ -3827,5 +3764,5 @@ init();
 setupMenuHandlers();
 setupTouchControls();
 setupVictoryScreen();
-setupHelpOverlay();
+
 setupTutorialSystem();
