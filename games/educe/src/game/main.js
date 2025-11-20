@@ -12,6 +12,7 @@ import {
   getBgmVolume,
   getSfxVolume,
 } from './audio.js';
+import { startConfetti, initConfetti, updateConfetti, drawConfetti, stopConfetti } from './confetti-webgpu.js';
 import {
   WIDTH as CONFIG_WIDTH,
   HEIGHT as CONFIG_HEIGHT,
@@ -596,6 +597,8 @@ function prepareVictoryScreenContent() {
   }
 }
 
+
+
 function showVictoryScreenOverlay() {
   if (!victoryScreenRoot) {
     return;
@@ -604,6 +607,10 @@ function showVictoryScreenOverlay() {
   victoryScreenVisible = true;
   victoryScreenRoot.classList.add('is-visible');
   victoryScreenRoot.setAttribute('aria-hidden', 'false');
+
+  // Trigger confetti
+  startConfetti();
+
   notifyPokiGameplayStop('victory screen');
 
   if (victoryScreenNextButton && !victoryScreenNextButton.disabled) {
@@ -630,6 +637,7 @@ function hideVictoryScreenOverlay({ resumeGameplay = true } = {}) {
   if (resumeGameplay) {
     notifyPokiGameplayStart('victory dismissed');
   }
+  stopConfetti();
 }
 
 function handleLevelVictory() {
@@ -803,6 +811,114 @@ function setupHelpOverlay() {
 
   console.log('Help overlay initialized (press H for help)');
 }
+
+// Tutorial System
+const TUTORIAL_STORAGE_KEY = 'educe_tutorial_progress';
+let tutorialState = {
+  movementShown: false,
+  movementDismissed: false,
+  jumpShown: false,
+  jumpDismissed: false,
+};
+
+let tutorialMovementElement = null;
+let tutorialJumpElement = null;
+
+function loadTutorialProgress() {
+  try {
+    const stored = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      tutorialState = { ...tutorialState, ...parsed };
+    }
+  } catch (err) {
+    if (DEV_TOOLS_ENABLED) {
+      console.warn('Failed to load tutorial progress', err);
+    }
+  }
+}
+
+function saveTutorialProgress() {
+  try {
+    localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify(tutorialState));
+  } catch (err) {
+    if (DEV_TOOLS_ENABLED) {
+      console.warn('Failed to save tutorial progress', err);
+    }
+  }
+}
+
+function showTutorialPrompt(element) {
+  if (!element) return;
+  element.classList.add('is-visible');
+}
+
+function hideTutorialPrompt(element) {
+  if (!element) return;
+  element.classList.remove('is-visible');
+}
+
+function setupTutorialSystem() {
+  tutorialMovementElement = document.getElementById('tutorial-movement');
+  tutorialJumpElement = document.getElementById('tutorial-jump');
+
+  if (!tutorialMovementElement || !tutorialJumpElement) {
+    if (DEV_TOOLS_ENABLED) {
+      console.warn('Tutorial elements not found');
+    }
+    return;
+  }
+
+  loadTutorialProgress();
+
+  // Show movement tutorial if not dismissed
+  if (!tutorialState.movementDismissed) {
+    setTimeout(() => {
+      tutorialState.movementShown = true;
+      showTutorialPrompt(tutorialMovementElement);
+    }, 500);
+  }
+
+  console.log('Tutorial system initialized');
+}
+
+function updateTutorialProgress() {
+  if (!tutorialMovementElement || !tutorialJumpElement) {
+    return;
+  }
+
+  // Check if player has moved left or right
+  if (tutorialState.movementShown && !tutorialState.movementDismissed) {
+    const hasMoved = keyboardState.moveLeft || keyboardState.moveRight ||
+      touchState.moveLeft || touchState.moveRight;
+
+    if (hasMoved) {
+      tutorialState.movementDismissed = true;
+      hideTutorialPrompt(tutorialMovementElement);
+      saveTutorialProgress();
+
+      // Show jump tutorial after a short delay
+      setTimeout(() => {
+        if (!tutorialState.jumpDismissed) {
+          tutorialState.jumpShown = true;
+          showTutorialPrompt(tutorialJumpElement);
+        }
+      }, 800);
+    }
+  }
+
+  // Check if player has jumped
+  if (tutorialState.jumpShown && !tutorialState.jumpDismissed) {
+    const hasJumped = keyboardState.actionDown || touchState.jump;
+
+    if (hasJumped) {
+      tutorialState.jumpDismissed = true;
+      hideTutorialPrompt(tutorialJumpElement);
+      saveTutorialProgress();
+    }
+  }
+}
+
 
 // Gamepad handling
 const GAMEPAD_BUTTONS = {
@@ -1139,6 +1255,7 @@ function gameLoop(currentTime) {
     checkExitTileTrigger();
     handleUnsplitting();
     checkNpcMergeTrigger();
+    updateTutorialProgress();
   }
 
   // Render with WebGPU
@@ -1146,6 +1263,7 @@ function gameLoop(currentTime) {
     renderScene();
   }
 }
+
 
 //
 // WebGPU Rendering
@@ -1168,6 +1286,8 @@ async function initWebGPU() {
       device,
       format: presentationFormat,
     });
+
+    initConfetti(device, presentationFormat);
 
     // Load shader code
     const shaderCode = await fetch(SHADER_URL).then(res => res.text());
@@ -3185,6 +3305,10 @@ function renderScene() {
     }
   }
 
+  // Draw Confetti (if active)
+  updateConfetti(device);
+  drawConfetti(pass);
+
   pass.end();
   device.queue.submit([encoder.finish()]);
 }
@@ -3593,3 +3717,4 @@ setupMenuHandlers();
 setupTouchControls();
 setupVictoryScreen();
 setupHelpOverlay();
+setupTutorialSystem();

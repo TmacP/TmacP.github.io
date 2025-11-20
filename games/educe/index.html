@@ -311,7 +311,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.82);
+      background: transparent;
       z-index: 2500;
     }
 
@@ -585,6 +585,110 @@
         right: 12px;
       }
     }
+
+    /* Tutorial Overlay System */
+    #tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tutorial-prompt {
+      position: absolute;
+      background: rgba(12, 12, 12, 0.95);
+      border: 3px solid rgba(76, 175, 80, 0.9);
+      border-radius: 12px;
+      padding: 24px 32px;
+      color: #f2fff2;
+      font-family: monospace;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px rgba(76, 175, 80, 0.3);
+      animation: tutorialPulse 2s ease-in-out infinite;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .tutorial-prompt.is-visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .tutorial-prompt h3 {
+      font-size: 22px;
+      margin: 0 0 16px 0;
+      color: #7CFF8A;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+
+    .tutorial-keys {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .tutorial-keys kbd {
+      display: inline-block;
+      min-width: 48px;
+      padding: 12px 16px;
+      background: linear-gradient(180deg, #505050 0%, #353535 100%);
+      border: 3px solid #666;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .tutorial-description {
+      text-align: center;
+      font-size: 16px;
+      color: #d0ffd6;
+      margin-top: 8px;
+    }
+
+    @keyframes tutorialPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 20px rgba(76, 175, 80, 0.3);
+      }
+
+      50% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 30px rgba(76, 175, 80, 0.6);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .tutorial-prompt {
+        padding: 20px 24px;
+        max-width: calc(100% - 48px);
+      }
+
+      .tutorial-prompt h3 {
+        font-size: 18px;
+        margin-bottom: 12px;
+      }
+
+      .tutorial-keys kbd {
+        min-width: 40px;
+        padding: 10px 12px;
+        font-size: 18px;
+      }
+
+      .tutorial-description {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 
@@ -683,6 +787,26 @@
   </div>
 
   <button id="help-button" aria-label="Show Help">?</button>
+
+  <div id="tutorial-overlay">
+    <div id="tutorial-movement" class="tutorial-prompt">
+      <h3>Movement</h3>
+      <div class="tutorial-keys">
+        <kbd>A</kbd>
+        <kbd>D</kbd>
+      </div>
+      <div class="tutorial-description">Move Left and Right</div>
+    </div>
+    <div id="tutorial-jump" class="tutorial-prompt">
+      <h3>Jump</h3>
+      <div class="tutorial-keys">
+        <kbd>W</kbd>
+        <span style="color: #9FE6A7;">or</span>
+        <kbd>Space</kbd>
+      </div>
+      <div class="tutorial-description">Press to Jump</div>
+    </div>
+  </div>
 
   <div id="touch-controls">
     <div class="touch-controls__cluster touch-controls__cluster--movement">
