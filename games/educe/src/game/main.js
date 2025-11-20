@@ -869,7 +869,11 @@ function setupTutorialSystem() {
     return;
   }
 
-  loadTutorialProgress();
+  // loadTutorialProgress(); // Force reset for now to ensure user sees it
+  tutorialState.movementDismissed = false;
+  tutorialState.movementShown = false;
+  tutorialState.jumpDismissed = false;
+  tutorialState.jumpShown = false;
 
   // Show movement tutorial if not dismissed
   if (!tutorialState.movementDismissed) {
@@ -1327,6 +1331,25 @@ async function initWebGPU() {
     const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
     atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
     normalizedTileDefinitions = extractTileDefinitions(atlasData);
+
+    // Inject Spawn Tile (251) if missing, using the blob character frame
+    if (!normalizedTileDefinitions.find(t => t.id === SPAWN_TILE_ID)) {
+      const blobFrames = atlasData?.[PLAYER_ANIMATION];
+      if (Array.isArray(blobFrames) && blobFrames.length > 0) {
+        const frame = blobFrames[0];
+        normalizedTileDefinitions.push({
+          id: SPAWN_TILE_ID,
+          name: 'Spawn Point',
+          x: frame.x,
+          y: frame.y,
+          width: frame.width,
+          height: frame.height
+        });
+        // Re-sort by ID
+        normalizedTileDefinitions.sort((a, b) => a.id - b.id);
+      }
+    }
+
     npcPaletteDefinitions = extractNpcDefinitions(atlasData);
     npcFrameLookup = new Map(npcPaletteDefinitions.map((def) => [def.id, def.frames]));
     if (Array.isArray(atlasData?.[NPC_ANIMATION])) {
