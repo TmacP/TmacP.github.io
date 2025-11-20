@@ -277,13 +277,13 @@ function resizeCanvas() {
   const scaleX = Math.floor(window.innerWidth / GAME_WIDTH);
   const scaleY = Math.floor(window.innerHeight / GAME_HEIGHT);
   const scale = Math.max(1, Math.min(scaleX, scaleY));
-  
+
   canvas.width = GAME_WIDTH;
   canvas.height = GAME_HEIGHT;
-  
+
   canvas.style.width = `${GAME_WIDTH * scale}px`;
   canvas.style.height = `${GAME_HEIGHT * scale}px`;
-  
+
   console.log(`Canvas: ${GAME_WIDTH}x${GAME_HEIGHT}, Display scale: ${scale}x`);
 
   if (levelEditor && typeof levelEditor.refreshOverlayPositions === 'function') {
@@ -308,18 +308,18 @@ const keyMap = {
 
 document.addEventListener('keydown', (e) => {
   // Handle Ctrl+S for saving in editor mode
-  if(e.ctrlKey && e.key === 's') {
-    if(DEV_TOOLS_ENABLED && levelEditor && levelEditor.isEditorMode) {
+  if (e.ctrlKey && e.key === 's') {
+    if (DEV_TOOLS_ENABLED && levelEditor && levelEditor.isEditorMode) {
       e.preventDefault();
       console.log('Ctrl+S pressed - saving map...');
       levelEditor.saveCurrentMap();
     }
     return;
   }
-  
+
   // Toggle editor mode with 'E' key
-  if(e.code === 'KeyE' && DEV_TOOLS_ENABLED) {
-    if(levelEditor) {
+  if (e.code === 'KeyE' && DEV_TOOLS_ENABLED) {
+    if (levelEditor) {
       levelEditor.toggleEditorMode();
       updateEditorStatus();
       e.preventDefault();
@@ -327,24 +327,24 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  if(e.code === 'KeyS') {
+  if (e.code === 'KeyS') {
     if (e.repeat) {
       return;
     }
-    if(!levelEditor || !levelEditor.isEditorMode) {
+    if (!levelEditor || !levelEditor.isEditorMode) {
       unsplitRequested = true;
       e.preventDefault();
     }
     return;
   }
-  
+
   // Don't send game input while in editor mode
-  if(levelEditor && levelEditor.isEditorMode) {
+  if (levelEditor && levelEditor.isEditorMode) {
     return;
   }
-  
+
   const action = keyMap[e.code];
-  if(action) {
+  if (action) {
     keyboardState[action] = true;
     e.preventDefault();
   }
@@ -352,12 +352,12 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('keyup', (e) => {
   // Don't send game input while in editor mode
-  if(levelEditor && levelEditor.isEditorMode) {
+  if (levelEditor && levelEditor.isEditorMode) {
     return;
   }
-  
+
   const action = keyMap[e.code];
-  if(action) {
+  if (action) {
     keyboardState[action] = false;
     e.preventDefault();
   }
@@ -728,6 +728,81 @@ function setupVictoryScreen() {
   });
 }
 
+function setupHelpOverlay() {
+  const helpOverlay = document.getElementById('help-overlay');
+  const helpButton = document.getElementById('help-button');
+  const helpCloseBtn = document.getElementById('help-close-btn');
+
+  if (!helpOverlay) {
+    return;
+  }
+
+  let helpVisible = false;
+
+  const showHelp = () => {
+    helpVisible = true;
+    helpOverlay.classList.add('is-visible');
+    helpOverlay.setAttribute('aria-hidden', 'false');
+  };
+
+  const hideHelp = () => {
+    helpVisible = false;
+    helpOverlay.classList.remove('is-visible');
+    helpOverlay.setAttribute('aria-hidden', 'true');
+  };
+
+  const toggleHelp = () => {
+    if (helpVisible) {
+      hideHelp();
+    } else {
+      showHelp();
+    }
+  };
+
+  // Help button click
+  if (helpButton) {
+    helpButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleHelp();
+    });
+  }
+
+  // Close button click
+  if (helpCloseBtn) {
+    helpCloseBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideHelp();
+    });
+  }
+
+  // Click outside modal to close
+  helpOverlay.addEventListener('click', (e) => {
+    if (e.target === helpOverlay) {
+      hideHelp();
+    }
+  });
+
+  // Keyboard shortcut: H key to toggle help, ESC to close
+  window.addEventListener('keydown', (event) => {
+    // Don't interfere with editor mode
+    if (levelEditor && levelEditor.isEditorMode) {
+      return;
+    }
+
+    if (event.key === 'h' || event.key === 'H') {
+      event.preventDefault();
+      toggleHelp();
+    } else if (event.key === 'Escape' && helpVisible) {
+      event.preventDefault();
+      hideHelp();
+    }
+  });
+
+  console.log('Help overlay initialized (press H for help)');
+}
+
 // Gamepad handling
 const GAMEPAD_BUTTONS = {
   cross: 0,
@@ -1014,7 +1089,7 @@ window.addEventListener('gamepadconnected', (e) => {
 
 window.addEventListener('gamepaddisconnected', (e) => {
   console.log(`Gamepad disconnected: ${e.gamepad.id}`);
-  if(e.gamepad.index === gamepadIndex) {
+  if (e.gamepad.index === gamepadIndex) {
     gamepadIndex = -1;
   }
 });
@@ -1025,12 +1100,12 @@ window.addEventListener('gamepaddisconnected', (e) => {
 
 function gameLoop(currentTime) {
   requestAnimationFrame(gameLoop);
-  
+
   const dt = Math.min((currentTime - lastTime) / 1000.0, 0.1);
   lastTime = currentTime;
-  
+
   updateGamepadInput();
-  
+
   // Don't update game if in editor mode or if ad is playing
   if ((!levelEditor || !levelEditor.isEditorMode) && !isAdPlaying && !victoryScreenVisible) {
     // Send input to WASM
@@ -1052,7 +1127,7 @@ function gameLoop(currentTime) {
       inputState.start,
       inputState.back
     );
-    
+
     // Update game logic (C++ updates game state)
     wasm.WebUpdateAndRender(dt);
 
@@ -1064,7 +1139,7 @@ function gameLoop(currentTime) {
     handleUnsplitting();
     checkNpcMergeTrigger();
   }
-  
+
   // Render with WebGPU
   if (device) {
     renderScene();
@@ -1093,9 +1168,9 @@ async function initWebGPU() {
       format: presentationFormat,
     });
 
-  // Load shader code
-  const shaderCode = await fetch(SHADER_URL).then(res => res.text());
-    
+    // Load shader code
+    const shaderCode = await fetch(SHADER_URL).then(res => res.text());
+
     const module = device.createShaderModule({
       label: 'sprite shader',
       code: shaderCode,
@@ -1127,30 +1202,30 @@ async function initWebGPU() {
       },
     });
 
-  // Load sprite atlas
-  const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
-  atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
-  normalizedTileDefinitions = extractTileDefinitions(atlasData);
-  npcPaletteDefinitions = extractNpcDefinitions(atlasData);
-  npcFrameLookup = new Map(npcPaletteDefinitions.map((def) => [def.id, def.frames]));
-  if (Array.isArray(atlasData?.[NPC_ANIMATION])) {
-    npcFrameLookup.set(NPC_ANIMATION, atlasData[NPC_ANIMATION]);
-  }
-  if (Array.isArray(atlasData?.[PLAYER_ANIMATION])) {
-    npcFrameLookup.set(PLAYER_ANIMATION, atlasData[PLAYER_ANIMATION]);
-  }
-  const playerFrames = atlasData?.[PLAYER_ANIMATION];
-  if (Array.isArray(playerFrames) && playerFrames.length > 0) {
-    playerFrameWidth = playerFrames[0].width ?? playerFrameWidth;
-    playerFrameHeight = playerFrames[0].height ?? playerFrameHeight;
-  }
+    // Load sprite atlas
+    const imgBitmap = await createImageBitmap(await fetch(ATLAS_IMAGE_URL).then(r => r.blob()));
+    atlasData = await fetch(ATLAS_DATA_URL).then(r => r.json());
+    normalizedTileDefinitions = extractTileDefinitions(atlasData);
+    npcPaletteDefinitions = extractNpcDefinitions(atlasData);
+    npcFrameLookup = new Map(npcPaletteDefinitions.map((def) => [def.id, def.frames]));
+    if (Array.isArray(atlasData?.[NPC_ANIMATION])) {
+      npcFrameLookup.set(NPC_ANIMATION, atlasData[NPC_ANIMATION]);
+    }
+    if (Array.isArray(atlasData?.[PLAYER_ANIMATION])) {
+      npcFrameLookup.set(PLAYER_ANIMATION, atlasData[PLAYER_ANIMATION]);
+    }
+    const playerFrames = atlasData?.[PLAYER_ANIMATION];
+    if (Array.isArray(playerFrames) && playerFrames.length > 0) {
+      playerFrameWidth = playerFrames[0].width ?? playerFrameWidth;
+      playerFrameHeight = playerFrames[0].height ?? playerFrameHeight;
+    }
 
-  const npcFrames = atlasData?.[NPC_ANIMATION];
-  if (Array.isArray(npcFrames) && npcFrames.length > 0) {
-    npcFrameWidth = npcFrames[0].width ?? npcFrameWidth;
-    npcFrameHeight = npcFrames[0].height ?? npcFrameHeight;
-  }
-    
+    const npcFrames = atlasData?.[NPC_ANIMATION];
+    if (Array.isArray(npcFrames) && npcFrames.length > 0) {
+      npcFrameWidth = npcFrames[0].width ?? npcFrameWidth;
+      npcFrameHeight = npcFrames[0].height ?? npcFrameHeight;
+    }
+
     atlasWidth = imgBitmap.width;
     atlasHeight = imgBitmap.height;
     console.log('Atlas loaded:', atlasWidth, 'x', atlasHeight);
@@ -1239,7 +1314,7 @@ async function initWebGPU() {
       size: 48, // 12 floats minimum for WebGPU
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    
+
     const tileGlobals = new Float32Array(12);
     tileGlobals[0] = atlasWidth;
     tileGlobals[1] = atlasHeight;
@@ -1303,7 +1378,7 @@ async function initWebGPU() {
     atlasLoaded = true;
     console.log('WebGPU initialized');
     return true;
-  } catch(error) {
+  } catch (error) {
     console.error('WebGPU initialization failed:', error);
     return false;
   }
@@ -1427,23 +1502,23 @@ function rebuildCurrentRoomTiles() {
   }
 
   sendCurrentRoomNpcData();
-  
+
   // Build instance data: each tile is 6 floats (x, y, frameX, frameY, frameW, frameH)
   const instances = [];
-  
+
   const maxRows = Math.min(tileData.length, ROOM_TILE_ROWS);
   for (let row = 0; row < maxRows; row++) {
     const maxCols = Math.min(tileData[row].length, ROOM_TILE_COLS);
     for (let col = 0; col < maxCols; col++) {
       const tileId = tileData[row][col];
       if (tileId === 0) continue; // Skip empty tiles
-      
+
       const tileInfo = tileLookup.get(tileId);
       if (!tileInfo) continue;
-      
+
       const x = col * TILE_WIDTH;
       const y = row * TILE_HEIGHT;
-      
+
       instances.push(
         x, y,  // tile position
         tileInfo.x, tileInfo.y, tileInfo.width, tileInfo.height  // frame rect
@@ -1472,24 +1547,24 @@ function rebuildCurrentRoomTiles() {
       }
     }
   }
-  
+
   tileInstanceCount = instances.length / 6;
-  
+
   if (tileInstanceCount > 0) {
     const instanceData = new Float32Array(instances);
-    
+
     if (tileInstanceBuffer) {
       tileInstanceBuffer.destroy();
     }
-    
+
     tileInstanceBuffer = device.createBuffer({
       size: instanceData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-    
+
     device.queue.writeBuffer(tileInstanceBuffer, 0, instanceData);
   }
-  
+
   updateEditorStatus();
 }
 
@@ -2718,7 +2793,7 @@ function loadWorldFromWasm() {
     throw new Error('WASM module not initialized before loading world data.');
   }
   if (typeof wasm.GetWorldDataHeaderPointer !== 'function' ||
-      typeof wasm.GetWorldTileDataPointer !== 'function') {
+    typeof wasm.GetWorldTileDataPointer !== 'function') {
     throw new Error('Current WASM build does not expose world data accessors.');
   }
 
@@ -2893,7 +2968,7 @@ function handleNpcEditorClick({ worldX, worldY }) {
     }
 
     if (worldX >= npcX && worldX <= npcX + width &&
-        worldY >= npcY && worldY <= npcY + height) {
+      worldY >= npcY && worldY <= npcY + height) {
       const removed = mapManager.removeNpcByIndex(mapManager.currentRoomX, mapManager.currentRoomY, index);
       if (removed) {
         rebuildCurrentRoomTiles();
@@ -2931,7 +3006,7 @@ function updateEditorStatus() {
 // Check for room changes
 function checkRoomChange() {
   if (!wasm) return;
-  
+
   const newRoomX = wasm.GetPlayerRoomX();
   const newRoomY = wasm.GetPlayerRoomY();
 
@@ -2943,17 +3018,17 @@ function checkRoomChange() {
     }
     initialNpcSyncPending = false;
   }
-  
+
   if (newRoomX !== currentRoomX || newRoomY !== currentRoomY) {
     currentRoomX = newRoomX;
     currentRoomY = newRoomY;
-    
+
     if (mapManager) {
       mapManager.currentRoomX = currentRoomX;
       mapManager.currentRoomY = currentRoomY;
       rebuildCurrentRoomTiles();
     }
-    
+
     console.log(`Room changed to (${currentRoomX}, ${currentRoomY})`);
   }
 }
@@ -3076,61 +3151,61 @@ async function init() {
     try {
       await PokiSDK.init();
       console.log("Poki SDK successfully initialized");
-      
+
       // Load any shared game state from URL
       loadGameStateFromURL();
     } catch (error) {
       console.log("Poki SDK initialization failed, continuing anyway", error);
     }
-    
+
     console.log('Loading WASM...');
-    
-  const response = await fetch(WASM_URL);
+
+    const response = await fetch(WASM_URL);
     const { instance } = await WebAssembly.instantiateStreaming(response);
-    
-  wasm = instance.exports;
-  globalThis.__educeWasm = wasm;
+
+    wasm = instance.exports;
+    globalThis.__educeWasm = wasm;
     memory = wasm.memory;
-    
+
     console.log('WASM loaded');
-    
+
     wasm.WebInit(GAME_WIDTH, GAME_HEIGHT, 4);
     console.log('Game initialized');
-    
+
     // Initialize WebGPU
     const gpuOk = await initWebGPU();
     if (!gpuOk) {
       throw new Error('WebGPU required but not available');
     }
-    
+
     lastTime = performance.now();
-    
+
     // Signal to Poki that game loading is finished
     if (typeof PokiSDK !== 'undefined') {
       PokiSDK.gameLoadingFinished();
       console.log('Poki: Game loading finished');
     }
-    
+
     gameLoop(lastTime);
-    
+
     console.log('Game loop started');
-    
+
     // Start background music on first user interaction
     document.addEventListener('click', async () => {
       playMidiSong(true); // Loop enabled
       setMasterVolume(0.3); // Set volume to 30%
-      
+
       // Show commercial break before starting gameplay for first time
       await showCommercialBreak();
-      
+
       if (typeof PokiSDK !== 'undefined') {
         PokiSDK.gameplayStart();
         console.log('Poki: Initial gameplay started');
       }
     }, { once: true });
-    
+
     console.log('Click anywhere to start music');
-  } catch(error) {
+  } catch (error) {
     console.error('Failed to initialize:', error);
     document.body.innerHTML = `<div style="color: white; padding: 20px;">
       <h1>Error loading game</h1>
@@ -3155,7 +3230,7 @@ function setupMenuHandlers() {
   const sfxVolumeDisplay = document.getElementById('sfx-volume-display');
   const sfxVolUpBtn = document.getElementById('sfx-vol-up');
   const sfxVolDownBtn = document.getElementById('sfx-vol-down');
-  
+
   let isMenuOpen = false;
 
   // Apply initial slider values to audio system
@@ -3165,7 +3240,7 @@ function setupMenuHandlers() {
   setSfxVolume(initialSfxVolume / 100);
   bgmVolumeDisplay.textContent = `BGM: ${initialBgmVolume}%`;
   sfxVolumeDisplay.textContent = `SFX: ${initialSfxVolume}%`;
-  
+
   // Toggle menu with ESC key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -3173,10 +3248,10 @@ function setupMenuHandlers() {
       if (levelEditor && levelEditor.isEditorMode) {
         return;
       }
-      
+
       isMenuOpen = !isMenuOpen;
       gameMenu.style.display = isMenuOpen ? 'block' : 'none';
-      
+
       // Poki gameplay events
       if (typeof PokiSDK !== 'undefined') {
         if (isMenuOpen) {
@@ -3192,7 +3267,7 @@ function setupMenuHandlers() {
           });
         }
       }
-      
+
       if (isMenuOpen) {
         const currentBgm = Math.round(getBgmVolume() * 100);
         const currentSfx = Math.round(getSfxVolume() * 100);
@@ -3204,26 +3279,26 @@ function setupMenuHandlers() {
       e.preventDefault();
     }
   });
-  
+
   // Resume button
   resumeBtn.addEventListener('click', async () => {
     isMenuOpen = false;
     gameMenu.style.display = 'none';
-    
+
     // Show commercial break before resuming gameplay
     await showCommercialBreak();
-    
+
     // Poki gameplay start
     if (typeof PokiSDK !== 'undefined') {
       PokiSDK.gameplayStart();
       console.log('Poki: Gameplay started (resume button)');
     }
   });
-  
+
   // Rewarded ad button
   rewardedAdBtn.addEventListener('click', async () => {
     const success = await showRewardedBreak();
-    
+
     if (success) {
       // Give player some reward (you can customize this)
       console.log('Poki: Player watched rewarded ad successfully - giving bonus!');
@@ -3234,7 +3309,7 @@ function setupMenuHandlers() {
       console.log('Poki: Player did not watch rewarded ad');
     }
   });
-  
+
   // Share game button
   shareGameBtn.addEventListener('click', async () => {
     if (typeof PokiSDK !== 'undefined' && typeof PokiSDK.shareableURL === 'function') {
@@ -3245,9 +3320,9 @@ function setupMenuHandlers() {
           score: Math.floor(Math.random() * 1000), // Replace with actual score
           timestamp: Date.now()
         };
-        
+
         const shareableUrl = await PokiSDK.shareableURL(params);
-        
+
         // Copy to clipboard
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(shareableUrl);
@@ -3262,7 +3337,7 @@ function setupMenuHandlers() {
           document.body.removeChild(textArea);
           alert('Game URL copied to clipboard!\n\n' + shareableUrl);
         }
-        
+
         console.log('Poki: Shareable URL created:', shareableUrl);
       } catch (error) {
         console.error('Poki: Error creating shareable URL:', error);
@@ -3279,24 +3354,24 @@ function setupMenuHandlers() {
       }
     }
   });
-  
+
   // Play music button
   playMidiBtn.addEventListener('click', () => {
     playMidiSong(true);
   });
-  
+
   // Stop music button
   stopMidiBtn.addEventListener('click', () => {
     stopMidiSong();
   });
-  
+
   // BGM Volume slider
   bgmVolumeSlider.addEventListener('input', (e) => {
     const volume = parseInt(e.target.value, 10);
     bgmVolumeDisplay.textContent = `BGM: ${volume}%`;
     setBgmVolume(volume / 100);
   });
-  
+
   // BGM Volume + button
   bgmVolUpBtn.addEventListener('click', () => {
     let volume = parseInt(bgmVolumeSlider.value, 10);
@@ -3305,7 +3380,7 @@ function setupMenuHandlers() {
     bgmVolumeDisplay.textContent = `BGM: ${volume}%`;
     setBgmVolume(volume / 100);
   });
-  
+
   // BGM Volume - button
   bgmVolDownBtn.addEventListener('click', () => {
     let volume = parseInt(bgmVolumeSlider.value, 10);
@@ -3314,14 +3389,14 @@ function setupMenuHandlers() {
     bgmVolumeDisplay.textContent = `BGM: ${volume}%`;
     setBgmVolume(volume / 100);
   });
-  
+
   // SFX Volume slider
   sfxVolumeSlider.addEventListener('input', (e) => {
     const volume = parseInt(e.target.value, 10);
     sfxVolumeDisplay.textContent = `SFX: ${volume}%`;
     setSfxVolume(volume / 100);
   });
-  
+
   // SFX Volume + button
   sfxVolUpBtn.addEventListener('click', () => {
     let volume = parseInt(sfxVolumeSlider.value, 10);
@@ -3330,7 +3405,7 @@ function setupMenuHandlers() {
     sfxVolumeDisplay.textContent = `SFX: ${volume}%`;
     setSfxVolume(volume / 100);
   });
-  
+
   // SFX Volume - button
   sfxVolDownBtn.addEventListener('click', () => {
     let volume = parseInt(sfxVolumeSlider.value, 10);
@@ -3339,7 +3414,7 @@ function setupMenuHandlers() {
     sfxVolumeDisplay.textContent = `SFX: ${volume}%`;
     setSfxVolume(volume / 100);
   });
-  
+
   console.log('Menu handlers initialized');
 }
 
@@ -3374,9 +3449,9 @@ async function showCommercialBreak() {
   if (typeof PokiSDK === 'undefined') {
     return Promise.resolve();
   }
-  
+
   console.log('Poki: Starting commercial break');
-  
+
   return PokiSDK.commercialBreak(() => {
     muteAudioForAd();
     disableInputForAd();
@@ -3395,9 +3470,9 @@ async function showRewardedBreak() {
   if (typeof PokiSDK === 'undefined') {
     return Promise.resolve(false);
   }
-  
+
   console.log('Poki: Starting rewarded break');
-  
+
   return PokiSDK.rewardedBreak(() => {
     muteAudioForAd();
     disableInputForAd();
@@ -3429,16 +3504,16 @@ function loadGameStateFromURL() {
   const level = getURLParam('level');
   const score = getURLParam('score');
   const timestamp = getURLParam('timestamp');
-  
+
   if (level) {
     console.log('Poki: Loading shared game state - level:', level);
-    
+
     // Parse level coordinates
     const coords = level.split('_');
     if (coords.length === 2) {
       const roomX = parseInt(coords[0], 10);
       const roomY = parseInt(coords[1], 10);
-      
+
       if (!isNaN(roomX) && !isNaN(roomY)) {
         currentRoomX = roomX;
         currentRoomY = roomY;
@@ -3446,12 +3521,12 @@ function loadGameStateFromURL() {
       }
     }
   }
-  
+
   if (score) {
     console.log('Poki: Shared game score:', score);
     // Here you could restore the player's score
   }
-  
+
   if (timestamp) {
     console.log('Poki: Shared game timestamp:', new Date(parseInt(timestamp, 10)));
   }
@@ -3459,9 +3534,9 @@ function loadGameStateFromURL() {
 
 // Prevent page jump on arrow keys and spacebar
 window.addEventListener('keydown', ev => {
-    if (['ArrowDown', 'ArrowUp', ' '].includes(ev.key)) {
-        ev.preventDefault();
-    }
+  if (['ArrowDown', 'ArrowUp', ' '].includes(ev.key)) {
+    ev.preventDefault();
+  }
 });
 window.addEventListener('wheel', ev => ev.preventDefault(), { passive: false });
 
@@ -3469,3 +3544,4 @@ init();
 setupMenuHandlers();
 setupTouchControls();
 setupVictoryScreen();
+setupHelpOverlay();
