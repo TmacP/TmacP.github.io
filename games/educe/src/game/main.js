@@ -813,16 +813,23 @@ function setupHelpOverlay() {
 }
 
 // Tutorial System
+// Tutorial System
 const TUTORIAL_STORAGE_KEY = 'educe_tutorial_progress';
 let tutorialState = {
   movementShown: false,
   movementDismissed: false,
   jumpShown: false,
   jumpDismissed: false,
+  mergeShown: false,
+  mergeDismissed: false,
+  unmergeShown: false,
+  unmergeDismissed: false,
 };
 
 let tutorialMovementElement = null;
 let tutorialJumpElement = null;
+let tutorialMergeElement = null;
+let tutorialUnmergeElement = null;
 
 function loadTutorialProgress() {
   try {
@@ -861,6 +868,8 @@ function hideTutorialPrompt(element) {
 function setupTutorialSystem() {
   tutorialMovementElement = document.getElementById('tutorial-movement');
   tutorialJumpElement = document.getElementById('tutorial-jump');
+  tutorialMergeElement = document.getElementById('tutorial-merge');
+  tutorialUnmergeElement = document.getElementById('tutorial-unmerge');
 
   if (!tutorialMovementElement || !tutorialJumpElement) {
     if (DEV_TOOLS_ENABLED) {
@@ -870,13 +879,18 @@ function setupTutorialSystem() {
   }
 
   // loadTutorialProgress(); // Force reset for now to ensure user sees it
+  // Resetting all for testing/consistency as requested
   tutorialState.movementDismissed = false;
   tutorialState.movementShown = false;
   tutorialState.jumpDismissed = false;
   tutorialState.jumpShown = false;
+  tutorialState.mergeDismissed = false;
+  tutorialState.mergeShown = false;
+  tutorialState.unmergeDismissed = false;
+  tutorialState.unmergeShown = false;
 
-  // Show movement tutorial if not dismissed
-  if (!tutorialState.movementDismissed) {
+  // Show movement tutorial if not dismissed and in Level 1 (index 0)
+  if (currentLevelIndex === 0 && !tutorialState.movementDismissed) {
     setTimeout(() => {
       tutorialState.movementShown = true;
       showTutorialPrompt(tutorialMovementElement);
@@ -891,34 +905,60 @@ function updateTutorialProgress() {
     return;
   }
 
-  // Check if player has moved left or right
-  if (tutorialState.movementShown && !tutorialState.movementDismissed) {
-    const hasMoved = keyboardState.moveLeft || keyboardState.moveRight ||
-      touchState.moveLeft || touchState.moveRight;
+  // --- Level 1 Tutorials: Movement & Jump ---
+  if (currentLevelIndex === 0) {
+    // Check if player has moved left or right
+    if (tutorialState.movementShown && !tutorialState.movementDismissed) {
+      const hasMoved = keyboardState.moveLeft || keyboardState.moveRight ||
+        touchState.moveLeft || touchState.moveRight;
 
-    if (hasMoved) {
-      tutorialState.movementDismissed = true;
-      hideTutorialPrompt(tutorialMovementElement);
-      saveTutorialProgress();
+      if (hasMoved) {
+        tutorialState.movementDismissed = true;
+        hideTutorialPrompt(tutorialMovementElement);
+        saveTutorialProgress();
 
-      // Show jump tutorial after a short delay
-      setTimeout(() => {
-        if (!tutorialState.jumpDismissed) {
-          tutorialState.jumpShown = true;
-          showTutorialPrompt(tutorialJumpElement);
-        }
-      }, 800);
+        // Show jump tutorial after a short delay
+        setTimeout(() => {
+          if (!tutorialState.jumpDismissed) {
+            tutorialState.jumpShown = true;
+            showTutorialPrompt(tutorialJumpElement);
+          }
+        }, 800);
+      }
+    }
+
+    // Check if player has jumped
+    if (tutorialState.jumpShown && !tutorialState.jumpDismissed) {
+      const hasJumped = keyboardState.actionDown || touchState.jump;
+
+      if (hasJumped) {
+        tutorialState.jumpDismissed = true;
+        hideTutorialPrompt(tutorialJumpElement);
+        saveTutorialProgress();
+      }
     }
   }
 
-  // Check if player has jumped
-  if (tutorialState.jumpShown && !tutorialState.jumpDismissed) {
-    const hasJumped = keyboardState.actionDown || touchState.jump;
+  // --- Level 2 Tutorials: Merge & Unmerge ---
+  if (currentLevelIndex === 1) {
+    // Show merge tutorial at start of level 2
+    if (!tutorialState.mergeShown && !tutorialState.mergeDismissed) {
+      tutorialState.mergeShown = true;
+      // Small delay to let level load
+      setTimeout(() => {
+        showTutorialPrompt(tutorialMergeElement);
+      }, 1000);
+    }
 
-    if (hasJumped) {
-      tutorialState.jumpDismissed = true;
-      hideTutorialPrompt(tutorialJumpElement);
-      saveTutorialProgress();
+    // Merge dismissal is handled in checkNpcMergeTrigger
+
+    // Show unmerge tutorial after merge is dismissed (which happens on merge)
+    if (tutorialState.mergeDismissed && !tutorialState.unmergeShown && !tutorialState.unmergeDismissed) {
+      // Wait a bit after merging before showing unmerge
+      // We'll set a flag or just check if we are currently merged?
+      // Actually, let's trigger this in the merge event handler to be safe, 
+      // but here we can check if we should show it.
+      // For now, let's rely on the merge event to set unmergeShown = true
     }
   }
 }
@@ -2151,6 +2191,22 @@ function checkNpcMergeTrigger() {
     sendCurrentRoomNpcData();
     setPlayerType(nextType);
     console.log(`Merged with NPC -> evolved to type ${nextType}`);
+
+    // Tutorial: Dismiss Merge, Show Unmerge
+    if (tutorialState.mergeShown && !tutorialState.mergeDismissed) {
+      tutorialState.mergeDismissed = true;
+      hideTutorialPrompt(tutorialMergeElement);
+      saveTutorialProgress();
+
+      // Show unmerge tutorial after a short delay
+      setTimeout(() => {
+        if (!tutorialState.unmergeDismissed) {
+          tutorialState.unmergeShown = true;
+          showTutorialPrompt(tutorialUnmergeElement);
+        }
+      }, 1500);
+    }
+
     return;
   }
 }
@@ -2195,6 +2251,13 @@ function handleUnsplitting() {
 
   setPlayerType(targetType);
   console.log(`Unsplitting -> reverted to type ${targetType}`);
+
+  // Tutorial: Dismiss Unmerge
+  if (tutorialState.unmergeShown && !tutorialState.unmergeDismissed) {
+    tutorialState.unmergeDismissed = true;
+    hideTutorialPrompt(tutorialUnmergeElement);
+    saveTutorialProgress();
+  }
 }
 
 function clampValue(value, min, max) {
