@@ -1,0 +1,302 @@
+/* @theme stats241 */
+
+@import 'default';
+
+/* Lab section with embedded game */
+section.lab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+section.lab .game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 10px 0;
+}
+
+section.lab .game-container iframe {
+    border: 2px solid #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+header {
+    position: fixed;
+    left: 32px;
+    right: 32px;
+    top: 8px;
+    height: 60px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+}
+
+header img {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+}
+
+footer {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 5px;
+    text-align: center;
+}
+
+/* debugging */
+/* section > * {
+    border: 1px dashed black;
+} */
+
+section > * {
+    font-size: 22pt;
+}
+
+section.two-column {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 550px 550px;
+    grid-template-areas: 
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel";
+}
+section.two-column h1 {
+    grid-area: slideheading;
+}
+section.two-column * {
+    grid-area: onecol;
+}
+section.two-column div {
+    max-height: 480px;
+    grid-area: rpanel;
+    max-width: 530px;
+}
+section.two-column div:first-of-type {
+    grid-area: lpanel;
+}
+
+section.two-column-l {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 750px 350px;
+    grid-template-areas: 
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel";
+}
+section.two-column-l h1 {
+    grid-area: slideheading;
+}
+section.two-column-l * {
+    grid-area: onecol;
+}
+section.two-column-l div {
+    max-height: 480px;
+    grid-area: rpanel;
+    max-width: 350px;
+}
+section.two-column-l div:first-of-type {
+    grid-area: lpanel;
+    max-width: 750px;
+}
+
+section.two-column-r {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 350px 750px;
+    grid-template-areas:
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel";
+}
+section.two-column-r h1 {
+    grid-area: slideheading;
+}
+section.two-column-r * {
+    grid-area: onecol;
+}
+
+section.three-column {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 360px 360px 360px;
+    grid-template-areas: 
+        "slideheading slideheading slideheading"
+        "panel panel panel";
+}
+section.three-column h1 {
+    grid-area: slideheading;
+}
+
+div.two-column {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 550px 550px;
+    grid-template-areas: 
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel";
+}
+div.two-column h1 {
+    grid-area: slideheading;
+}
+div.two-column * {
+    grid-area: onecol;
+}
+div.two-column div {
+    max-height: 480px;
+    grid-area: rpanel;
+    max-width: 530px;
+}
+div.two-column div:first-of-type {
+    grid-area: lpanel;
+}
+
+div.two-column-l {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 750px 350px;
+    grid-template-areas: 
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel";
+}
+div.two-column-l h1 {
+    grid-area: slideheading;
+}
+div.two-column-l * {
+    grid-area: onecol;
+}
+div.two-column-l div {
+    max-height: 480px;
+    grid-area: rpanel;
+    max-width: 350px;
+}
+div.two-column-l div:first-of-type {
+    grid-area: lpanel;
+    max-width: 750px;
+}
+
+div.two-column-r {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 350px 750px;
+    grid-template-areas:
+        "slideheading slideheading"
+        "onecol onecol"
+        "lpanel rpanel"
+}
+
+div.two-column-r h1 {
+    grid-area: slideheading;
+}
+
+div.two-column-r div {
+    max-height: 480px;
+    grid-area: rpanel;
+    max-width: 750px;
+}
+div.two-column-r div:first-of-type {
+    grid-area: lpanel;
+    max-width: 350px;
+}
+
+div.three-column {
+    overflow: visible;
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 360px 360px 360px;
+    grid-template-areas: 
+        "slideheading slideheading slideheading"
+        "panel panel panel";
+}
+div.three-column h1 {
+    grid-area: slideheading;
+}
+
+.center {
+    text-align: center;
+}
+
+.xlg {
+    font-size: 28pt;
+}
+.lg {
+    font-size: 24pt;
+}
+.md {
+    font-size: 20pt;
+}
+.sm {
+    font-size: 18pt;
+}
+.xsm {
+    font-size: 16pt;
+}
+.xxsm {
+    font-size: 16pt;
+}
+img {
+    object-fit: contain;
+    max-height: 100%;
+    max-width: 100%;
+}
+
+sub, sup {
+    display: inline-block;
+}
+
+/* Consistent shader canvas sizing so slides do not overflow */
+section {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 16px;
+    box-sizing: border-box;
+    padding-bottom: 60px;
+    min-height: 100%;
+}
+
+section h1 {
+    margin-bottom: 8px;
+}
+
+section ul,
+section ol {
+    margin-top: 0;
+}
+
+section pre {
+    font-size: 18pt;
+    line-height: 1.25;
+    padding: 14px 18px;
+    max-height: 260px;
+    overflow: auto;
+}
+
+section canvas,
+div canvas {
+    width: min(78%, 520px) !important;
+    height: auto !important;
+    max-height: 240px !important;
+    margin: 10px auto 2px;
+    display: block;
+}
+
+section canvas + script,
+div canvas + script {
+    display: none;
+}
