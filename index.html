@@ -26,10 +26,29 @@
                 <img src="image/7risten.svg" alt="7risten Logo" width="103" height="124.8">
             </a>
             <nav>
-                <a href="#about">About</a>
-                <a href="#portfolio">Portfolio</a>
-                <a href="/lectures/deck/">Lectures</a>
-                <a href="#contact" class="button">Contact</a>
+                <div class="dropdown">
+                    <button class="dropdown-toggle">About</button>
+                    <div class="dropdown-menu">
+                        <a href="#about">About Me</a>
+                        <a href="#contact">Contact</a>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="dropdown-toggle">Portfolio</button>
+                    <div class="dropdown-menu">
+                        <a href="/portfolio/educe/">Educe</a>
+                        <a href="/portfolio/koi-keep/">Koi Keep</a>
+                        <a href="/portfolio/potions-pastries/">Potions & Pastries</a>
+                        <a href="/portfolio/infinite-abyss/">Infinite Abyss</a>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="dropdown-toggle">Lectures</button>
+                    <div class="dropdown-menu">
+                        <a href="/lectures/cmpt306/">CMPT 306 — Graphics</a>
+                        <a href="/lectures/stats/">STAT 241 — Probability</a>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -80,55 +99,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Portfolio Section -->
-    <section id="portfolio" class="portfolio">
-        <div class="container">
-            <h2>Portfolio</h2>
-            <div class="portfolio-grid">
-                <!-- Educe Game (Top Portfolio Entry) -->
-                <div class="portfolio-item">
-                    <h3>Educe</h3>
-                    <p class="portfolio-date">Work In Progress</p>
-                    <p>My current passion project. A pixel art metroidvania with no engine. Using C-like C++ to WASM via LLVM (no EMSDK), WebGPU, and JS. Focus on performance and build sizes measured in KB.</p>
-                    <div class="portfolio-embed portfolio-embed--game">
-                        <iframe src="games/educe/index.html" title="Educe" loading="lazy" allow="autoplay"></iframe>
-                    </div>
-                </div>
-                
-                <!-- Koi Keep -->
-                <div class="portfolio-item">
-                    <h3>Koi Keep</h3>
-                    <p class="portfolio-date">November 2024</p>
-                    <p>Computer Science 453 Project. I used Defold to learn about game networking. I built several iterations using UDP, TCP, WS, and finally WSS. Deployed to Fly.io.</p>
-                    <div class="portfolio-embed">
-                        <iframe src="https://www.youtube.com/embed/kt4-tqD1riw" title="Koi Keep" loading="lazy" allowfullscreen></iframe>
-                    </div>
-                </div>
-
-                <!-- Potions & Pastries -->
-                <div class="portfolio-item">
-                    <h3>Potions & Pastries</h3>
-                    <p class="portfolio-date">April 2024</p>
-                    <p>Potions & Pastries was my 4th year game development project using Unity. I did the audio/sfx, writing, and some of the programming.</p>
-                    <div class="portfolio-embed">
-                        <iframe src="https://www.youtube.com/embed/iMgsxGeCC24" title="Potions & Pastries" loading="lazy" allowfullscreen></iframe>
-                    </div>
-                </div>
-
-                <!-- Infinite Abyss -->
-                <div class="portfolio-item">
-                    <h3>Infinite Abyss</h3>
-                    <p class="portfolio-date">December 2023</p>
-                    <p>Infinite Abyss was my 3rd year game development group project done in Unity. I did the music/sfx and a large portion of the programming.</p>
-                    <div class="portfolio-embed">
-                        <iframe src="https://infinite-abyss.pages.dev/" title="Infinite Abyss Game" loading="lazy"></iframe>
-                    </div>
-                </div>
-
             </div>
         </div>
     </section>
