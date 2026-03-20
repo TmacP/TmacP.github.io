@@ -26,29 +26,9 @@
                 <img src="image/7risten.svg" alt="7risten Logo" width="103" height="124.8">
             </a>
             <nav>
-                <div class="dropdown">
-                    <button class="dropdown-toggle">About</button>
-                    <div class="dropdown-menu">
-                        <a href="#about">About Me</a>
-                        <a href="#contact">Contact</a>
-                    </div>
-                </div>
-                <div class="dropdown">
-                    <button class="dropdown-toggle">Portfolio</button>
-                    <div class="dropdown-menu">
-                        <a href="/portfolio/educe/">Educe</a>
-                        <a href="/portfolio/koi-keep/">Koi Keep</a>
-                        <a href="/portfolio/potions-pastries/">Potions & Pastries</a>
-                        <a href="/portfolio/infinite-abyss/">Infinite Abyss</a>
-                    </div>
-                </div>
-                <div class="dropdown">
-                    <button class="dropdown-toggle">Lectures</button>
-                    <div class="dropdown-menu">
-                        <a href="/lectures/cmpt306/">CMPT 306 — Graphics</a>
-                        <a href="/lectures/stats/">STAT 241 — Probability</a>
-                    </div>
-                </div>
+                <a href="#about">About</a>
+                <a href="#portfolio">Portfolio</a>
+                <a href="#contact">Contact</a>
             </nav>
         </div>
     </header>
@@ -71,24 +51,9 @@
             <div class="about-content">
                 <div class="about-text">
                     <p>I'm in my last year of my Honours in Computer Science.</p>
-                    
-                    <div class="skills-grid">
-                        <div class="skill-item">
-                            <h3>Game Development</h3>
-                            <p>Godot, Unity, Defold, and custom WASM engines.</p>
-                        </div>
-                        <div class="skill-item">
-                            <h3>Computer Science</h3>
-                            <p>Software architecture in game programming.</p>
-                        </div>
-                        <div class="skill-item">
-                            <h3>Arts</h3>
-                            <p>Music: Guitar, Trumpet, Logic Pro.</br> Art: Copic, Procreate, Aseprite.</p>
-                        </div>
-                    </div>
-                    
+
+
                     <div class="principles-section">
-                        <p>My guiding principles are <strong>Truth</strong>, <strong>Beauty</strong>, and <strong>Goodness</strong>.</p>
                         <div class="social-links">
                             <a href="https://www.linkedin.com/in/tristen-macpherson-15042029b" target="_blank" rel="noopener">
                                 <img src="image/linkedin.png" alt="LinkedIn" width="24" height="24">
@@ -98,6 +63,45 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="portfolio">
+        <h2>Portfolio</h2>
+        <div class="portfolio-grid">
+            <div class="portfolio-item">
+                <h3>Educe</h3>
+                <p class="portfolio-date">Available on Steam</p>
+                <p>My passion project. A pixel art metroidvania with no engine. Using C-like C++ to WASM via LLVM (no EMSDK), WebGPU, and JS. Focus on performance and build sizes measured in KB.</p>
+                <div class="portfolio-embed">
+                    <iframe src="https://store.steampowered.com/widget/4486530/" title="Educe on Steam" loading="lazy" style="border:none; width:100%; max-width:646px; height:190px;"></iframe>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <h3>Koi Keep</h3>
+                <p class="portfolio-date">November 2024</p>
+                <p>Computer Science 453 Project. I used Defold to learn about game networking. I built several iterations using UDP, TCP, WS, and finally WSS. Deployed to Fly.io.</p>
+                <div class="portfolio-embed">
+                    <iframe src="https://www.youtube.com/embed/kt4-tqD1riw" title="Koi Keep" loading="lazy" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <h3>Potions &amp; Pastries</h3>
+                <p class="portfolio-date">April 2024</p>
+                <p>Potions &amp; Pastries was my 4th year game development project using Unity. I did the audio/sfx, writing, and some of the programming.</p>
+                <div class="portfolio-embed">
+                    <iframe src="https://www.youtube.com/embed/iMgsxGeCC24" title="Potions & Pastries" loading="lazy" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <h3>Infinite Abyss</h3>
+                <p class="portfolio-date">December 2023</p>
+                <p>Infinite Abyss was my 3rd year game development group project done in Unity. I did the music/sfx and a large portion of the programming.</p>
+                <div class="portfolio-embed">
+                    <iframe src="https://infinite-abyss.pages.dev/" title="Infinite Abyss" loading="lazy"></iframe>
                 </div>
             </div>
         </div>
