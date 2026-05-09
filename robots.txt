@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://7risten.ca/sitemap.xml
+Sitemap: https://educedmoment.ca/sitemap.xml

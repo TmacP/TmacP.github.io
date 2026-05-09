@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle external links
-    const externalLinks = document.querySelectorAll('a[href^="http"]:not([href*="7risten.ca"])');
+    const externalLinks = document.querySelectorAll('a[href^="http"]:not([href*="educedmoment"])');
     externalLinks.forEach(link => {
         // Ensure external links open in new tab and have security attributes
         link.setAttribute('target', '_blank');
@@ -189,11 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Performance optimization: Preload important images
     const importantImages = [
-        'image/7risten.svg',
-        'image/portfolio.png',
-        'image/desktop.svg',
-        'image/tablet.svg',
-        'image/phone.svg'
+        'image/educedmoment-logo.svg'
     ];
 
     importantImages.forEach(src => {
@@ -247,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
     highlightActiveNavItem();
     toggleBackToTopButton();
     
-    console.log('7risten.ca site initialized successfully!');
+    console.log('educedmoment.ca initialized');
 });
 
 // Handle page visibility changes (for performance)
