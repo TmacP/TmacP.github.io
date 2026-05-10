@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Educed Moment — Press Kit</title>
-    <meta name="description" content="Press kit for Educed Moment, an indie game studio.">
+    <meta name="description" content="Press kit for Educed Moment, an independent game studio based in Saskatoon, Canada. Currently building Educe, a photography metroidbrainia.">
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -12,16 +12,26 @@
     <link rel="manifest" href="/site.webmanifest">
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- Layout adapted from presskit.html (https://github.com/pixelnest/presskit.html), original presskit() by Rami Ismail. -->
 </head>
 <body>
     <div class="page grid">
-        <nav class="page-nav nav">
+        <nav class="page-nav nav grid__item">
             <h1 class="nav__title"><a href="/presskit/">Educed Moment</a></h1>
-            <p class="nav__subtitle">presskit()</p>
+            <aside class="nav__subtitle"><a href="/presskit/">studio — press kit</a></aside>
+
             <ul class="nav__list">
-                <a class="nav__item" href="/presskit/">Studio</a>
-                <a class="nav__item" href="/presskit/educe/">Educe</a>
-                <a class="nav__item" href="/">← Back to studio site</a>
+                <li><a class="nav__item" href="#factsheet">Factsheet</a></li>
+                <li><a class="nav__item" href="#description">Description</a></li>
+                <li><a class="nav__item" href="#projects">Projects</a></li>
+                <li><a class="nav__item" href="#history">History</a></li>
+                <li><a class="nav__item" href="#logo">Logo &amp; Icon</a></li>
+                <li><a class="nav__item" href="#links">Additional Links</a></li>
+                <li><a class="nav__item" href="#credits">Team</a></li>
+                <li><a class="nav__item" href="#contact">Contact</a></li>
+                <li class="nav__item--separator"><a class="nav__item" href="/presskit/educe/">Educe — press kit →</a></li>
+                <li><a class="nav__item" href="/">← Back to studio site</a></li>
             </ul>
         </nav>
 
@@ -33,39 +43,45 @@
             <main class="page-content" role="main">
                 <section class="block grid">
                     <aside class="factsheet grid__item">
-                        <h2>Factsheet</h2>
-                        <dl>
-                            <dt>Developer</dt>
+                        <h2 id="factsheet" class="factsheet__title">Factsheet</h2>
+
+                        <dl class="factsheet__list">
+                            <dt>Studio:</dt>
                             <dd>Educed Moment</dd>
+                            <dd>Based in Saskatoon, Saskatchewan, Canada</dd>
 
-                            <dt>Based in</dt>
-                            <dd>Saskatoon, Saskatchewan, Canada</dd>
+                            <dt>Founded by:</dt>
+                            <dd>Tristen MacPherson</dd>
 
-                            <dt>Founding date</dt>
+                            <dt>Founding date:</dt>
                             <dd><!-- TODO: founding date --></dd>
 
-                            <dt>Website</dt>
+                            <dt>Website:</dt>
                             <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
 
-                            <dt>Press / Business contact</dt>
+                            <dt>Press / Business contact:</dt>
                             <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
 
-                            <dt>Social</dt>
-                            <dd><a href="https://github.com/TmacP/" target="_blank" rel="noopener">github.com/TmacP</a></dd>
-
-                            <dt>Releases</dt>
-                            <dd><a href="educe/">Educe</a></dd>
+                            <dt>Releases:</dt>
+                            <dd><a href="educe/">Educe</a> &mdash; in development</dd>
                         </dl>
+
+                        <p class="press">
+                            <a href="mailto:tristenmac@gmail.com?subject=Press%20inquiry%20%E2%80%94%20Educed%20Moment" class="button" tabindex="0">
+                                Press inquiries
+                            </a>
+                        </p>
                     </aside>
 
                     <article class="description grid__item">
-                        <h2>Description</h2>
+                        <h2 id="description">Description</h2>
                         <p>Educed Moment is an independent game studio founded by Tristen MacPherson, a solo developer based in Saskatoon, Canada. The studio is currently building <a href="educe/">Educe</a>, a photography metroidbrainia, on a custom C/C++ tech stack &mdash; alongside Tristen&rsquo;s internship at <a href="https://www.winterpixel.com" target="_blank" rel="noopener">Winterpixel Games</a> and a master&rsquo;s in games research.</p>
+
                         <p>The studio&rsquo;s focus is small, handcrafted games where every system &mdash; engine, audio synth, asset pipeline, photo gallery format &mdash; is built deliberately to serve the work.</p>
 
                         <h2 id="projects">Projects</h2>
                         <ul>
-                            <li><a href="educe/">Educe</a> &mdash; in development, <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">free demo live on itch.io</a></li>
+                            <li><a href="educe/">Educe</a> &mdash; photography metroidbrainia, in development. <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">Free demo on itch.io</a>. Q3 2028 release target.</li>
                         </ul>
                     </article>
                 </section>
@@ -77,57 +93,59 @@
                     <p><!-- TODO: founding story — when, why, what motivated starting the studio --></p>
 
                     <h3>Educe</h3>
-                    <p>Educe is the studio&rsquo;s first commercial title &mdash; a photography metroidbrainia where players creep through flooded caverns, photograph wildlife, and recreate compositions from empty frames embedded in the world. In development since July 2025. Currently first playable, with builds for Windows, macOS, iPad, and Web.</p>
-                </section>
-
-                <section class="block">
-                    <h2 id="videos">Videos</h2>
-                    <p><!-- TODO: trailer. Replace VIDEO_ID with the YouTube ID, or remove this block. -->
-                        <em>Trailer coming soon.</em>
-                    </p>
-                    <!--
-                    <div class="video-player">
-                        <iframe class="video-player__frame" src="https://www.youtube.com/embed/VIDEO_ID" title="Educe Trailer" allowfullscreen></iframe>
-                    </div>
-                    -->
+                    <p>Educe is the studio&rsquo;s first commercial title &mdash; a photography metroidbrainia where players creep through flooded caverns, photograph wildlife, and recreate compositions from empty frames embedded in the world. In development since July 2025. Currently first playable, with builds for Windows, macOS, iPad, and Web. <a href="educe/">See the Educe press kit &rarr;</a></p>
                 </section>
 
                 <section class="block">
                     <h2 id="logo">Logo &amp; Icon</h2>
-                    <p>
-                        <a href="images/logo.svg" download class="button">Download logo (SVG)</a>
-                    </p>
-                    <p class="logo">
-                        <img src="images/logo.svg" alt="Educed Moment logo">
-                    </p>
+                    <p>Studio wordmark. SVG, scales cleanly. Black-on-transparent &mdash; pair against light backgrounds, or invert for dark.</p>
+                    <a href="images/logo.svg" download>
+                        <img src="images/logo.svg" alt="Educed Moment logo" class="logo">
+                    </a>
                 </section>
 
                 <section class="block">
-                    <h2 id="team">Team</h2>
+                    <h2 id="links">Additional Links</h2>
                     <dl>
-                        <dt>Tristen MacPherson</dt>
-                        <dd>Founder / Developer / Designer</dd>
-                    </dl>
-                </section>
-
-                <section class="block">
-                    <h2 id="contact">Contact</h2>
-                    <dl>
-                        <dt>Inquiries</dt>
-                        <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
-
-                        <dt>Web</dt>
+                        <dt>Studio site</dt>
                         <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
 
-                        <dt>GitHub</dt>
+                        <dt>Instagram</dt>
+                        <dd><a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">@educedmoment</a></dd>
+
+                        <dt>Discord</dt>
+                        <dd><a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Educed Moment server</a></dd>
+
+                        <dt>Founder GitHub</dt>
                         <dd><a href="https://github.com/TmacP/" target="_blank" rel="noopener">github.com/TmacP</a></dd>
                     </dl>
+                </section>
+
+                <section class="block grid _team-fix-margin-top">
+                    <article class="grid__item grid__item--flexible">
+                        <h2 id="credits">Team</h2>
+                        <dl>
+                            <dt>Tristen MacPherson</dt>
+                            <dd>Founder. Solo developer on Educe &mdash; programming, game design, music, pixel art. Concurrently interning at <a href="https://www.winterpixel.com" target="_blank" rel="noopener">Winterpixel Games</a> and pursuing a master&rsquo;s in computer science focused on games research.</dd>
+                        </dl>
+                    </article>
+
+                    <article class="grid__item grid__item--flexible">
+                        <h2 id="contact">Contact</h2>
+                        <dl>
+                            <dt>Press &amp; Business inquiries</dt>
+                            <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
+
+                            <dt>Web</dt>
+                            <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
+                        </dl>
+                    </article>
                 </section>
             </main>
 
             <footer class="page-footer">
                 <p>Educed Moment &mdash; <a href="/">educedmoment.ca</a></p>
-                <p><small>presskit() format inspired by Rami Ismail's <a href="https://dopresskit.com" target="_blank" rel="noopener">dopresskit.com</a>.</small></p>
+                <p><small>Layout after <a href="https://github.com/pixelnest/presskit.html" target="_blank" rel="noopener">presskit.html</a> by Pixelnest, original <a href="https://dopresskit.com" target="_blank" rel="noopener">presskit()</a> by Rami Ismail.</small></p>
             </footer>
         </div>
     </div>

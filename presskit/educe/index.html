@@ -12,82 +12,103 @@
     <link rel="manifest" href="/site.webmanifest">
 
     <link rel="stylesheet" href="../style.css">
+
+    <!-- Layout adapted from presskit.html (https://github.com/pixelnest/presskit.html), original presskit() by Rami Ismail. -->
 </head>
 <body>
     <div class="page grid">
-        <nav class="page-nav nav">
+        <nav class="page-nav nav grid__item">
             <h1 class="nav__title"><a href="/presskit/">Educed Moment</a></h1>
-            <p class="nav__subtitle">presskit()</p>
+            <aside class="nav__subtitle"><a href="/presskit/educe/">Educe — press kit</a></aside>
+
             <ul class="nav__list">
-                <a class="nav__item" href="/presskit/">Studio</a>
-                <a class="nav__item" href="/presskit/educe/">Educe</a>
-                <a class="nav__item" href="/">← Back to studio site</a>
+                <li><a class="nav__item" href="#factsheet">Factsheet</a></li>
+                <li><a class="nav__item" href="#description">Description</a></li>
+                <li><a class="nav__item" href="#history">History</a></li>
+                <li><a class="nav__item" href="#features">Features</a></li>
+                <li><a class="nav__item" href="#videos">Videos</a></li>
+                <li><a class="nav__item" href="#images">Images</a></li>
+                <li><a class="nav__item" href="#logo">Logo &amp; Icon</a></li>
+                <li><a class="nav__item" href="#systems">Implemented Systems</a></li>
+                <li><a class="nav__item" href="#links">Additional Links</a></li>
+                <li><a class="nav__item" href="#about">About Educed Moment</a></li>
+                <li><a class="nav__item" href="#credits">Team</a></li>
+                <li><a class="nav__item" href="#contact">Contact</a></li>
+                <li class="nav__item--separator"><a class="nav__item" href="/">← Back to studio site</a></li>
             </ul>
         </nav>
 
         <div class="page-wrapper grid__item">
             <header class="page-header">
-                <!-- TODO: replace with Educe key art / header image (1920x500 ideal) -->
-                <!-- <img src="images/header.png" alt="Educe" title="Educe"> -->
+                <!-- TODO: Educe key art header (1920x500 ideal). Once added:
+                <img src="images/header.png" alt="Educe" title="Educe">
+                -->
             </header>
 
             <main class="page-content" role="main">
                 <section class="block grid">
                     <aside class="factsheet grid__item">
-                        <h2>Factsheet</h2>
-                        <dl>
-                            <dt>Developer</dt>
+                        <h2 id="factsheet" class="factsheet__title">Factsheet</h2>
+
+                        <dl class="factsheet__list">
+                            <dt>Developer:</dt>
                             <dd><a href="/presskit/">Educed Moment</a></dd>
+                            <dd>Based in Saskatoon, Saskatchewan, Canada</dd>
 
-                            <dt>Based in</dt>
-                            <dd>Saskatoon, Saskatchewan, Canada</dd>
+                            <dt>Publisher:</dt>
+                            <dd>Self-published. <small>(Seeking publisher partnership.)</small></dd>
 
-                            <dt>Genre</dt>
-                            <dd>Photography, Metroidbrainia, Wholesome, Cozy, Puzzle</dd>
+                            <dt>Release date:</dt>
+                            <dd>Q3 2028 (target)</dd>
 
-                            <dt>Demo</dt>
-                            <dd>Free demo playable now on <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a>. Larger public demo push planned 2027.</dd>
+                            <dt>Platforms:</dt>
+                            <dd><a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">Steam (PC)</a></dd>
+                            <dd><a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io (web demo)</a></dd>
+                            <dd>macOS &amp; iPad &mdash; <small>builds compile, store launches with full release</small></dd>
+                            <dd><small>Switch / PlayStation / Xbox &mdash; planned pending devkit access</small></dd>
 
-                            <dt>Release</dt>
-                            <dd>Q3 2029 (target)</dd>
+                            <dt>Website:</dt>
+                            <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
 
-                            <dt>Platforms</dt>
-                            <dd>Windows, macOS, iPad, Web. Console (Switch / PlayStation / Xbox) planned pending devkit access.</dd>
-
-                            <dt>Stores</dt>
-                            <dd>
-                                <a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">Steam</a> (wishlist)<br>
-                                <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a> (demo)
-                            </dd>
-
-                            <dt>Price</dt>
+                            <dt>Regular price:</dt>
                             <dd>USD $15.00 (planned)</dd>
 
-                            <dt>Players</dt>
+                            <dt>Genre:</dt>
+                            <dd>Photography, Metroidbrainia, Wholesome, Cozy, Puzzle</dd>
+
+                            <dt>Players:</dt>
                             <dd>Single player</dd>
 
-                            <dt>Length</dt>
-                            <dd>4&ndash;6 hours critical path; longer for completionists filling the photo encyclopedia</dd>
+                            <dt>Length:</dt>
+                            <dd>4&ndash;6 hours critical path</dd>
 
-                            <dt>Engine</dt>
-                            <dd>Custom C/C++ engine. Metal (macOS), Direct3D 12 (Windows). Hot-reloadable game code. Kernel-level input polling at the last possible moment before each frame &mdash; full ownership of the loop. No middleware.</dd>
-
-                            <dt>Press / Business contact</dt>
-                            <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
-
-                            <dt>Social</dt>
-                            <dd>
-                                <a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">Instagram</a><br>
-                                <a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Discord</a>
-                            </dd>
+                            <dt>Engine:</dt>
+                            <dd>Custom C/C++ (Metal on macOS, Direct3D 12 on Windows). Hot-reloadable. No middleware.</dd>
                         </dl>
+
+                        <p class="press">
+                            <a href="mailto:tristenmac@gmail.com?subject=Press%20inquiry%20%E2%80%94%20Educe" class="button" tabindex="0">
+                                Request press build
+                            </a>
+                        </p>
                     </aside>
 
                     <article class="description grid__item">
-                        <h2>Description</h2>
+                        <h2 id="description">Description</h2>
                         <p>Creep through flooded caverns past tangled roots. Empty frames line the walls, each one waiting for a photograph only you can take. Venture deep and creep up on wildlife. Become still. Aim your camera. Capture this instant before they startle, and watch it develop in your hands.</p>
 
                         <p><em>Every frame is a question. The cave is full of answers.</em></p>
+
+                        <h2 id="history">History</h2>
+
+                        <h3>Premise</h3>
+                        <p>Educe started from a single question: what does a metroidvania look like when the camera replaces the sword? The answer became a wildlife photography game where the world is a puzzle box of compositions waiting to be solved &mdash; not by reflexes, but by patience, observation, and an eye for what light is doing.</p>
+
+                        <h3>Custom tech, deliberately</h3>
+                        <p>The engine is C/C++ from scratch with hot-reloadable game code, a custom audio synth (ESA patches, ESM modules), a custom asset pipeline (Aseprite sprites, BTA animation metadata), and a strict platform abstraction layer. Builds for Windows, macOS, iPad, and Web all compile today. The architectural choice isn&rsquo;t for purity &mdash; it&rsquo;s because owning the frame loop is what makes the photography mechanic feel right.</p>
+
+                        <h3>Currently</h3>
+                        <p>First playable. Core systems are built and the gameplay loop is playable end-to-end. A free demo is live on <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a>. Remaining work to vertical slice is asset production, additional wildlife species, the lens system (wide / telephoto / macro), and level design. In development since July 2025.</p>
 
                         <h2 id="features">Features</h2>
                         <ul>
@@ -101,31 +122,29 @@
                 </section>
 
                 <section class="block">
-                    <h2 id="history">History</h2>
-
-                    <h3>Premise</h3>
-                    <p>Educe started from a single question: what does a metroidvania look like when the camera replaces the sword? The answer became a wildlife photography game where the world is a puzzle box of compositions waiting to be solved &mdash; not by reflexes, but by patience, observation, and an eye for what light is doing.</p>
-
-                    <h3>Custom tech, deliberately</h3>
-                    <p>The engine is C/C++ from scratch with hot-reloadable game code, a custom audio synth (ESA patches, ESM modules), a custom asset pipeline (Aseprite sprites, BTA animation metadata), and a strict platform abstraction layer. Builds for Windows, macOS, iPad, and Web all compile today. The architectural choice isn&rsquo;t for purity &mdash; it&rsquo;s because owning the frame loop is what makes the photography mechanic feel right.</p>
-
-                    <h3>Currently</h3>
-                    <p>First playable. Core systems are built and the gameplay loop is playable end-to-end. A free demo is live on <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a>. Remaining work to vertical slice is asset production, additional wildlife species, the lens system (wide / telephoto / macro), and level design. In development since July 2025.</p>
-                </section>
-
-                <section class="block">
                     <h2 id="videos">Videos</h2>
-                    <p><em><!-- TODO: trailer YouTube ID -- uncomment block below --> Trailer in production. In the meantime, the <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">free demo on itch.io</a> is the best way to experience the game. A larger demo push is planned for 2027.</em></p>
-                    <!--
-                    <div class="video-player">
-                        <iframe class="video-player__frame" src="https://www.youtube.com/embed/VIDEO_ID" title="Educe Trailer" allowfullscreen></iframe>
+
+                    <aside class="block__notice">
+                        Trailer in production. The <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">free demo on itch.io</a> is the most direct way to experience the game right now.
+                    </aside>
+
+                    <!-- Trailer placeholder. Replace VIDEO_ID once trailer is uploaded.
+                    <div>
+                        <p><strong>Announcement Trailer</strong> &mdash; <a href="https://www.youtube.com/embed/VIDEO_ID">YouTube</a></p>
+                        <div class="video-player">
+                            <iframe class="video-player__frame" src="https://www.youtube.com/embed/VIDEO_ID" frameborder="0" allowfullscreen></iframe>
+                        </div>
                     </div>
                     -->
                 </section>
 
                 <section class="block">
                     <h2 id="images">Images</h2>
-                    <p>In-game Polaroids generated by Educe&rsquo;s photo system &mdash; click any thumbnail to download full-res. Press is welcome to use these freely with credit to <em>Educe / Educed Moment</em>.</p>
+
+                    <aside class="block__notice">
+                        In-game Polaroids generated by Educe&rsquo;s photo system. Click any thumbnail to download full-res. Press is welcome to use these freely with credit to <em>Educe / Educed Moment</em>.
+                    </aside>
+
                     <ul class="gallery">
                         <li class="gallery__item"><a href="/image/educe/polaroid01.png"><img src="/image/educe/polaroid01.png" alt="In-game Polaroid from Educe — flame-crested bird in cyanotype tint" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
                         <li class="gallery__item"><a href="/image/educe/polaroid02.png"><img src="/image/educe/polaroid02.png" alt="In-game Polaroid from Educe — bird against a cobalt cavern wall" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
@@ -140,13 +159,10 @@
 
                 <section class="block">
                     <h2 id="logo">Logo &amp; Icon</h2>
-                    <p>
-                        <a href="images/studio-logo.svg" download class="button">Download studio logo (SVG)</a>
-                        <!-- TODO: add Educe game logo download once designed -->
-                    </p>
-                    <p class="logo">
-                        <img src="images/studio-logo.svg" alt="Educed Moment logo">
-                    </p>
+                    <p>Studio logo only for now. A dedicated Educe wordmark is in design.</p>
+                    <a href="images/studio-logo.svg" download>
+                        <img src="images/studio-logo.svg" alt="Educed Moment logo" class="logo">
+                    </a>
                 </section>
 
                 <section class="block">
@@ -170,44 +186,12 @@
                 </section>
 
                 <section class="block">
-                    <h2 id="awards">Awards &amp; Recognition</h2>
-                    <p><em><!-- TODO: list awards, festival selections, notable mentions, or remove this section. --></em></p>
-                </section>
-
-                <section class="block">
-                    <h2 id="quotes">Selected Articles</h2>
-                    <p><em><!-- TODO: add press quotes / review excerpts as they come in. --></em></p>
-                </section>
-
-                <section class="block">
-                    <h2 id="about">About Educed Moment</h2>
-                    <p>Educed Moment is an independent game studio founded by Tristen MacPherson, a solo developer based in Saskatoon, Canada. Educe is the studio&rsquo;s first commercial title &mdash; the start of a planned catalog built on a custom tech stack and a distinct art style. <a href="/presskit/">More information on the studio</a>.</p>
-                </section>
-
-                <section class="block">
-                    <h2 id="team">Team</h2>
+                    <h2 id="links">Additional Links</h2>
                     <dl>
-                        <dt>Tristen MacPherson</dt>
-                        <dd>Solo developer &mdash; programming, game design, music, pixel art</dd>
+                        <dt>Steam page (wishlist)</dt>
+                        <dd><a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">store.steampowered.com/app/4486530/Educe</a></dd>
 
-                        <dt>Contract artist</dt>
-                        <dd>Capsule art and promotional assets</dd>
-                    </dl>
-                </section>
-
-                <section class="block">
-                    <h2 id="contact">Contact</h2>
-                    <dl>
-                        <dt>Inquiries</dt>
-                        <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
-
-                        <dt>Web</dt>
-                        <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
-
-                        <dt>Steam</dt>
-                        <dd><a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">store.steampowered.com/app/4486530</a></dd>
-
-                        <dt>itch.io</dt>
+                        <dt>itch.io (free demo)</dt>
                         <dd><a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">educedmoment.itch.io/educe</a></dd>
 
                         <dt>Instagram</dt>
@@ -217,10 +201,46 @@
                         <dd><a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Educed Moment server</a></dd>
                     </dl>
                 </section>
+
+                <section class="block">
+                    <h2 id="about">About Educed Moment</h2>
+                    <dl>
+                        <dt>Boilerplate</dt>
+                        <dd>Educed Moment is an independent game studio founded by Tristen MacPherson, a solo developer based in Saskatoon, Canada. The studio&rsquo;s focus is small, handcrafted games where every system &mdash; engine, audio synth, asset pipeline, photo gallery format &mdash; is built deliberately to serve the work.</dd>
+
+                        <dt>More information</dt>
+                        <dd>More information on Educed Moment, the studio&rsquo;s logo, and relevant media are available <a href="/presskit/">on the studio press kit</a>.</dd>
+                    </dl>
+                </section>
+
+                <section class="block grid _team-fix-margin-top">
+                    <article class="grid__item grid__item--flexible">
+                        <h2 id="credits">Educe Credits</h2>
+                        <dl>
+                            <dt>Tristen MacPherson</dt>
+                            <dd>Solo developer &mdash; programming, game design, music, pixel art</dd>
+
+                            <dt>Contract artist</dt>
+                            <dd>Capsule art and promotional assets</dd>
+                        </dl>
+                    </article>
+
+                    <article class="grid__item grid__item--flexible">
+                        <h2 id="contact">Contact</h2>
+                        <dl>
+                            <dt>Press &amp; Business inquiries</dt>
+                            <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
+
+                            <dt>Web</dt>
+                            <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
+                        </dl>
+                    </article>
+                </section>
             </main>
 
             <footer class="page-footer">
                 <p>Educe &mdash; Educed Moment &mdash; <a href="/">educedmoment.ca</a></p>
+                <p><small>Layout after <a href="https://github.com/pixelnest/presskit.html" target="_blank" rel="noopener">presskit.html</a> by Pixelnest, original <a href="https://dopresskit.com" target="_blank" rel="noopener">presskit()</a> by Rami Ismail.</small></p>
             </footer>
         </div>
     </div>
