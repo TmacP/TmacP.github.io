@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Educe — Press Kit | Educed Moment</title>
-    <meta name="description" content="Press kit for Educe, a pixel-art metroidvania built without a game engine, by Educed Moment.">
+    <meta name="description" content="Press kit for Educe, a photography metroidbrainia by Educed Moment. Creep through flooded caverns, photograph wildlife, recreate compositions from empty frames in the world.">
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -39,51 +39,83 @@
                             <dt>Developer</dt>
                             <dd><a href="/presskit/">Educed Moment</a></dd>
 
-                            <dt>Release date</dt>
-                            <dd><!-- TODO: Steam release date --></dd>
+                            <dt>Based in</dt>
+                            <dd>Saskatoon, Saskatchewan, Canada</dd>
+
+                            <dt>Genre</dt>
+                            <dd>Photography, Metroidbrainia, Wholesome, Cozy, Puzzle</dd>
+
+                            <dt>Demo</dt>
+                            <dd>Free demo playable now on <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a>. Larger public demo push planned 2027.</dd>
+
+                            <dt>Release</dt>
+                            <dd>Q3 2029 (target)</dd>
 
                             <dt>Platforms</dt>
-                            <dd>Windows (<a href="https://store.steampowered.com/app/4486530/" target="_blank" rel="noopener">Steam</a>)</dd>
+                            <dd>Windows, macOS, iPad, Web. Console (Switch / PlayStation / Xbox) planned pending devkit access.</dd>
 
-                            <dt>Website</dt>
-                            <dd><a href="https://store.steampowered.com/app/4486530/" target="_blank" rel="noopener">Steam page</a></dd>
+                            <dt>Stores</dt>
+                            <dd>
+                                <a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">Steam</a> (wishlist)<br>
+                                <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a> (demo)
+                            </dd>
 
                             <dt>Price</dt>
-                            <dd><!-- TODO: e.g. USD $9.99 --></dd>
+                            <dd>USD $15.00 (planned)</dd>
+
+                            <dt>Players</dt>
+                            <dd>Single player</dd>
+
+                            <dt>Length</dt>
+                            <dd>4&ndash;6 hours critical path; longer for completionists filling the photo encyclopedia</dd>
+
+                            <dt>Engine</dt>
+                            <dd>Custom C/C++ engine. Metal (macOS), Direct3D 12 (Windows). Hot-reloadable game code. Kernel-level input polling at the last possible moment before each frame &mdash; full ownership of the loop. No middleware.</dd>
 
                             <dt>Press / Business contact</dt>
                             <dd><a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a></dd>
+
+                            <dt>Social</dt>
+                            <dd>
+                                <a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">Instagram</a><br>
+                                <a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Discord</a>
+                            </dd>
                         </dl>
                     </aside>
 
                     <article class="description grid__item">
                         <h2>Description</h2>
-                        <p>Educe is a pixel-art metroidvania built without a game engine. The runtime is hand-written C-like C++ compiled directly to WebAssembly via LLVM (no Emscripten), rendering through WebGPU and orchestrated from a tiny JavaScript host. The whole game ships in kilobytes.</p>
+                        <p>Creep through flooded caverns past tangled roots. Empty frames line the walls, each one waiting for a photograph only you can take. Venture deep and creep up on wildlife. Become still. Aim your camera. Capture this instant before they startle, and watch it develop in your hands.</p>
+
+                        <p><em>Every frame is a question. The cave is full of answers.</em></p>
 
                         <h2 id="features">Features</h2>
                         <ul>
-                            <li>Pixel-art metroidvania with hand-tuned exploration and combat.</li>
-                            <li>Custom engine: C++ → WASM via LLVM, no Emscripten runtime.</li>
-                            <li>WebGPU rendering pipeline written from scratch.</li>
-                            <li>Build size measured in KB &mdash; loads in a tab, runs natively on Steam.</li>
-                            <li><!-- TODO: add 1-2 more game-design features (boss design? unique mechanic? aesthetic?) --></li>
+                            <li><strong>Photographs are puzzles.</strong> Frames in the world show you scenes that only happen under specific conditions. Find the elements, understand what causes the moment, then engineer the shot. The puzzles are not just &ldquo;find the subject&rdquo; &mdash; they&rsquo;re environmental riddles solved through the lens of your camera.</li>
+                            <li><strong>Mastery comes from understanding wildlife.</strong> Players who learn animal behavior and environmental systems can engineer the exact composition they need. New players earn it through observation and patience.</li>
+                            <li><strong>Observation replaces combat.</strong> No combat, no punishment for failure, no twitch platforming. The challenge is exploration, observation, and understanding. Easy to pick up, with a high ceiling of mastery built on your eye for composition. Accessible to a wide age range.</li>
+                            <li><strong>AAA rendering on a 320×180 canvas.</strong> Pixel art paired with a serious rendering pipeline: deferred lighting with normal maps, dynamic lights, volumetric fog, liquid simulation with refraction, and a full CRT post-processing pass with scanlines and phosphor dots.</li>
                         </ul>
+                        <p><em>Built-in shareable artifacts: every photo is saved as a PNG with a textured Polaroid border, ready to share without extra work.</em></p>
                     </article>
                 </section>
 
                 <section class="block">
                     <h2 id="history">History</h2>
 
-                    <h3>Engine first, game second</h3>
-                    <p>Educe started as an experiment in shrinking a game runtime as small as it can go: writing a C++ codebase that compiles straight to WebAssembly with LLVM&apos;s WASM backend, skipping Emscripten and its runtime entirely, and rendering through the browser&apos;s native WebGPU. The metroidvania grew up around that engine.</p>
+                    <h3>Premise</h3>
+                    <p>Educe started from a single question: what does a metroidvania look like when the camera replaces the sword? The answer became a wildlife photography game where the world is a puzzle box of compositions waiting to be solved &mdash; not by reflexes, but by patience, observation, and an eye for what light is doing.</p>
 
-                    <h3>From browser to Steam</h3>
-                    <p>What began as a web-only project shipped on Steam (<a href="https://store.steampowered.com/app/4486530/" target="_blank" rel="noopener">app 4486530</a>) wrapped as a desktop build, while the same core continues to run in any modern browser.</p>
+                    <h3>Custom tech, deliberately</h3>
+                    <p>The engine is C/C++ from scratch with hot-reloadable game code, a custom audio synth (ESA patches, ESM modules), a custom asset pipeline (Aseprite sprites, BTA animation metadata), and a strict platform abstraction layer. Builds for Windows, macOS, iPad, and Web all compile today. The architectural choice isn&rsquo;t for purity &mdash; it&rsquo;s because owning the frame loop is what makes the photography mechanic feel right.</p>
+
+                    <h3>Currently</h3>
+                    <p>First playable. Core systems are built and the gameplay loop is playable end-to-end. A free demo is live on <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">itch.io</a>. Remaining work to vertical slice is asset production, additional wildlife species, the lens system (wide / telephoto / macro), and level design. In development since July 2025.</p>
                 </section>
 
                 <section class="block">
                     <h2 id="videos">Videos</h2>
-                    <p><em><!-- TODO: trailer YouTube ID — uncomment block below --> Trailer coming soon.</em></p>
+                    <p><em><!-- TODO: trailer YouTube ID -- uncomment block below --> Trailer in production. In the meantime, the <a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">free demo on itch.io</a> is the best way to experience the game. A larger demo push is planned for 2027.</em></p>
                     <!--
                     <div class="video-player">
                         <iframe class="video-player__frame" src="https://www.youtube.com/embed/VIDEO_ID" title="Educe Trailer" allowfullscreen></iframe>
@@ -93,20 +125,24 @@
 
                 <section class="block">
                     <h2 id="images">Images</h2>
-                    <p><em>Drop screenshots into <code>/presskit/educe/images/</code> and uncomment the gallery below.</em></p>
-                    <!--
+                    <p>In-game Polaroids generated by Educe&rsquo;s photo system &mdash; click any thumbnail to download full-res. Press is welcome to use these freely with credit to <em>Educe / Educed Moment</em>.</p>
                     <ul class="gallery">
-                        <li class="gallery__item"><a href="images/screenshot01.png"><img src="images/screenshot01.png" alt="Screenshot 1"></a></li>
-                        <li class="gallery__item"><a href="images/screenshot02.png"><img src="images/screenshot02.png" alt="Screenshot 2"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid01.png"><img src="/image/educe/polaroid01.png" alt="In-game Polaroid from Educe — flame-crested bird in cyanotype tint" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid02.png"><img src="/image/educe/polaroid02.png" alt="In-game Polaroid from Educe — bird against a cobalt cavern wall" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid03.png"><img src="/image/educe/polaroid03.png" alt="In-game Polaroid from Educe — sepia frame near falling water" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid04.png"><img src="/image/educe/polaroid04.png" alt="In-game Polaroid from Educe — warm yellow wash on a chamber" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid05.png"><img src="/image/educe/polaroid05.png" alt="In-game Polaroid from Educe — hot orange sunset filter" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid06.png"><img src="/image/educe/polaroid06.png" alt="In-game Polaroid from Educe — yellow rat against cool blue background" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid07.png"><img src="/image/educe/polaroid07.png" alt="In-game Polaroid from Educe — creature on a warm-lit ledge" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
+                        <li class="gallery__item"><a href="/image/educe/polaroid08.png"><img src="/image/educe/polaroid08.png" alt="In-game Polaroid from Educe — wildlife in a vine-draped cavern" loading="lazy" onerror="this.parentElement.parentElement.style.display='none'"></a></li>
                     </ul>
-                    -->
                 </section>
 
                 <section class="block">
                     <h2 id="logo">Logo &amp; Icon</h2>
                     <p>
                         <a href="images/studio-logo.svg" download class="button">Download studio logo (SVG)</a>
-                        <!-- TODO: add Educe game logo download once available -->
+                        <!-- TODO: add Educe game logo download once designed -->
                     </p>
                     <p class="logo">
                         <img src="images/studio-logo.svg" alt="Educed Moment logo">
@@ -114,8 +150,23 @@
                 </section>
 
                 <section class="block">
-                    <h2 id="buy">Available on</h2>
-                    <iframe class="widget widget--steam" src="https://store.steampowered.com/widget/4486530/" frameborder="0"></iframe>
+                    <h2 id="systems">Implemented Systems</h2>
+                    <p>For technical press &mdash; the systems below are built and functional in the current playable build:</p>
+                    <ul>
+                        <li>Viewfinder camera with manual focus and depth of field</li>
+                        <li>Motion-blur photo quality scoring (sharpness 60% + focus 40%, 1&ndash;3 star grading)</li>
+                        <li>Polaroid development animation (slide-out, fade-in, tint)</li>
+                        <li>Five post-processing photo filters</li>
+                        <li>Photo gallery with disk persistence (custom GALP format)</li>
+                        <li>Gallery frame system with pose-template puzzle locks and editor tools</li>
+                        <li>Wildlife AI with 4-state alert FSM, data-driven spawning, roaming migration</li>
+                        <li>Stealth / sneak mechanics (detection suppression)</li>
+                        <li>Full control remapping (keyboard + gamepad)</li>
+                        <li>CRT post-processing rendering pipeline</li>
+                        <li>Custom audio synth engine (ESA patches, ESM modules)</li>
+                        <li>Standalone level editor (separate application, hot-reloadable)</li>
+                        <li>Educe DSL transpiler for data-driven entity definitions</li>
+                    </ul>
                 </section>
 
                 <section class="block">
@@ -130,14 +181,17 @@
 
                 <section class="block">
                     <h2 id="about">About Educed Moment</h2>
-                    <p>Educed Moment is an independent game studio founded by Tristen MacPherson. We build small, focused games with a deep interest in the craft underneath: writing engines from scratch, treating performance as a feature, and shipping things that fit in a browser tab. <a href="/presskit/">More information on the studio</a>.</p>
+                    <p>Educed Moment is an independent game studio founded by Tristen MacPherson, a solo developer based in Saskatoon, Canada. Educe is the studio&rsquo;s first commercial title &mdash; the start of a planned catalog built on a custom tech stack and a distinct art style. <a href="/presskit/">More information on the studio</a>.</p>
                 </section>
 
                 <section class="block">
                     <h2 id="team">Team</h2>
                     <dl>
                         <dt>Tristen MacPherson</dt>
-                        <dd>Designer / Developer / Engine programmer</dd>
+                        <dd>Solo developer &mdash; programming, game design, music, pixel art</dd>
+
+                        <dt>Contract artist</dt>
+                        <dd>Capsule art and promotional assets</dd>
                     </dl>
                 </section>
 
@@ -151,7 +205,16 @@
                         <dd><a href="https://educedmoment.ca">educedmoment.ca</a></dd>
 
                         <dt>Steam</dt>
-                        <dd><a href="https://store.steampowered.com/app/4486530/" target="_blank" rel="noopener">store.steampowered.com/app/4486530</a></dd>
+                        <dd><a href="https://store.steampowered.com/app/4486530/Educe/" target="_blank" rel="noopener">store.steampowered.com/app/4486530</a></dd>
+
+                        <dt>itch.io</dt>
+                        <dd><a href="https://educedmoment.itch.io/educe" target="_blank" rel="noopener">educedmoment.itch.io/educe</a></dd>
+
+                        <dt>Instagram</dt>
+                        <dd><a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">@educedmoment</a></dd>
+
+                        <dt>Discord</dt>
+                        <dd><a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Educed Moment server</a></dd>
                     </dl>
                 </section>
             </main>
