@@ -5,7 +5,10 @@
 // visit. Binary game assets are embedded inside photo_poki.wasm, and shaders
 // are inlined into main.js by the build — so only the shell files need caching.
 
-const CACHE_NAME = 'photo-poki-pwa-v2';
+// NOTE: the `-v2` suffix is a placeholder — the `photo_poki_web` make recipe
+// rewrites it to a hash of the built bundle at deploy time, so installed PWAs
+// reliably pick up new deploys. Don't rely on this literal value at runtime.
+const CACHE_NAME = 'photo-poki-pwa-a1c1ba6385';
 
 const CORE_ASSETS = [
   './',
