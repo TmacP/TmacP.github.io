@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Comfey</title>
+  <meta name="theme-color" content="#000000">
+  <!-- Poki SDK — the ONLY switch that enables Poki (ads + gameplay events). The
+       full lifecycle (init / gameLoadingFinished / gameplayStart|Stop with the
+       interaction gate) lives in the SHARED src/web/main.js and activates purely
+       on `typeof PokiSDK !== 'undefined'`; every call is guarded, and a failed
+       init() is caught → the game boots standalone. So this same shell works on
+       the poki.com portal AND self-hosted (quick share links). Comment this tag
+       out for a pure-standalone build that never contacts Poki's CDN. -->
+  <!-- Poki SDK omitted: NO_POKI=1 standalone build -->
+  <!-- Per-game config for the SHARED renderer (src/web/main.js). Must run as a
+       classic (non-module) script so it executes before the deferred module.
+       Numeric fields are STAMPED from game_config.h at build by
+       tools/stamp_web_config.py; the values here are dev fallbacks only. -->
+  <script>
+    window.EDUCE_WEB_CONFIG = {
+      wasmFile: 'arfid.wasm',
+      // AudioWorklet synth: run BGM on the real-time audio thread rather than
+      // the main thread's deprecated ScriptProcessorNode. Both fields must be
+      // present or main.js falls back to the old main-thread mixer. Built and
+      // copied by `make web` from G_WEB_AUDIO_SRC / G_WEB_BGM in game.mk.
+      audioWasmFile: 'arfid_audio.wasm',
+      bgmFile: 'assets/audio/FilmExposure2.esm',
+      // arfid is a pure render_data/3D game: GameUpdateAndRender reads
+      // Buffer->Width/Height for the virtual-resolution math and never writes a
+      // pixel into Buffer->Memory. Uploading that permanently-zero buffer every
+      // frame was ~2.9MB @120fps and the biggest remaining render cost. Flip this
+      // back to true (or delete the line) the moment arfid draws software pixels
+      // — a localhost-only audit in main.js will shout if you forget.
+      softwareFramebuffer: false,
+      nativePortrait: true, // arfid renders a genuinely portrait backbuffer (360×640);
+                            // skip Educe's landscape-section-crop path (else the web
+                            // crops a 96px slice → zoomed framing + broken CRT scale).
+      dualOrientation: true, // width/height below are the PORTRAIT END of a range,
+                            // not a fixed shape: on a landscape window main.js
+                            // transposes the grid at constant pixel area (360×640
+                            // → up to 640×360) so a desktop browser sees more of
+                            // the village sideways instead of a 9:16 strip. The 3D
+                            // camera holds its vertical FOV, so this widens the
+                            // horizontal field rather than zooming out. Resolved at
+                            // page load; a mid-session resize still letterboxes.
+      width: 360,        // STAMPED from game_config.h WIDTH (CONTENT grid, fine)
+      height: 640,       // STAMPED from game_config.h HEIGHT (CONTENT grid, fine)
+      crtArtWidth: 180,  // STAMPED from CRT_ART_WIDTH (chunky CRT cadence)
+      crtArtHeight: 320, // STAMPED from CRT_ART_HEIGHT
+      roomCols: 23,      // STAMPED from ROOM_TILE_COLS (render_data layout!)
+      roomRows: 40,      // STAMPED from ROOM_TILE_ROWS
+      tilePx: 8,         // STAMPED from TILE_PIXEL_WIDTH
+      noFont: false,     // main.js fetches font_atlas.png (+ embedded .bin)
+    };
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html {
+      width: 100%; height: 100%;
+      background-color: #000;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      -webkit-user-select: none; user-select: none;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      background-color: #000;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #loading {
+      position: absolute; color: #888; font-family: monospace; font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- DOM contract required by src/web/main.js: canvas id="screen" + div id="loading". -->
+  <canvas id="screen" tabindex="0"></canvas>
+  <div id="loading">loading…</div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
