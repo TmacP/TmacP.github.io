@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Comfy Cachet</title>
+  <title>Sweet Delivery</title>
   <meta name="theme-color" content="#000000">
   <!-- Poki SDK — the ONLY switch that enables Poki (ads + gameplay events). The
        full lifecycle (init / gameLoadingFinished / gameplayStart|Stop with the
@@ -12,7 +12,7 @@
        init() is caught → the game boots standalone. So this same shell works on
        the poki.com portal AND self-hosted (quick share links). Comment this tag
        out for a pure-standalone build that never contacts Poki's CDN. -->
-  <!-- Poki SDK omitted: NO_POKI=1 standalone build -->
+  <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
   <!-- Per-game config for the SHARED renderer (src/web/main.js). Must run as a
        classic (non-module) script so it executes before the deferred module.
        Numeric fields are STAMPED from game_config.h at build by
@@ -33,6 +33,11 @@
       // back to true (or delete the line) the moment arfid draws software pixels
       // — a localhost-only audit in main.js will shout if you forget.
       softwareFramebuffer: false,
+      // Stamped from GAME_RENDER_PIPELINE_3D in game_config.h by
+      // tools/stamp_web_config.py — see the rationale there. Authored 0 so a
+      // stamper failure falls back to the SLOW-but-correct 2D chain rather than
+      // silently skipping passes a future 2D-drawing arfid would need.
+      renderPipeline3D: 1,
       nativePortrait: true, // arfid renders a genuinely portrait backbuffer (360×640);
                             // skip Educe's landscape-section-crop path (else the web
                             // crops a 96px slice → zoomed framing + broken CRT scale).
