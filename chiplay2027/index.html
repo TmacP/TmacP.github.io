@@ -12,7 +12,7 @@
        init() is caught → the game boots standalone. So this same shell works on
        the poki.com portal AND self-hosted (quick share links). Comment this tag
        out for a pure-standalone build that never contacts Poki's CDN. -->
-  <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
+  <!-- Poki SDK omitted: NO_POKI=1 standalone build -->
   <!-- Per-game config for the SHARED renderer (src/web/main.js). Must run as a
        classic (non-module) script so it executes before the deferred module.
        Numeric fields are STAMPED from game_config.h at build by

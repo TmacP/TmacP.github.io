@@ -40,7 +40,7 @@ const EXPECTED_SAMPLE_RATE = 44100;
 function mathImports() {
   return {
     sinf: Math.sin, cosf: Math.cos, tanf: Math.tan,
-    asinf: Math.asin, acosf: Math.acos, atan2f: Math.atan2,
+    asinf: Math.asin, acosf: Math.acos, atanf: Math.atan, atan2f: Math.atan2,
     powf: Math.pow, expf: Math.exp, logf: Math.log, log2f: Math.log2,
     coshf: Math.cosh, tanhf: Math.tanh,
     fmodf: (a, b) => a % b,
