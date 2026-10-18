@@ -320,27 +320,49 @@ function pageTitleOf(manifest) {
   return "";
 }
 
+async function resolveFileHandle(path, create = false) {
+  if (g.fileHandles[path]) return g.fileHandles[path];
+  if (!g.dirHandle) return null;
+  try {
+    const parts = path.split("/").filter(Boolean);
+    let curr = g.dirHandle;
+    for (let i = 0; i < parts.length - 1; i++) {
+      curr = await curr.getDirectoryHandle(parts[i], { create });
+    }
+    const fileName = parts[parts.length - 1];
+    const fh = await curr.getFileHandle(fileName, { create });
+    g.fileHandles[path] = fh;
+    return fh;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function readFileFromDisk(path) {
+  const fh = await resolveFileHandle(path, false);
+  if (!fh) return null;
+  try {
+    const f = await fh.getFile();
+    const txt = await f.text();
+    g.files[path] = txt;
+    return txt;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function writeFileToDisk(path, content) {
   g.files[path] = content;
-  const handle = g.fileHandles[path];
+  const handle = await resolveFileHandle(path, true);
   if (handle) {
     try {
       const writable = await handle.createWritable();
       await writable.write(content);
       await writable.close();
       return true;
-    } catch {}
-  } else if (g.dirHandle && path.startsWith(".educed/")) {
-    try {
-      const subDir = await g.dirHandle.getDirectoryHandle(".educed", { create: true });
-      const fileName = path.slice(".educed/".length);
-      const fh = await subDir.getFileHandle(fileName, { create: true });
-      g.fileHandles[path] = fh;
-      const writable = await fh.createWritable();
-      await writable.write(content);
-      await writable.close();
-      return true;
-    } catch {}
+    } catch (err) {
+      console.error(`writeFileToDisk error for ${path}:`, err);
+    }
   }
   return false;
 }
@@ -563,8 +585,15 @@ async function saveBlock(idx) {
   const b = g.blocks[idx];
   if (b.kind !== "file") { saveManifest(); return; }
 
-  const raw = g.files[b.source];
-  if (raw === undefined) { g.status = `save: cannot read ${b.source}`; requestDraw(); return; }
+  let raw = g.files[b.source];
+  if (raw === undefined) {
+    raw = await readFileFromDisk(b.source);
+  }
+  if (raw === undefined || raw === null) {
+    g.status = `save: cannot read ${b.source} from disk`;
+    requestDraw();
+    return;
+  }
   const fileLines = raw.split(/\r?\n/);
 
   const s = Math.max(0, Math.min(fileLines.length, b.startLine - 1));
@@ -601,8 +630,10 @@ async function saveAll() {
   let wroteFiles = 0;
 
   for (const path of filePaths) {
-    if (g.files[path] === undefined) continue;
-    const fileLines = g.files[path].split(/\r?\n/);
+    let raw = g.files[path];
+    if (raw === undefined) raw = await readFileFromDisk(path);
+    if (raw === undefined || raw === null) continue;
+    const fileLines = raw.split(/\r?\n/);
     const indices = g.blocks
       .map((b, i) => (b.kind === "file" && b.source === path ? i : -1))
       .filter(i => i >= 0)
@@ -631,7 +662,7 @@ async function saveAll() {
   requestDraw();
 }
 
-function reloadBlock(idx) {
+async function reloadBlock(idx) {
   if (idx < 0 || idx >= g.blocks.length) return false;
   const b = g.blocks[idx];
   if (b.kind !== "file") {
@@ -639,9 +670,12 @@ function reloadBlock(idx) {
     requestDraw();
     return false;
   }
-  const raw = g.files[b.source];
+  let raw = g.files[b.source];
   if (raw === undefined) {
-    g.status = `reload: cannot read ${b.source}`;
+    raw = await readFileFromDisk(b.source);
+  }
+  if (raw === undefined || raw === null) {
+    g.status = `reload: cannot read ${b.source} (check folder mount)`;
     requestDraw();
     return false;
   }
@@ -661,10 +695,10 @@ function reloadBlock(idx) {
   return true;
 }
 
-function reloadAll() {
+async function reloadAll() {
   let count = 0;
   for (let i = 0; i < g.blocks.length; i++) {
-    if (g.blocks[i].kind === "file" && reloadBlock(i)) count++;
+    if (g.blocks[i].kind === "file" && await reloadBlock(i)) count++;
   }
   g.status = `reloaded ${count} file block(s)`;
   requestDraw();
