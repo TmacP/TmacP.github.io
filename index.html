@@ -320,6 +320,19 @@ function pageTitleOf(manifest) {
   return "";
 }
 
+async function ensureReadWritePermission() {
+  if (!g.dirHandle) return false;
+  try {
+    let perm = await g.dirHandle.queryPermission({ mode: "readwrite" });
+    if (perm !== "granted") {
+      perm = await g.dirHandle.requestPermission({ mode: "readwrite" });
+    }
+    return perm === "granted";
+  } catch {
+    return false;
+  }
+}
+
 async function resolveFileHandle(path, create = false) {
   if (g.fileHandles[path]) return g.fileHandles[path];
   if (!g.dirHandle) return null;
@@ -347,12 +360,14 @@ async function readFileFromDisk(path) {
     g.files[path] = txt;
     return txt;
   } catch (err) {
+    console.error(`readFileFromDisk error for ${path}:`, err);
     return null;
   }
 }
 
 async function writeFileToDisk(path, content) {
   g.files[path] = content;
+  if (!(await ensureReadWritePermission())) return false;
   const handle = await resolveFileHandle(path, true);
   if (handle) {
     try {
@@ -367,7 +382,7 @@ async function writeFileToDisk(path, content) {
   return false;
 }
 
-function saveManifest(quiet = false) {
+async function saveManifest(quiet = false) {
   if (!g.pagePath) g.pagePath = ".educed/main.page";
   if (!g.pageTitle) g.pageTitle = "main";
 
@@ -392,7 +407,7 @@ function saveManifest(quiet = false) {
   } catch {}
 
   if (g.fileHandles[g.pagePath] || g.dirHandle) {
-    writeFileToDisk(g.pagePath, manifest);
+    await writeFileToDisk(g.pagePath, manifest);
     if (!quiet) g.status = `saved ${g.pagePath}`;
   } else if (!quiet) {
     g.status = `saved page: ${g.pageTitle}`;
@@ -429,13 +444,8 @@ function importManifest(manifestText, path = g.pagePath) {
       const s = parseInt(parts[2], 10) || 1;
       const e = parseInt(parts[3], 10) || s;
       i++;
-      let lbl = pendingLabel;
+      const lbl = pendingLabel;
       pendingLabel = "";
-
-      if (i < lines.length && lines[i].startsWith("label ")) {
-        lbl = lines[i].slice(6).trim();
-        i++;
-      }
 
       let slice = [`[Awaiting load for ${src}]`];
       if (g.files[src] !== undefined) {
@@ -446,13 +456,9 @@ function importManifest(manifestText, path = g.pagePath) {
     } else if (parts[0] === "scratch") {
       const cnt = parseInt(parts[1], 10) || 1;
       i++;
-      let lbl = pendingLabel;
+      const lbl = pendingLabel;
       pendingLabel = "";
 
-      if (i < lines.length && lines[i].startsWith("label ")) {
-        lbl = lines[i].slice(6).trim();
-        i++;
-      }
       const textLines = lines.slice(i, i + cnt);
       i += cnt;
       createBlock({ kind: "scratch", lines: textLines.length ? textLines : [""], label: lbl });
@@ -583,12 +589,11 @@ async function scanDirHandle(dirHandle, prefix) {
 async function saveBlock(idx) {
   if (idx < 0 || idx >= g.blocks.length) return;
   const b = g.blocks[idx];
-  if (b.kind !== "file") { saveManifest(); return; }
+  if (b.kind !== "file") { await saveManifest(); return; }
 
-  let raw = g.files[b.source];
-  if (raw === undefined) {
-    raw = await readFileFromDisk(b.source);
-  }
+  // Read latest disk state first so external changes outside the block range aren't clobbered
+  let raw = await readFileFromDisk(b.source);
+  if (raw === null) raw = g.files[b.source];
   if (raw === undefined || raw === null) {
     g.status = `save: cannot read ${b.source} from disk`;
     requestDraw();
@@ -620,18 +625,20 @@ async function saveBlock(idx) {
 
   const out = fileLines.join("\n");
   const onDisk = await writeFileToDisk(b.source, out);
-  g.status = `saved block → ${b.source}${onDisk ? " (disk)" : " (in-memory)"}`;
-  saveManifest(true);
+  g.status = onDisk
+    ? `saved block → ${b.source} (disk)`
+    : `saved block → ${b.source} (in-memory only — mount via Chrome/Edge File System API for disk write)`;
+  await saveManifest(true);
   requestDraw();
 }
 
 async function saveAll() {
   const filePaths = [...new Set(g.blocks.filter(b => b.kind === "file").map(b => b.source))];
-  let wroteFiles = 0;
+  let wroteDisk = 0, wroteMem = 0;
 
   for (const path of filePaths) {
-    let raw = g.files[path];
-    if (raw === undefined) raw = await readFileFromDisk(path);
+    let raw = await readFileFromDisk(path);
+    if (raw === null) raw = g.files[path];
     if (raw === undefined || raw === null) continue;
     const fileLines = raw.split(/\r?\n/);
     const indices = g.blocks
@@ -654,11 +661,13 @@ async function saveAll() {
       computeBlockLineDiffs(b);
       delta += newCount - oldCount;
     }
-    await writeFileToDisk(path, fileLines.join("\n"));
-    wroteFiles++;
+    const ok = await writeFileToDisk(path, fileLines.join("\n"));
+    if (ok) wroteDisk++; else wroteMem++;
   }
-  saveManifest(true);
-  g.status = `saved all blocks home (${wroteFiles} files)`;
+  await saveManifest(true);
+  g.status = wroteMem > 0
+    ? `saved ${wroteDisk} to disk, ${wroteMem} in-memory only (no write handle)`
+    : `saved all blocks home (${wroteDisk} files to disk)`;
   requestDraw();
 }
 
@@ -670,27 +679,27 @@ async function reloadBlock(idx) {
     requestDraw();
     return false;
   }
-  let raw = g.files[b.source];
-  if (raw === undefined) {
-    raw = await readFileFromDisk(b.source);
-  }
+  // Force a fresh read from disk first!
+  let raw = await readFileFromDisk(b.source);
+  if (raw === null) raw = g.files[b.source];
   if (raw === undefined || raw === null) {
     g.status = `reload: cannot read ${b.source} (check folder mount)`;
     requestDraw();
     return false;
   }
   const all = raw.split(/\r?\n/);
-  const s = Math.max(1, b.startLine);
-  const e = Math.min(all.length, b.endLine);
-  const slice = s <= e ? all.slice(s - 1, e) : [""];
+  const s = Math.max(1, Math.min(b.startLine, all.length));
+  const e = Math.max(s, Math.min(all.length, b.endLine));
+  const slice = all.slice(s - 1, e);
   pushUndo(idx);
-  b.lines = [...slice];
-  b.savedLines = [...slice];
-  b.endLine = s + slice.length - 1;
+  b.lines = slice.length ? [...slice] : [""];
+  b.savedLines = [...b.lines];
+  b.startLine = s;
+  b.endLine = s + b.lines.length - 1;
   b.dirty = false;
   computeBlockLineDiffs(b);
   if (idx === g.curBlock) ensureCursorSane();
-  g.status = `reloaded ${b.source}`;
+  g.status = `reloaded ${b.source} from disk`;
   requestDraw();
   return true;
 }
@@ -1951,6 +1960,7 @@ function updateTextFinderMatches() {
   if (q.length < 2) return;
 
   for (const [path, content] of Object.entries(g.files)) {
+    if (path === ".educed.page" || path.startsWith(".educed/") || path.endsWith(".page")) continue;
     const lines = content.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].toLowerCase().includes(q)) {
@@ -1964,7 +1974,12 @@ function updateTextFinderMatches() {
 function openFileFinder() {
   g.finder.mode = "FILE";
   g.finder.query = "";
-  g.finder.files = Object.keys(g.files);
+  const validPaths = Object.keys(g.files).filter(p => {
+    if (p === ".educed.page" || p.startsWith(".educed/") || p.endsWith(".page")) return false;
+    if (Object.keys(g.fileHandles).length > 0 && !g.fileHandles[p]) return false;
+    return true;
+  });
+  g.finder.files = [...new Set(validPaths)].sort((a, b) => a.localeCompare(b));
   updateFinderMatches();
   requestDraw();
 }
@@ -1981,7 +1996,15 @@ function updateFinderMatches() {
 // ─── Key Event Pipeline ───────────────────────────────────────────────
 window.addEventListener("keydown", async (e) => {
   resetBlink();
-  await checkPendingDirPermission();
+
+  // Immediately prevent default on browser-hijacked shortcuts BEFORE any await
+  if ((e.metaKey || e.ctrlKey) && ["KeyR", "KeyS", "KeyP", "KeyF", "KeyO", "KeyW"].includes(e.code)) {
+    e.preventDefault();
+  }
+
+  if (g.dirHandlePendingPrompt) {
+    await checkPendingDirPermission();
+  }
 
   if (g.showHelp) {
     e.preventDefault();
@@ -2370,8 +2393,10 @@ window.addEventListener("keydown", async (e) => {
 
   // Emacs-style Ctrl Keys (layout-stable via e.code)
   if (isCtrl && !g.cmdActive) {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e.code !== "KeyV") {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (e.key === "Enter") { toggleFoldAll(); return; }
     switch (e.code) {
       case "KeyN": moveVertByVisual(+1); break;
@@ -2422,7 +2447,7 @@ window.addEventListener("keydown", async (e) => {
         break;
       case "Space": markOrCopy(); break;
       case "KeyX":  cutSelection(); break;
-      case "KeyV":  break; // Handled via paste event
+      case "KeyV":  return; // Let browser fire native paste event
       case "KeyJ":  toggleFold(); break;
       case "BracketLeft":
         if (g.curBlock > 0) {
@@ -2882,14 +2907,32 @@ window.addEventListener("wheel", (e) => {
 
 document.getElementById("folder-picker").addEventListener("change", async (e) => {
   const files = e.target.files;
+  if (!files || !files.length) return;
+
+  const skip = new Set([".git", "node_modules", "build", "dist", "DerivedData"]);
+  const binaryExt = /\.(png|jpg|jpeg|gif|wasm|bin|ico|pdf|exe|dylib|so)$/i;
+
+  g.dirHandle = null;
+  g.files = {};
+  g.fileHandles = {};
+
+  const firstRel = files[0].webkitRelativePath || "";
+  const rootName = firstRel.includes("/") ? firstRel.split("/")[0] : "workspace";
+  g.projectRoot = rootName;
+
+  let loadedCount = 0;
   for (const f of files) {
-    const rel = f.webkitRelativePath || f.name;
-    const text = await f.text();
-    g.files[rel] = text;
-    g.files[f.name] = text;
+    const rawRel = f.webkitRelativePath || f.name;
+    const rel = rawRel.includes("/") ? rawRel.slice(rawRel.indexOf("/") + 1) : rawRel;
+    const parts = rel.split("/");
+    if (parts.some(p => skip.has(p))) continue;
+    if (f.size >= 2_000_000 || binaryExt.test(f.name)) continue;
+
+    g.files[rel] = await f.text();
+    loadedCount++;
   }
   refreshLoadedFileBlocks();
-  g.status = `mounted folder (${files.length} files) · Alt-W / ⌘P to pull`;
+  g.status = `mounted ${g.projectRoot} (${loadedCount} files, read-only fallback) · Alt-W / ⌘P to pull`;
   enterPagePicker();
 });
 
