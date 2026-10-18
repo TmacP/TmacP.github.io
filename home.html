@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educed Moment — Games Researcher | Tristen MacPherson</title>
+    <meta name="description" content="Educed Moment is an independent game studio by Tristen MacPherson, currently interning at Winterpixel Games and pursuing a master's in games research.">
+    <meta name="author" content="Tristen MacPherson">
+    <meta name="keywords" content="Educed Moment, Tristen MacPherson, Game Design, Poki Games, Web Games, Winterpixel Games">
+
+    <link rel="canonical" href="https://educedmoment.ca/">
+    <meta property="og:title" content="Educed Moment — Games Researcher">
+    <meta property="og:description" content="Educed Moment is an independent game studio by Tristen MacPherson.">
+    <meta property="og:url" content="https://educedmoment.ca/">
+    <meta property="og:type" content="website">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="site-container">
+        <!-- Site Header / Brand & Nav -->
+        <header class="site-header">
+            <div class="site-brand">
+                <a href="/" class="site-brand__link">
+                    <img src="image/educedmoment-logo.svg" alt="Educed Moment" class="site-brand__logo">
+                </a>
+                <span class="site-brand__sub">Games Researcher</span>
+            </div>
+            <nav class="site-nav">
+                <a href="/" class="active">Writing</a>
+                <a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Discord</a>
+                <a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">Instagram</a>
+                <a href="https://github.com/TmacP/" target="_blank" rel="noopener">GitHub</a>
+                <a href="mailto:tristenmac@gmail.com">Contact</a>
+            </nav>
+        </header>
+
+        <!-- Intro / Bio -->
+        <section class="site-intro">
+            <p class="site-intro__lead">
+                <strong>Educed Moment</strong> is an independent game studio founded by
+                <a href="https://github.com/TmacP/" target="_blank" rel="noopener">Tristen MacPherson</a>,
+                a solo developer based in Saskatoon, Canada, currently interning at
+                <a href="https://www.winterpixel.com" target="_blank" rel="noopener">Winterpixel Games</a>
+                and pursuing a master&rsquo;s in games research.
+            </p>
+        </section>
+
+        <!-- Main Blog Feed -->
+        <main class="site-feed">
+            <h2 class="feed-heading">Essays &amp; Deconstructions</h2>
+
+            <div class="post-list">
+                <div class="empty-feed">
+                    <p class="empty-feed__title">First deconstruction in progress</p>
+                    <p class="empty-feed__text">
+                        Critical write-ups dissecting Poki game mechanics, onboarding friction, and game feel will appear here shortly.
+                    </p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="site-footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <img src="image/educedmoment-logo.svg" alt="Educed Moment" class="footer-logo">
+                    <span>&copy; <span id="year"></span> Educed Moment &middot; Tristen MacPherson</span>
+                </div>
+                <p class="footer-notes">
+                    <a href="/privacy.html">Privacy Policy</a> &middot; <a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

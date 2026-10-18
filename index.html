@@ -1,86 +1,2915 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Educed Moment — Games Researcher | Tristen MacPherson</title>
-    <meta name="description" content="Educed Moment is an independent game studio by Tristen MacPherson, currently interning at Winterpixel Games and pursuing a master's in games research.">
-    <meta name="author" content="Tristen MacPherson">
-    <meta name="keywords" content="Educed Moment, Tristen MacPherson, Game Design, Poki Games, Web Games, Winterpixel Games">
-
-    <link rel="canonical" href="https://educedmoment.ca/">
-    <meta property="og:title" content="Educed Moment — Games Researcher">
-    <meta property="og:description" content="Educed Moment is an independent game studio by Tristen MacPherson.">
-    <meta property="og:url" content="https://educedmoment.ca/">
-    <meta property="og:type" content="website">
-
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
-
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>educed</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: rgb(28, 29, 33); /* Exact MTLClearColorMake(0.11, 0.115, 0.13, 1.0) */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #view-canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: text;
+  }
+  #key-sink {
+    position: fixed;
+    top: -100px;
+    left: -100px;
+    width: 1px;
+    height: 1px;
+    opacity: 0.01;
+    pointer-events: none;
+    border: none;
+    outline: none;
+    resize: none;
+  }
+</style>
 </head>
 <body>
-    <div class="site-container">
-        <!-- Site Header / Brand & Nav -->
-        <header class="site-header">
-            <div class="site-brand">
-                <a href="/" class="site-brand__link">
-                    <img src="image/educedmoment-logo.svg" alt="Educed Moment" class="site-brand__logo">
-                </a>
-                <span class="site-brand__sub">Games Researcher</span>
-            </div>
-            <nav class="site-nav">
-                <a href="/" class="active">Writing</a>
-                <a href="https://discord.com/invite/E6ky7d5cMq" target="_blank" rel="noopener">Discord</a>
-                <a href="https://www.instagram.com/educedmoment/" target="_blank" rel="noopener">Instagram</a>
-                <a href="https://github.com/TmacP/" target="_blank" rel="noopener">GitHub</a>
-                <a href="mailto:tristenmac@gmail.com">Contact</a>
-            </nav>
-        </header>
 
-        <!-- Intro / Bio -->
-        <section class="site-intro">
-            <p class="site-intro__lead">
-                <strong>Educed Moment</strong> is an independent game studio founded by
-                <a href="https://github.com/TmacP/" target="_blank" rel="noopener">Tristen MacPherson</a>,
-                a solo developer based in Saskatoon, Canada, currently interning at
-                <a href="https://www.winterpixel.com" target="_blank" rel="noopener">Winterpixel Games</a>
-                and pursuing a master&rsquo;s in games research.
-            </p>
-        </section>
+<canvas id="view-canvas"></canvas>
+<textarea id="key-sink" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+<input type="file" id="folder-picker" webkitdirectory directory multiple style="display:none;" />
 
-        <!-- Main Blog Feed -->
-        <main class="site-feed">
-            <h2 class="feed-heading">Essays &amp; Deconstructions</h2>
+<script>
+// ─── Complete High-Fidelity Canvas 2D Port of educed Native Editor ────
+const canvas = document.getElementById("view-canvas");
+const ctx = canvas.getContext("2d", { alpha: false });
+const keySink = document.getElementById("key-sink");
 
-            <div class="post-list">
-                <div class="empty-feed">
-                    <p class="empty-feed__title">First deconstruction in progress</p>
-                    <p class="empty-feed__text">
-                        Critical write-ups dissecting Poki game mechanics, onboarding friction, and game feel will appear here shortly.
-                    </p>
-                </div>
-            </div>
-        </main>
+let fontPt = 14;
+let dpr = window.devicePixelRatio || 1;
+let lineH = Math.round(fontPt * 1.55);
+let advPx = 8.4;
+let marginX = 20;
+let marginTop = 12;
+let barH = lineH + 8;
+let gAscent = fontPt * 0.9;
+let pps = 1;
 
-        <!-- Footer -->
-        <footer class="site-footer">
-            <div class="footer-inner">
-                <div class="footer-brand">
-                    <img src="image/educedmoment-logo.svg" alt="Educed Moment" class="footer-logo">
-                    <span>&copy; <span id="year"></span> Educed Moment &middot; Tristen MacPherson</span>
-                </div>
-                <p class="footer-notes">
-                    <a href="/privacy.html">Privacy Policy</a> &middot; <a href="mailto:tristenmac@gmail.com">tristenmac@gmail.com</a>
-                </p>
-            </div>
-        </footer>
-    </div>
+function updateMetrics() {
+  dpr = window.devicePixelRatio || 1;
+  pps = dpr;
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
 
-    <script>
-        document.getElementById('year').textContent = new Date().getFullYear();
-    </script>
+  lineH = Math.round(fontPt * 1.55 * dpr);
+  gAscent = fontPt * 0.95 * dpr;
+  barH = lineH + Math.round(8 * dpr);
+  marginX = Math.round(20 * dpr);
+  marginTop = Math.round(12 * dpr);
+
+  ctx.font = `${Math.round(fontPt * dpr)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+  advPx = ctx.measureText("M").width;
+}
+
+// ─── Help Overlay Reference Table (Direct main.mm kHelp replica) ──────
+const kHelp = [
+  "educed — keys                              (any key closes this help)",
+  "",
+  "  search / pull",
+  "    Ctrl-H            search loaded blocks — live, highlights every match:",
+  "                      type to find · Ctrl-H next · Ctrl-Shift-H prev · ↵ keep · Esc cancel",
+  "    Ctrl-G  /  Cmd-F  find text across files (Esc grep <term> too) — pulls a match in",
+  "    Alt-W / Ctrl-W    fuzzy file finder -> pull range",
+  "    range  /  range a:b   resize the current block's window",
+  "    Esc 42  /  goto 42    jump to line 42      :nums  toggle line numbers",
+  "    :md [all]         toggle markdown styling for this block (all: everywhere)",
+  "    :organize         group blocks by file, ordered by line (notes sink last)",
+  "    :page <title>     save the open blocks as a page in this project",
+  "",
+  "  blocks",
+  "    Ctrl-;            next block · +Shift previous (wraps around)",
+  "    Ctrl-[  Ctrl-]    move block up / down",
+  "    Ctrl-J  Opt-J     fold / unfold block  ·  Opt-J expand block to whole file",
+  "    Ctrl-Return       fold / unfold all blocks",
+  "    Ctrl-/  Ctrl-\\    split block at cursor / join with block below",
+  "    Ctrl-O            resize edges: Ctrl-N/P move · Tab start↔end · ↵ done",
+  "    Ctrl-Q / Opt-Q    close block (unsaved edits / notes ask twice)",
+  "    Ctrl-S / Cmd-S    save block home   (double-tap Ctrl-S or Cmd-S = save all)",
+  "    Cmd-R / :reload   reload block from disk (Shift or 'all' for every block)",
+  "    Ctrl-U  Ctrl-Sh-U undo / redo (each block has its own ring)",
+  "",
+  "  motion",
+  "    Ctrl-N P A E F B  row down/up (soft-wrap aware), line start/end, char fwd/back",
+  "    Opt-Up / Opt-Down move line up / down",
+  "    Opt-F  Opt-B      word forward / back",
+  "    Opt-D  Opt-Del    kill word forward / back (goes to clipboard)",
+  "    Opt-N  Opt-P      page down / up (PageUp / PageDn keys work too)",
+  "    Ctrl-L            recenter — repeat cycles center / top / bottom",
+  "    Ctrl-T / :label   name the current block's header (bare :label clears)",
+  "    Ctrl-'  Ctrl-M    set user mark [a-z] / jump to mark [a-z]",
+  "    Ctrl-D  Ctrl-K    delete forward / kill to end of line",
+  "    Ctrl-Space        set mark; again copies  (Ctrl-X cut, Ctrl-V/Cmd-V paste)",
+  "",
+  "  app",
+  "    Opt-O / Cmd-O     pages list (Enter open · + new page · mount folder)",
+  "    Cmd-+ / Cmd--     zoom in / out",
+  "    Esc               command bar: pull scratch drop range split join edge reload",
+  "                                   goto search nums md page open organize w ?"
+];
+
+// ─── Global State (Direct struct State replica from main.mm) ───────────
+const g = {
+  blocks: [],
+  pagePath: ".educed/main.page",
+  pageTitle: "main",
+  projectRoot: "workspace",
+  curBlock: 0,
+  curLine: 0,
+  curCol: 0,
+  goalCol: -1,
+  scrollY: 0,
+  visibleRows: 20,
+  showLineNos: true,
+  showMarkdown: true,
+  showHelp: false,
+  status: "educed · Opt-O pages · Alt-W pull · Ctrl-G grep · Ctrl-; next · ⌘S save · Esc cmd",
+  cmdActive: false,
+  cmd: "",
+  searchActive: false,
+  searchQuery: "",
+  lastSearch: "",
+  cursorOn: true,
+  followCursor: true,
+  files: {},
+  fileHandles: {},
+  dirHandle: null,
+  dirHandlePendingPrompt: false,
+  clipboard: "",
+  markActive: false,
+  markBlock: -1,
+  markLine: 0,
+  markCol: 0,
+  quickMarks: {},
+  settingMark: false,
+  goingToMark: false,
+  edgeAdjust: 0,
+  hitRows: [],
+  visualRows: [],
+  wrapCols: 80,
+  textX: 0,
+  recenterCycle: 0,
+  recenterTopRequested: false,
+  lastCtrlQ: 0,
+  lastCtrlQBlock: -1,
+  lastCtrlS: 0,
+  finder: {
+    mode: "NONE", // NONE, FILE, RANGE, TEXT, PAGE, NEWPAGE
+    query: "",
+    sel: 0,
+    matches: [],
+    files: [],
+    textMatches: [],
+    pagePaths: [],
+    pageTitles: [],
+    path: "",
+    lines: [],
+    cur: 0,
+    top: 0,
+    markStart: -1,
+    editBlock: -1
+  }
+};
+
+// ─── Render Scheduling (requestAnimationFrame) ────────────────────────
+let animFrameRequested = false;
+function requestDraw() {
+  if (!animFrameRequested) {
+    animFrameRequested = true;
+    requestAnimationFrame(() => {
+      animFrameRequested = false;
+      draw();
+    });
+  }
+}
+
+let blinkTimer = null;
+function resetBlink() {
+  g.cursorOn = true;
+  clearInterval(blinkTimer);
+  blinkTimer = setInterval(() => {
+    g.cursorOn = !g.cursorOn;
+    requestDraw();
+  }, 530);
+  requestDraw();
+}
+
+// ─── IndexedDB Persistent Directory Handle Storage ────────────────────
+const DB_NAME = "EducedWebDB";
+const STORE_NAME = "handles";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function persistDirHandle(handle) {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put(handle, "projectRoot");
+  } catch {}
+}
+
+async function restoreDirHandle() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get("projectRoot");
+    req.onsuccess = async () => {
+      if (req.result) {
+        g.dirHandle = req.result;
+        g.projectRoot = g.dirHandle.name;
+        const perm = await g.dirHandle.queryPermission({ mode: "readwrite" });
+        if (perm === "granted") {
+          await scanDirHandle(g.dirHandle, "");
+          refreshLoadedFileBlocks();
+          g.status = `resumed project: ${g.dirHandle.name}`;
+          requestDraw();
+        } else {
+          g.dirHandlePendingPrompt = true;
+          g.status = `Project handle found (${g.dirHandle.name}) — press Opt-O or click to restore disk access`;
+          requestDraw();
+        }
+      }
+    };
+  } catch {}
+}
+
+async function checkPendingDirPermission() {
+  if (g.dirHandlePendingPrompt && g.dirHandle) {
+    g.dirHandlePendingPrompt = false;
+    try {
+      const perm = await g.dirHandle.requestPermission({ mode: "readwrite" });
+      if (perm === "granted") {
+        await scanDirHandle(g.dirHandle, "");
+        refreshLoadedFileBlocks();
+        g.status = `restored disk access: ${g.dirHandle.name}`;
+        requestDraw();
+      }
+    } catch {}
+  }
+}
+
+function refreshLoadedFileBlocks() {
+  for (const b of g.blocks) {
+    if (b.kind === "file" && !b.dirty && g.files[b.source] !== undefined) {
+      const full = g.files[b.source].split(/\r?\n/);
+      b.lines = full.slice(Math.max(0, b.startLine - 1), b.endLine);
+      b.savedLines = [...b.lines];
+      computeBlockLineDiffs(b);
+    }
+  }
+  requestDraw();
+}
+
+// ─── Multi-Page Architecture & File Splicing Write-Back ───────────────
+function slugify(s) {
+  let out = "", dash = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (/[a-zA-Z0-9]/.test(c)) { out += c.toLowerCase(); dash = false; }
+    else if (!dash && out.length > 0) { out += "-"; dash = true; }
+  }
+  while (out.endsWith("-")) out = out.slice(0, -1);
+  return out || "page";
+}
+
+function pageHasContent(manifest) {
+  const lines = manifest.split(/\r?\n/);
+  for (let i = 0; i < lines.length; ) {
+    const line = lines[i].trim();
+    if (!line) { i++; continue; }
+    const parts = line.split(/\s+/);
+    if (parts[0] === "pull" || parts[0] === "reminders") return true;
+    if (parts[0] === "scratch") {
+      const n = parseInt(parts[1], 10) || 0;
+      for (let k = 0; k < n && i + 1 + k < lines.length; k++) {
+        if (lines[i + 1 + k].trim().length > 0) return true;
+      }
+      i += 1 + n;
+    } else {
+      i++;
+    }
+  }
+  return false;
+}
+
+function pageTitleOf(manifest) {
+  const lines = manifest.split(/\r?\n/);
+  if (!lines.length) return "";
+  if (lines[0].startsWith("title ")) return lines[0].slice(6).trim();
+  return "";
+}
+
+async function writeFileToDisk(path, content) {
+  g.files[path] = content;
+  const handle = g.fileHandles[path];
+  if (handle) {
+    try {
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return true;
+    } catch {}
+  } else if (g.dirHandle && path.startsWith(".educed/")) {
+    try {
+      const subDir = await g.dirHandle.getDirectoryHandle(".educed", { create: true });
+      const fileName = path.slice(".educed/".length);
+      const fh = await subDir.getFileHandle(fileName, { create: true });
+      g.fileHandles[path] = fh;
+      const writable = await fh.createWritable();
+      await writable.write(content);
+      await writable.close();
+      return true;
+    } catch {}
+  }
+  return false;
+}
+
+function saveManifest(quiet = false) {
+  if (!g.pagePath) g.pagePath = ".educed/main.page";
+  if (!g.pageTitle) g.pageTitle = "main";
+
+  let manifest = `title ${g.pageTitle}\n`;
+  for (const b of g.blocks) {
+    if (b.label) manifest += `label ${b.label}\n`;
+    if (b.kind === "file") {
+      manifest += `pull ${b.source} ${b.startLine} ${b.endLine}\n`;
+    } else {
+      manifest += `scratch ${b.lines.length}\n`;
+      manifest += b.lines.join("\n") + "\n";
+    }
+  }
+
+  g.files[g.pagePath] = manifest;
+  localStorage.setItem("educed_manifest_backup", manifest);
+  localStorage.setItem("educed_page_path", g.pagePath);
+  try {
+    const storedPages = JSON.parse(localStorage.getItem("educed_pages_map") || "{}");
+    storedPages[g.pagePath] = manifest;
+    localStorage.setItem("educed_pages_map", JSON.stringify(storedPages));
+  } catch {}
+
+  if (g.fileHandles[g.pagePath] || g.dirHandle) {
+    writeFileToDisk(g.pagePath, manifest);
+    if (!quiet) g.status = `saved ${g.pagePath}`;
+  } else if (!quiet) {
+    g.status = `saved page: ${g.pageTitle}`;
+  }
+  requestDraw();
+}
+
+function importManifest(manifestText, path = g.pagePath) {
+  const lines = manifestText.split(/\r?\n/);
+  g.blocks = [];
+  g.pagePath = path || ".educed/main.page";
+  g.pageTitle = "";
+  let i = 0;
+  let pendingLabel = "";
+
+  while (i < lines.length) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (!line) { i++; continue; }
+    const parts = line.split(/\s+/);
+
+    if (parts[0] === "title") {
+      g.pageTitle = rawLine.replace(/^\s*title\s+/, "").trim();
+      i++;
+      continue;
+    }
+    if (parts[0] === "label") {
+      pendingLabel = rawLine.replace(/^\s*label\s+/, "").trim();
+      i++;
+      continue;
+    }
+    if (parts[0] === "pull") {
+      const src = parts[1];
+      const s = parseInt(parts[2], 10) || 1;
+      const e = parseInt(parts[3], 10) || s;
+      i++;
+      let lbl = pendingLabel;
+      pendingLabel = "";
+
+      if (i < lines.length && lines[i].startsWith("label ")) {
+        lbl = lines[i].slice(6).trim();
+        i++;
+      }
+
+      let slice = [`[Awaiting load for ${src}]`];
+      if (g.files[src] !== undefined) {
+        const full = g.files[src].split(/\r?\n/);
+        slice = full.slice(Math.max(0, s - 1), e);
+      }
+      createBlock({ kind: "file", source: src, startLine: s, endLine: e, lines: slice, label: lbl });
+    } else if (parts[0] === "scratch") {
+      const cnt = parseInt(parts[1], 10) || 1;
+      i++;
+      let lbl = pendingLabel;
+      pendingLabel = "";
+
+      if (i < lines.length && lines[i].startsWith("label ")) {
+        lbl = lines[i].slice(6).trim();
+        i++;
+      }
+      const textLines = lines.slice(i, i + cnt);
+      i += cnt;
+      createBlock({ kind: "scratch", lines: textLines.length ? textLines : [""], label: lbl });
+    } else {
+      i++;
+    }
+  }
+
+  if (!g.pageTitle) {
+    let stem = g.pagePath.split("/").pop() || "main";
+    if (stem.endsWith(".page")) stem = stem.slice(0, -5);
+    g.pageTitle = stem;
+  }
+  g.curBlock = 0; g.curLine = 0; g.curCol = 0;
+  ensureCursorSane();
+  g.status = `opened ${g.pageTitle}`;
+  requestDraw();
+}
+
+function enterPagePicker() {
+  saveManifest(true);
+  try {
+    const storedPages = JSON.parse(localStorage.getItem("educed_pages_map") || "{}");
+    for (const [k, v] of Object.entries(storedPages)) {
+      if (!g.files[k]) g.files[k] = v;
+    }
+  } catch {}
+
+  if (g.files[".educed.page"] && !g.files[".educed/main.page"]) {
+    const legacy = g.files[".educed.page"];
+    g.files[".educed/main.page"] = legacy.startsWith("title ") ? legacy : `title main\n${legacy}`;
+  }
+
+  const found = [];
+  for (const [path, data] of Object.entries(g.files)) {
+    if ((path.startsWith(".educed/") && path.endsWith(".page")) || path.endsWith(".page")) {
+      if (!pageHasContent(data)) continue;
+      let title = pageTitleOf(data);
+      if (!title) {
+        title = path.split("/").pop().replace(/\.page$/, "");
+      }
+      found.push({ path, title });
+    }
+  }
+  g.finder.pagePaths = found.map(f => f.path);
+  g.finder.pageTitles = found.map(f => f.title);
+  g.finder.mode = "PAGE";
+  g.finder.sel = 0;
+  g.status = `${g.finder.pagePaths.length} pages   Enter open   + new page / mount folder   Esc cancel`;
+  requestDraw();
+}
+
+function createPage(title) {
+  saveManifest(true);
+  const base = slugify(title);
+  let path = `.educed/${base}.page`;
+  for (let n = 2; g.files[path] !== undefined; n++) {
+    path = `.educed/${base}-${n}.page`;
+  }
+  g.blocks = [];
+  g.pagePath = path;
+  g.pageTitle = title;
+  createBlock({ kind: "scratch", lines: [""] });
+  saveManifest(true);
+  g.curBlock = 0; g.curLine = 0; g.curCol = 0;
+  g.status = `new page: ${title}`;
+  requestDraw();
+}
+
+function adoptPage(title) {
+  if (g.pagePath) {
+    g.pageTitle = title;
+    saveManifest(true);
+    g.status = `page renamed: ${title}  (${g.pagePath})`;
+    requestDraw();
+    return;
+  }
+  const base = slugify(title);
+  let path = `.educed/${base}.page`;
+  for (let n = 2; g.files[path] !== undefined; n++) {
+    path = `.educed/${base}-${n}.page`;
+  }
+  g.pagePath = path;
+  g.pageTitle = title;
+  saveManifest(true);
+  g.status = `page saved: ${title}  (${path})`;
+  requestDraw();
+}
+
+async function mountDirectory() {
+  if ("showDirectoryPicker" in window) {
+    try {
+      g.dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+      g.dirHandlePendingPrompt = false;
+      g.projectRoot = g.dirHandle.name;
+      g.files = {};
+      g.fileHandles = {};
+      await persistDirHandle(g.dirHandle);
+      await scanDirHandle(g.dirHandle, "");
+      refreshLoadedFileBlocks();
+      g.status = `mounted ${g.dirHandle.name} (${Object.keys(g.files).length} files, read/write)`;
+      enterPagePicker();
+      return;
+    } catch (err) {
+      if (err.name === "AbortError") return;
+    }
+  }
+  document.getElementById("folder-picker").click();
+}
+
+async function scanDirHandle(dirHandle, prefix) {
+  const skip = new Set([".git", "node_modules", "build", "dist", "DerivedData"]);
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (skip.has(name)) continue;
+    const relPath = prefix ? `${prefix}/${name}` : name;
+    if (handle.kind === "directory") {
+      await scanDirHandle(handle, relPath);
+    } else if (handle.kind === "file") {
+      const file = await handle.getFile();
+      if (file.size < 2_000_000 && !/\.(png|jpg|jpeg|gif|wasm|bin|ico|pdf|exe|dylib|so)$/i.test(name)) {
+        g.files[relPath] = await file.text();
+        g.fileHandles[relPath] = handle;
+      }
+    }
+  }
+}
+
+async function saveBlock(idx) {
+  if (idx < 0 || idx >= g.blocks.length) return;
+  const b = g.blocks[idx];
+  if (b.kind !== "file") { saveManifest(); return; }
+
+  const raw = g.files[b.source];
+  if (raw === undefined) { g.status = `save: cannot read ${b.source}`; requestDraw(); return; }
+  const fileLines = raw.split(/\r?\n/);
+
+  const s = Math.max(0, Math.min(fileLines.length, b.startLine - 1));
+  const e = Math.max(s - 1, Math.min(fileLines.length - 1, b.endLine - 1));
+  const oldCount = e - s + 1;
+  const newCount = b.lines.length;
+  const delta = newCount - oldCount;
+
+  fileLines.splice(s, oldCount, ...b.lines);
+  b.startLine = s + 1;
+  b.endLine = s + newCount;
+  b.savedLines = [...b.lines];
+  b.dirty = false;
+  computeBlockLineDiffs(b);
+
+  for (let i = 0; i < g.blocks.length; i++) {
+    if (i === idx) continue;
+    const o = g.blocks[i];
+    if (o.kind === "file" && o.source === b.source && (o.startLine - 1) > e) {
+      o.startLine += delta;
+      o.endLine += delta;
+    }
+  }
+
+  const out = fileLines.join("\n");
+  const onDisk = await writeFileToDisk(b.source, out);
+  g.status = `saved block → ${b.source}${onDisk ? " (disk)" : " (in-memory)"}`;
+  saveManifest(true);
+  requestDraw();
+}
+
+async function saveAll() {
+  const filePaths = [...new Set(g.blocks.filter(b => b.kind === "file").map(b => b.source))];
+  let wroteFiles = 0;
+
+  for (const path of filePaths) {
+    if (g.files[path] === undefined) continue;
+    const fileLines = g.files[path].split(/\r?\n/);
+    const indices = g.blocks
+      .map((b, i) => (b.kind === "file" && b.source === path ? i : -1))
+      .filter(i => i >= 0)
+      .sort((a, b) => g.blocks[a].startLine - g.blocks[b].startLine);
+
+    let delta = 0;
+    for (const bi of indices) {
+      const b = g.blocks[bi];
+      const s = Math.max(0, Math.min(fileLines.length, b.startLine - 1 + delta));
+      const e = Math.max(s - 1, Math.min(fileLines.length - 1, b.endLine - 1 + delta));
+      const oldCount = e - s + 1;
+      fileLines.splice(s, oldCount, ...b.lines);
+      const newCount = b.lines.length;
+      b.startLine = s + 1;
+      b.endLine = s + newCount;
+      b.savedLines = [...b.lines];
+      b.dirty = false;
+      computeBlockLineDiffs(b);
+      delta += newCount - oldCount;
+    }
+    await writeFileToDisk(path, fileLines.join("\n"));
+    wroteFiles++;
+  }
+  saveManifest(true);
+  g.status = `saved all blocks home (${wroteFiles} files)`;
+  requestDraw();
+}
+
+function reloadBlock(idx) {
+  if (idx < 0 || idx >= g.blocks.length) return false;
+  const b = g.blocks[idx];
+  if (b.kind !== "file") {
+    g.status = "reload: current block has no source file";
+    requestDraw();
+    return false;
+  }
+  const raw = g.files[b.source];
+  if (raw === undefined) {
+    g.status = `reload: cannot read ${b.source}`;
+    requestDraw();
+    return false;
+  }
+  const all = raw.split(/\r?\n/);
+  const s = Math.max(1, b.startLine);
+  const e = Math.min(all.length, b.endLine);
+  const slice = s <= e ? all.slice(s - 1, e) : [""];
+  pushUndo(idx);
+  b.lines = [...slice];
+  b.savedLines = [...slice];
+  b.endLine = s + slice.length - 1;
+  b.dirty = false;
+  computeBlockLineDiffs(b);
+  if (idx === g.curBlock) ensureCursorSane();
+  g.status = `reloaded ${b.source}`;
+  requestDraw();
+  return true;
+}
+
+function reloadAll() {
+  let count = 0;
+  for (let i = 0; i < g.blocks.length; i++) {
+    if (g.blocks[i].kind === "file" && reloadBlock(i)) count++;
+  }
+  g.status = `reloaded ${count} file block(s)`;
+  requestDraw();
+}
+
+// ─── LCS Diff Engine (Exact Port of main.mm diffLines) ────────────────
+function computeBlockLineDiffs(b) {
+  b.lineDiffStatus = [];
+  b.lineDeletionsBefore = [];
+  b.lineDeletionAtEnd = false;
+  if (!b.dirty) return;
+
+  const a = b.savedLines, n = a.length;
+  const c = b.lines, m = c.length;
+  if (n * m > 4_000_000) {
+    b.lineDiffStatus = new Array(m).fill(1);
+    b.lineDeletionsBefore = new Array(m).fill(false);
+    return;
+  }
+
+  const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === c[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  let i = 0, j = 0, pendingDel = false;
+  while (i < n && j < m) {
+    if (a[i] === c[j]) {
+      b.lineDiffStatus.push(0);
+      b.lineDeletionsBefore.push(pendingDel);
+      pendingDel = false;
+      i++; j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      pendingDel = true;
+      i++;
+    } else {
+      b.lineDiffStatus.push(1);
+      b.lineDeletionsBefore.push(pendingDel);
+      pendingDel = false;
+      j++;
+    }
+  }
+  if (i < n) pendingDel = true;
+  while (j < m) {
+    b.lineDiffStatus.push(1);
+    b.lineDeletionsBefore.push(pendingDel);
+    pendingDel = false;
+    j++;
+  }
+  b.lineDeletionAtEnd = pendingDel;
+}
+
+function recomputeDirty(idx) {
+  const b = g.blocks[idx];
+  if (!b) return;
+  b.dirty = b.lines.length !== b.savedLines.length || b.lines.some((ln, i) => ln !== b.savedLines[i]);
+  computeBlockLineDiffs(b);
+}
+
+// ─── Block Struct & Factory ───────────────────────────────────────────
+function createBlock({ kind = "scratch", source = "", startLine = 1, endLine = 1, lines = [], label = "" }) {
+  const b = {
+    kind,
+    scratch: kind === "scratch",
+    source,
+    startLine,
+    endLine,
+    lines: lines.length ? [...lines] : [""],
+    savedLines: lines.length ? [...lines] : [""],
+    label: label,
+    folded: false,
+    dirty: false,
+    memLine: 0,
+    memCol: 0,
+    mdMode: 0,
+    undo: [],
+    redo: [],
+    lineDiffStatus: [],
+    lineDeletionsBefore: [],
+    lineDeletionAtEnd: false
+  };
+  g.blocks.push(b);
+  g.curBlock = g.blocks.length - 1;
+  g.curLine = 0;
+  g.curCol = 0;
+  computeBlockLineDiffs(b);
+  return b;
+}
+
+function headerTint(path) {
+  if (!path) return [0.18, 0.20, 0.25];
+  let h = 0x811c9dc5;
+  for (let i = 0; i < path.length; i++) {
+    h ^= path.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  const t = (h >>> 0) / 4294967295.0;
+  return [0.16 + 0.05 * Math.sin(t * 6.28), 0.18 + 0.05 * Math.cos(t * 6.28), 0.23 + 0.05 * Math.sin(t * 3.14)];
+}
+
+// ─── Per-Block Undo/Redo System ───────────────────────────────────────
+function pushUndo(idx = g.curBlock) {
+  const b = g.blocks[idx];
+  if (!b) return;
+  b.undo.push({ lines: [...b.lines], curLine: g.curLine, curCol: g.curCol });
+  if (b.undo.length > 300) b.undo.shift();
+  b.redo = [];
+}
+
+function undo() {
+  const b = g.blocks[g.curBlock];
+  if (!b || !b.undo.length) { g.status = "nothing to undo in this block"; requestDraw(); return; }
+  b.redo.push({ lines: [...b.lines], curLine: g.curLine, curCol: g.curCol });
+  const snap = b.undo.pop();
+  b.lines = [...snap.lines];
+  g.curLine = snap.curLine;
+  g.curCol = snap.curCol;
+  recomputeDirty(g.curBlock);
+  ensureCursorSane();
+  g.status = `undo (${b.undo.length} left · Ctrl-Shift-U redo)`;
+  g.followCursor = true;
+  requestDraw();
+}
+
+function redo() {
+  const b = g.blocks[g.curBlock];
+  if (!b || !b.redo.length) { g.status = "nothing to redo in this block"; requestDraw(); return; }
+  b.undo.push({ lines: [...b.lines], curLine: g.curLine, curCol: g.curCol });
+  const snap = b.redo.pop();
+  b.lines = [...snap.lines];
+  g.curLine = snap.curLine;
+  g.curCol = snap.curCol;
+  recomputeDirty(g.curBlock);
+  ensureCursorSane();
+  g.status = `redo (${b.redo.length} left)`;
+  g.followCursor = true;
+  requestDraw();
+}
+
+function ensureCursorSane() {
+  if (!g.blocks.length) return;
+  g.curBlock = Math.max(0, Math.min(g.blocks.length - 1, g.curBlock));
+  const b = g.blocks[g.curBlock];
+  if (!b.lines.length) b.lines.push("");
+  g.curLine = Math.max(0, Math.min(b.lines.length - 1, g.curLine));
+  g.curCol = Math.max(0, Math.min(b.lines[g.curLine].length, g.curCol));
+}
+
+// ─── Emacs Selection & Clipboard Integration ──────────────────────────
+function orderedSel() {
+  if (g.markLine < g.curLine || (g.markLine === g.curLine && g.markCol <= g.curCol)) {
+    return { sL: g.markLine, sC: g.markCol, eL: g.curLine, eC: g.curCol };
+  }
+  return { sL: g.curLine, sC: g.curCol, eL: g.markLine, eC: g.markCol };
+}
+
+function selectionTextFromRange(sL, sC, eL, eC) {
+  const b = g.blocks[g.curBlock];
+  if (sL === eL) return b.lines[sL].slice(sC, eC);
+  const middle = b.lines.slice(sL + 1, eL);
+  return [b.lines[sL].slice(sC), ...middle, b.lines[eL].slice(0, eC)].join("\n");
+}
+
+function getSelectionText() {
+  if (!g.markActive || g.markBlock !== g.curBlock) return "";
+  const { sL, sC, eL, eC } = orderedSel();
+  return selectionTextFromRange(sL, sC, eL, eC);
+}
+
+function deleteSelection() {
+  const { sL, sC, eL, eC } = orderedSel();
+  deleteSelectionFromRange(sL, sC, eL, eC);
+  g.markActive = false;
+  recomputeDirty(g.curBlock);
+}
+
+function markOrCopy() {
+  if (!g.markActive) {
+    g.markActive = true;
+    g.markBlock = g.curBlock;
+    g.markLine = g.curLine;
+    g.markCol = g.curCol;
+    g.status = "mark set — move, then Ctrl-Space to copy";
+  } else {
+    g.clipboard = getSelectionText();
+    try { navigator.clipboard.writeText(g.clipboard); } catch {}
+    g.markActive = false;
+    g.status = "copied region";
+  }
+  requestDraw();
+}
+
+function cutSelection() {
+  if (!g.markActive || g.markBlock !== g.curBlock) { g.status = "no selection"; requestDraw(); return; }
+  pushUndo();
+  g.clipboard = getSelectionText();
+  try { navigator.clipboard.writeText(g.clipboard); } catch {}
+  deleteSelection();
+  g.status = "cut region";
+  requestDraw();
+}
+
+window.addEventListener("paste", (e) => {
+  if (g.finder.mode !== "NONE") return;
+  const text = e.clipboardData?.getData("text/plain");
+  if (!text) return;
+  e.preventDefault();
+
+  if (g.cmdActive) {
+    g.cmd += text.replace(/[\r\n]+/g, " ");
+    requestDraw();
+    return;
+  }
+
+  if (!g.blocks.length) createBlock({ kind: "scratch" });
+  pushUndo();
+  if (g.markActive && g.markBlock === g.curBlock) deleteSelection();
+
+  const b = g.blocks[g.curBlock];
+  const segs = text.replace(/\r/g, "").split("\n");
+  const ln = b.lines[g.curLine];
+  const before = ln.slice(0, g.curCol), after = ln.slice(g.curCol);
+
+  if (segs.length === 1) {
+    b.lines[g.curLine] = before + segs[0] + after;
+    g.curCol += segs[0].length;
+  } else {
+    b.lines[g.curLine] = before + segs[0];
+    const mid = segs.slice(1);
+    const lastLen = mid[mid.length - 1].length;
+    mid[mid.length - 1] += after;
+    b.lines.splice(g.curLine + 1, 0, ...mid);
+    g.curLine += segs.length - 1;
+    g.curCol = lastLen;
+  }
+  recomputeDirty(g.curBlock);
+  g.status = "pasted";
+  requestDraw();
+});
+
+// ─── Markdown Scanner ─────────────────────────────────────────────────
+const MD_TEXT = 0, MD_MARK = 1, MD_HEAD1 = 2, MD_HEAD2 = 3, MD_HEAD3 = 4,
+      MD_BOLD = 5, MD_ITALIC = 6, MD_CODE = 7, MD_LINK = 8, MD_URL = 9,
+      MD_QUOTE = 10, MD_BULLET = 11, MD_DONE = 12;
+
+function isMarkdownBlock(b) {
+  if (!g.showMarkdown) return false;
+  if (b.mdMode !== 0) return b.mdMode > 0;
+  if (b.scratch) return true;
+  if (b.source.endsWith(".md") || b.source.endsWith(".markdown") || b.source.endsWith(".mdx")) return true;
+  return false;
+}
+
+function parseMdLine(line) {
+  const len = line.length;
+  const tag = new Uint8Array(len);
+  let a = 0;
+  while (a < len && line[a] === " ") a++;
+  const trimmed = line.slice(a);
+
+  if (trimmed.startsWith("# ")) {
+    tag.fill(MD_HEAD1);
+    for (let i = a; i < a + 2 && i < len; i++) tag[i] = MD_MARK;
+  } else if (trimmed.startsWith("## ")) {
+    tag.fill(MD_HEAD2);
+    for (let i = a; i < a + 3 && i < len; i++) tag[i] = MD_MARK;
+  } else if (trimmed.startsWith("### ")) {
+    tag.fill(MD_HEAD3);
+    for (let i = a; i < a + 4 && i < len; i++) tag[i] = MD_MARK;
+  } else if (trimmed.startsWith("> ")) {
+    tag.fill(MD_QUOTE);
+    for (let i = a; i < a + 2 && i < len; i++) tag[i] = MD_MARK;
+  } else if (trimmed.startsWith("- [x] ") || trimmed.startsWith("- [X] ")) {
+    tag.fill(MD_DONE);
+    for (let i = a; i < a + 6 && i < len; i++) tag[i] = MD_MARK;
+  } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+    tag.fill(MD_TEXT);
+    if (a < len) tag[a] = MD_BULLET;
+  } else if (trimmed.startsWith("```")) {
+    tag.fill(MD_CODE);
+  }
+
+  let i = 0;
+  while (i < len) {
+    if (line[i] === "`") {
+      let j = i + 1;
+      while (j < len && line[j] !== "`") j++;
+      if (j < len) {
+        tag[i] = MD_MARK; tag[j] = MD_MARK;
+        for (let k = i + 1; k < j; k++) tag[k] = MD_CODE;
+        i = j + 1;
+        continue;
+      }
+    } else if (line.slice(i, i + 2) === "**") {
+      let j = i + 2;
+      while (j < len - 1 && line.slice(j, j + 2) !== "**") j++;
+      if (j < len - 1) {
+        tag[i] = MD_MARK; tag[i+1] = MD_MARK;
+        tag[j] = MD_MARK; tag[j+1] = MD_MARK;
+        for (let k = i + 2; k < j; k++) tag[k] = MD_BOLD;
+        i = j + 2;
+        continue;
+      }
+    }
+    i++;
+  }
+  return tag;
+}
+
+function getMdColor(tagVal) {
+  switch (tagVal) {
+    case MD_MARK:   return "rgba(107, 117, 140, 0.9)";
+    case MD_HEAD1:  return "rgb(252, 219, 140)";
+    case MD_HEAD2:  return "rgb(245, 204, 132)";
+    case MD_HEAD3:  return "rgb(230, 199, 158)";
+    case MD_BOLD:   return "rgb(255, 255, 255)";
+    case MD_ITALIC: return "rgb(204, 217, 247)";
+    case MD_CODE:   return "rgb(184, 219, 184)";
+    case MD_LINK:   return "rgb(128, 184, 242)";
+    case MD_QUOTE:  return "rgb(178, 184, 199)";
+    case MD_BULLET: return "rgb(224, 158, 89)";
+    case MD_DONE:   return "rgba(128, 135, 148, 0.85)";
+    default:        return "rgb(219, 222, 230)";
+  }
+}
+
+// ─── Decoupled Layout & Render Passes ─────────────────────────────────
+function computeLayout(W, H) {
+  g.visibleRows = Math.max(1, Math.floor((H - barH - marginTop) / lineH));
+
+  let maxNum = 1;
+  for (const b of g.blocks) {
+    const hi = b.kind === "file" ? b.endLine : b.lines.length;
+    if (hi > maxNum) maxNum = hi;
+  }
+  const gutterDigits = String(maxNum).length;
+  const gutterW = g.showLineNos ? (gutterDigits + 1) * advPx : 0;
+  const textX = marginX + gutterW;
+  const wrapCols = Math.max(8, Math.floor((W - textX - marginX) / advPx));
+
+  g.wrapCols = wrapCols;
+  g.textX = textX;
+
+  if (g.blocks.length && g.curBlock >= 0 && g.curBlock < g.blocks.length) {
+    g.blocks[g.curBlock].memLine = g.curLine;
+    g.blocks[g.curBlock].memCol = g.curCol;
+  }
+
+  let y = marginTop;
+  const layout = [];
+  g.hitRows = [];
+  g.visualRows = [];
+
+  let cursorY = 0, cursorX = textX;
+  let curFolded = false;
+
+  for (let bi = 0; bi < g.blocks.length; bi++) {
+    const b = g.blocks[bi];
+    const mark = b.folded ? "+ " : "  ";
+    const derived = b.scratch ? "[scratch]" : `${b.source}:${b.startLine}-${b.endLine}`;
+    let head = mark + (b.label ? (b.kind === "file" ? `${b.label}   ·   ${derived}` : b.label) : derived);
+    if (b.folded) head += `   (${b.lines.length} lines)`;
+
+    const headerY = y;
+    layout.push({ bi, li: -1, isHeader: true, text: head, y, dirty: b.dirty });
+    g.hitRows.push({ bi, li: 0, y, off: 0, len: 0, isHeader: true });
+    y += lineH;
+
+    if (b.folded) {
+      if (bi === g.curBlock) { cursorY = headerY; cursorX = textX; curFolded = true; }
+      g.visualRows.push({ bi, li: 0, off: 0, len: 0 });
+    } else {
+      const isMd = isMarkdownBlock(b);
+      for (let li = 0; li < b.lines.length; li++) {
+        const lineText = b.lines[li];
+        const mdTag = isMd ? parseMdLine(lineText) : null;
+        let off = 0;
+        const len = lineText.length;
+        do {
+          const chunkLen = Math.min(wrapCols, Math.max(0, len - off));
+          const chunk = lineText.substr(off, chunkLen);
+          layout.push({ bi, li, isHeader: false, text: chunk, y, off, mdTag });
+          g.hitRows.push({ bi, li, y, off, len: chunkLen, isHeader: false });
+          g.visualRows.push({ bi, li, off, len: chunkLen });
+
+          if (bi === g.curBlock && li === g.curLine) {
+            if (g.curCol >= off && (g.curCol < off + wrapCols || off + chunkLen >= len)) {
+              cursorY = y;
+              cursorX = textX + (g.curCol - off) * advPx;
+            }
+          }
+          y += lineH;
+          off += wrapCols;
+        } while (off < len);
+      }
+    }
+    y += lineH * 0.4;
+  }
+
+  if (g.recenterTopRequested) {
+    const viewH = H - barH - marginTop;
+    if (g.recenterCycle === 2) g.scrollY = cursorY - marginTop;
+    else if (g.recenterCycle === 3) g.scrollY = cursorY - marginTop - (viewH - lineH);
+    else g.scrollY = cursorY - marginTop - (viewH - lineH) * 0.5;
+    g.recenterTopRequested = false;
+  } else if (g.followCursor) {
+    const viewTop = marginTop, viewBot = H - barH - lineH;
+    if (cursorY - g.scrollY < viewTop) g.scrollY = cursorY - viewTop;
+    if (cursorY - g.scrollY > viewBot) g.scrollY = cursorY - viewBot;
+  }
+  const maxScroll = Math.max(0, y - (H - barH) + lineH);
+  g.scrollY = Math.max(0, Math.min(g.scrollY, maxScroll));
+
+  return { layout, gutterDigits, textX, cursorY, cursorX, curFolded };
+}
+
+function draw() {
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.fillStyle = "rgb(28, 29, 33)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.font = `${Math.round(fontPt * dpr)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+
+  if (g.showHelp) {
+    drawHelp(W, H);
+  } else if (g.finder.mode === "FILE") {
+    drawFileFinder(W, H);
+  } else if (g.finder.mode === "RANGE") {
+    drawRangeFinder(W, H);
+  } else if (g.finder.mode === "TEXT") {
+    drawTextFinder(W, H);
+  } else if (g.finder.mode === "PAGE") {
+    drawPageFinder(W, H);
+  } else if (g.finder.mode === "NEWPAGE") {
+    drawNewPageFinder(W, H);
+  } else {
+    drawEditor(W, H);
+  }
+
+  // Bottom Status / Command Bar
+  ctx.fillStyle = "rgb(20, 20, 26)";
+  ctx.fillRect(0, H - barH, W, barH);
+  ctx.textBaseline = "middle";
+  const baseline = H - barH * 0.5;
+
+  if (g.cmdActive) {
+    ctx.fillStyle = "rgb(242, 242, 178)";
+    const cmdText = ":" + g.cmd;
+    ctx.fillText(cmdText, marginX * 0.5, baseline);
+    if (g.cursorOn) {
+      const cw = ctx.measureText(cmdText).width;
+      ctx.fillRect(marginX * 0.5 + cw, H - barH + 4 * pps, 2 * pps, lineH);
+    }
+  } else if (g.searchActive) {
+    ctx.fillStyle = "rgb(242, 204, 76)";
+    const sText = `search: "${g.searchQuery}" (↵ keep · Esc cancel · Ctrl-H next)`;
+    ctx.fillText(sText, marginX * 0.5, baseline);
+  } else if (g.edgeAdjust !== 0 && g.blocks[g.curBlock]) {
+    ctx.fillStyle = "rgb(128, 204, 242)";
+    const which = g.edgeAdjust === 2 ? "START" : "END";
+    const b = g.blocks[g.curBlock];
+    const sText = `edge ▸ ${which}  ${b.startLine}:${b.endLine}   Ctrl-N/P move · Tab switch · ↵/Esc done`;
+    ctx.fillText(sText, marginX * 0.5, baseline);
+  } else {
+    ctx.fillStyle = "rgb(128, 140, 158)";
+    ctx.fillText(g.status, marginX * 0.5, baseline);
+  }
+}
+
+function drawHelp(W, H) {
+  ctx.textBaseline = "alphabetic";
+  const hy = marginTop;
+  const helpTotalH = marginTop + kHelp.length * lineH;
+  const maxScroll = Math.max(0, helpTotalH - (H - barH) + lineH);
+  g.scrollY = Math.max(0, Math.min(g.scrollY, maxScroll));
+
+  ctx.fillStyle = "rgb(209, 217, 235)";
+  for (let i = 0; i < kHelp.length; i++) {
+    const ry = hy + i * lineH - g.scrollY;
+    if (ry + lineH < 0 || ry > H - barH) continue;
+    ctx.fillText(kHelp[i], marginX * 0.6, ry + gAscent);
+  }
+  g.status = "help — scroll to see all commands · press any key to close";
+}
+
+function drawPageFinder(W, H) {
+  ctx.textBaseline = "alphabetic";
+  const hy = marginTop;
+  const repo = g.dirHandle ? g.dirHandle.name : g.projectRoot;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(153, 184, 224)";
+  ctx.fillText(`pages · ${repo}`, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const count = g.finder.pagePaths.length + 2;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+
+  for (let i = 0; i < visible && off + i < count; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    const label = mi === 0
+      ? "+  new page"
+      : mi === 1
+      ? "+  open a project folder..."
+      : g.finder.pageTitles[mi - 2];
+    ctx.fillText(label, marginX, ry + gAscent);
+  }
+}
+
+function drawNewPageFinder(W, H) {
+  ctx.textBaseline = "alphabetic";
+  const hy = marginTop;
+  const title = "new page:  " + g.finder.query;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(242, 242, 178)";
+  ctx.fillText(title, marginX * 0.5, hy + gAscent);
+  if (g.cursorOn) {
+    const cw = ctx.measureText(title).width;
+    ctx.fillRect(marginX * 0.5 + cw, hy, 2 * pps, lineH);
+  }
+  g.status = "type a title   Enter create   Esc back";
+}
+
+function drawEditor(W, H) {
+  const { layout, gutterDigits, textX, cursorY, cursorX, curFolded } = computeLayout(W, H);
+
+  let pinnedHdr = null;
+  for (let k = 0; k < layout.length; k++) {
+    const row = layout[k];
+    if (row.isHeader && row.bi === g.curBlock) {
+      const ry = row.y - g.scrollY;
+      let nextHeaderY = layout[layout.length - 1].y;
+      for (let m = k + 1; m < layout.length; m++) {
+        if (layout[m].isHeader) { nextHeaderY = layout[m].y; break; }
+      }
+      if (ry < 0 && (nextHeaderY - g.scrollY) > lineH) {
+        pinnedHdr = row;
+      }
+      break;
+    }
+  }
+
+  const selOn = g.markActive && g.markBlock === g.curBlock;
+  const selBounds = selOn ? orderedSel() : null;
+
+  ctx.textBaseline = "alphabetic";
+  for (const row of layout) {
+    const ry = row.y - g.scrollY;
+    if (ry + lineH < 0 || ry > H - barH) continue;
+    if (pinnedHdr && ry < lineH) continue;
+
+    const textBaselineY = ry + gAscent;
+
+    if (row.isHeader) {
+      if (row.dirty) {
+        ctx.fillStyle = "rgb(61, 33, 36)";
+        ctx.fillRect(0, ry - 2 * pps, W, lineH);
+        ctx.fillStyle = "rgb(242, 107, 102)";
+      } else {
+        const [hr, hg, hb] = headerTint(g.blocks[row.bi].source);
+        ctx.fillStyle = `rgb(${Math.round(hr*255)}, ${Math.round(hg*255)}, ${Math.round(hb*255)})`;
+        ctx.fillRect(0, ry - 2 * pps, W, lineH);
+        ctx.fillStyle = "rgb(140, 158, 199)";
+      }
+      ctx.fillText(row.text, marginX * 0.5, textBaselineY);
+    } else {
+      const b = g.blocks[row.bi];
+
+      if (selOn && row.li >= selBounds.sL && row.li <= selBounds.eL) {
+        const lineLen = b.lines[row.li].length;
+        const la = (row.li === selBounds.sL) ? selBounds.sC : 0;
+        const lb = (row.li === selBounds.eL) ? selBounds.eC : lineLen;
+        const cs = row.off, ce = cs + row.text.length;
+        const a = Math.max(la, cs), bcol = Math.min(lb, ce);
+        if (bcol > a || (la <= cs && lb >= ce)) {
+          const x0 = textX + (a - cs) * advPx;
+          const w = Math.max(2 * pps, (bcol - a) * advPx);
+          ctx.fillStyle = "rgba(46, 76, 122, 0.75)";
+          ctx.fillRect(x0, ry - 2 * pps, w, lineH);
+        }
+      }
+
+      if (g.searchActive && g.searchQuery) {
+        const needle = g.searchQuery.toLowerCase();
+        const hay = row.text.toLowerCase();
+        let idx = 0;
+        while ((idx = hay.indexOf(needle, idx)) !== -1) {
+          const x0 = textX + idx * advPx;
+          const w = needle.length * advPx;
+          const isCur = (row.bi === g.curBlock && row.li === g.curLine && (row.off + idx <= g.curCol && g.curCol <= row.off + idx + needle.length));
+          ctx.fillStyle = isCur ? "rgba(242, 178, 51, 0.85)" : "rgba(184, 138, 38, 0.55)";
+          ctx.fillRect(x0, ry - 2 * pps, w, lineH);
+          idx += needle.length;
+        }
+      }
+
+      if (g.showLineNos && row.off === 0) {
+        const num = b.kind === "file" ? b.startLine + row.li : row.li + 1;
+        const ns = String(num);
+        const nx = marginX + (gutterDigits - ns.length) * advPx;
+        const isCur = (row.bi === g.curBlock && row.li === g.curLine);
+        ctx.fillStyle = isCur ? "rgb(204, 209, 133)" : "rgba(102, 115, 140, 0.85)";
+        ctx.fillText(ns, nx, textBaselineY);
+      }
+
+      if (b.dirty && row.off === 0) {
+        const markerX = textX - 8 * pps;
+        if (b.lineDiffStatus[row.li] === 1) {
+          ctx.fillStyle = "rgb(56, 191, 82)";
+          ctx.fillRect(markerX, ry - 2 * pps, 3 * pps, lineH);
+        }
+        if (b.lineDeletionsBefore[row.li]) {
+          ctx.fillStyle = "rgb(242, 64, 64)";
+          ctx.fillRect(markerX - 2 * pps, ry - 3 * pps, 7 * pps, 3 * pps);
+        }
+        if (row.li === b.lines.length - 1 && b.lineDeletionAtEnd) {
+          ctx.fillStyle = "rgb(242, 64, 64)";
+          ctx.fillRect(markerX - 2 * pps, ry + lineH - 3 * pps, 7 * pps, 3 * pps);
+        }
+      }
+
+      if (row.mdTag) {
+        const tag = row.mdTag;
+        let segStart = 0;
+        while (segStart < row.text.length) {
+          const t = tag[row.off + segStart] || 0;
+          let j = segStart + 1;
+          while (j < row.text.length && (tag[row.off + j] || 0) === t) j++;
+          ctx.fillStyle = getMdColor(t);
+          ctx.fillText(row.text.substring(segStart, j), textX + segStart * advPx, textBaselineY);
+          segStart = j;
+        }
+      } else {
+        ctx.fillStyle = "rgb(219, 222, 230)";
+        ctx.fillText(row.text, textX, textBaselineY);
+      }
+    }
+  }
+
+  if (pinnedHdr) {
+    if (pinnedHdr.dirty) {
+      ctx.fillStyle = "rgb(76, 41, 43)";
+      ctx.fillRect(0, 0, W, lineH);
+      ctx.fillStyle = "rgb(242, 107, 102)";
+    } else {
+      const [hr, hg, hb] = headerTint(g.blocks[pinnedHdr.bi].source);
+      ctx.fillStyle = `rgb(${Math.round((hr+0.04)*255)}, ${Math.round((hg+0.05)*255)}, ${Math.round((hb+0.07)*255)})`;
+      ctx.fillRect(0, 0, W, lineH);
+      ctx.fillStyle = "rgb(166, 184, 224)";
+    }
+    ctx.fillText(pinnedHdr.text, marginX * 0.5, gAscent);
+  }
+
+  if (!g.cmdActive && g.cursorOn && g.blocks.length) {
+    const ry = cursorY - g.scrollY;
+    ctx.fillStyle = "rgba(242, 204, 76, 0.95)";
+    if (curFolded) {
+      ctx.fillRect(0, ry - 2 * pps, 4 * pps, lineH);
+    } else {
+      ctx.fillRect(cursorX, ry, 2 * pps, lineH);
+    }
+  }
+}
+
+function drawFileFinder(W, H) {
+  const hy = marginTop;
+  const title = "find file:  " + g.finder.query;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(242, 242, 178)";
+  ctx.fillText(title, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+
+  for (let i = 0; i < visible && off + i < g.finder.matches.length; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    ctx.fillText(g.finder.files[g.finder.matches[mi]], marginX, ry + gAscent);
+  }
+}
+
+function drawRangeFinder(W, H) {
+  const hy = marginTop;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(153, 184, 224)";
+  ctx.fillText(g.finder.path, marginX * 0.5, hy + gAscent);
+
+  const bodyTop = hy + lineH * 1.4;
+  const visible = Math.max(1, Math.floor((H - barH - bodyTop) / lineH));
+  if (g.finder.cur < g.finder.top) g.finder.top = g.finder.cur;
+  if (g.finder.cur >= g.finder.top + visible) g.finder.top = g.finder.cur - visible + 1;
+
+  const selA = g.finder.markStart < 0 ? g.finder.cur : Math.min(g.finder.markStart, g.finder.cur);
+  const selB = g.finder.markStart < 0 ? g.finder.cur : Math.max(g.finder.markStart, g.finder.cur);
+  const gutterX = marginX * 0.4;
+
+  for (let i = 0; i < visible && g.finder.top + i < g.finder.lines.length; i++) {
+    const ln = g.finder.top + i;
+    const ry = bodyTop + i * lineH;
+
+    if (g.finder.markStart >= 0 && ln >= selA && ln <= selB) {
+      ctx.fillStyle = "rgb(38, 56, 41)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+    }
+    if (ln === g.finder.cur) {
+      ctx.fillStyle = "rgb(56, 61, 82)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+    }
+
+    const numStr = String(ln + 1).padStart(4, " ");
+    ctx.fillStyle = "rgb(107, 122, 148)";
+    ctx.fillText(numStr, gutterX, ry + gAscent);
+    ctx.fillStyle = "rgb(219, 222, 230)";
+    ctx.fillText(g.finder.lines[ln] || "", gutterX + 5.5 * advPx, ry + gAscent);
+  }
+}
+
+function drawTextFinder(W, H) {
+  const hy = marginTop;
+  const title = "search text:  " + g.finder.query;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(242, 204, 76)";
+  ctx.fillText(title, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+  const matches = g.finder.textMatches;
+
+  for (let i = 0; i < visible && off + i < matches.length; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    const tm = matches[mi];
+    const loc = `${tm.path}:${tm.line}`.padEnd(28, " ");
+    ctx.fillText(`${loc} │ ${tm.text}`, marginX * 0.5, ry + gAscent);
+  }
+}
+
+// ─── Mouse Hit Testing & Selection ────────────────────────────────────
+function resolveHit(clientX, clientY) {
+  if (!g.hitRows.length) return null;
+  const rect = canvas.getBoundingClientRect();
+  const xPx = (clientX - rect.left) * dpr;
+  const yPx = (clientY - rect.top) * dpr;
+
+  let best = -1, bestDist = 1e9;
+  for (let i = 0; i < g.hitRows.length; i++) {
+    const sy = g.hitRows[i].y - g.scrollY;
+    if (yPx >= sy && yPx < sy + lineH) { best = i; break; }
+    const d = Math.abs(yPx - (sy + lineH * 0.5));
+    if (d < bestDist) { bestDist = d; best = i; }
+  }
+  if (best < 0) return null;
+
+  const hr = g.hitRows[best];
+  const b = g.blocks[hr.bi];
+  if (b.folded || hr.isHeader) return { bi: hr.bi, li: 0, col: 0, isHeader: true };
+
+  const chunkCol = Math.max(0, Math.floor((xPx - g.textX + 0.5 * advPx) / advPx));
+  const col = Math.min(b.lines[hr.li].length, hr.off + chunkCol);
+  return { bi: hr.bi, li: hr.li, col, isHeader: false };
+}
+
+let dragState = { armed: false, selecting: false, bi: 0, li: 0, col: 0 };
+
+canvas.addEventListener("mousedown", async (e) => {
+  keySink.focus();
+  await checkPendingDirPermission();
+
+  if (g.finder.mode !== "NONE") return;
+  const hit = resolveHit(e.clientX, e.clientY);
+  if (!hit) return;
+
+  g.goalCol = -1;
+  const b = g.blocks[hit.bi];
+
+  if (hit.isHeader) {
+    if (b.folded) {
+      b.folded = false;
+      g.curBlock = hit.bi;
+      g.curLine = b.memLine || 0;
+      g.curCol = b.memCol || 0;
+      ensureCursorSane();
+    } else {
+      g.curBlock = hit.bi;
+    }
+    requestDraw();
+    return;
+  }
+
+  g.curBlock = hit.bi;
+  g.curLine = hit.li;
+  g.curCol = hit.col;
+  g.followCursor = false;
+
+  if (e.detail === 2) {
+    const ln = b.lines[hit.li];
+    let s = hit.col, en = hit.col;
+    if (s < ln.length && isWordCh(ln[s])) {
+      while (s > 0 && isWordCh(ln[s - 1])) s--;
+      while (en < ln.length && isWordCh(ln[en])) en++;
+    }
+    if (en > s) {
+      g.markActive = true;
+      g.markBlock = hit.bi; g.markLine = hit.li; g.markCol = s;
+      g.curCol = en;
+      g.status = "word selected — Ctrl-Space copies · Ctrl-X cuts";
+    }
+    dragState.armed = false;
+  } else {
+    g.markActive = false;
+    dragState = { armed: true, selecting: false, bi: hit.bi, li: hit.li, col: hit.col };
+  }
+  resetBlink();
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!dragState.armed || g.finder.mode !== "NONE") return;
+  const hit = resolveHit(e.clientX, e.clientY);
+  if (!hit || hit.isHeader) return;
+
+  let { bi, li, col } = hit;
+  if (bi !== dragState.bi) {
+    const ab = g.blocks[dragState.bi];
+    if (bi < dragState.bi) { li = 0; col = 0; }
+    else { li = ab.lines.length - 1; col = ab.lines[li].length; }
+    bi = dragState.bi;
+  }
+  if (!dragState.selecting && (li !== dragState.li || col !== dragState.col)) {
+    dragState.selecting = true;
+    g.markActive = true;
+    g.markBlock = dragState.bi; g.markLine = dragState.li; g.markCol = dragState.col;
+  }
+  if (dragState.selecting) {
+    g.curBlock = bi; g.curLine = li; g.curCol = col;
+    g.followCursor = false;
+    requestDraw();
+  }
+});
+
+window.addEventListener("mouseup", () => {
+  if (dragState.selecting) {
+    g.status = "region selected — Ctrl-Space copies · Ctrl-X cuts";
+    requestDraw();
+  }
+  dragState.armed = false;
+  dragState.selecting = false;
+});
+
+// ─── Block Surgery & Edge Resize ──────────────────────────────────────
+function splitBlock() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (b.folded) { g.status = "split: unfold first (Ctrl-J)"; requestDraw(); return; }
+  const at = g.curLine;
+  if (at <= 0 || at >= b.lines.length) {
+    g.status = "split: put cursor on an interior line first"; requestDraw(); return;
+  }
+
+  const lowerLines = b.lines.slice(at);
+  const upperLines = b.lines.slice(0, at);
+
+  const lower = {
+    ...b,
+    lines: lowerLines,
+    savedLines: [...lowerLines],
+    dirty: false,
+    folded: false,
+    label: "",
+    undo: [],
+    redo: []
+  };
+
+  b.lines = upperLines;
+  b.savedLines = [...upperLines];
+  b.dirty = false;
+  b.label = "";
+  b.undo = []; b.redo = [];
+
+  if (b.kind === "file") {
+    const topCount = upperLines.length;
+    lower.startLine = b.startLine + topCount;
+    lower.endLine = b.endLine;
+    b.endLine = b.startLine + topCount - 1;
+  }
+
+  g.blocks.splice(g.curBlock + 1, 0, lower);
+  g.curBlock++;
+  g.curLine = 0; g.curCol = 0;
+  computeBlockLineDiffs(b);
+  computeBlockLineDiffs(lower);
+  g.status = "split into 2 blocks";
+  saveManifest(true);
+  requestDraw();
+}
+
+function joinBlock() {
+  if (!g.blocks.length || g.curBlock + 1 >= g.blocks.length) {
+    g.status = "join: no block below this one"; requestDraw(); return;
+  }
+  const a = g.blocks[g.curBlock];
+  const b = g.blocks[g.curBlock + 1];
+
+  if (a.kind === "file" && b.kind === "file" && a.source === b.source && g.files[a.source]) {
+    const full = g.files[a.source].split(/\r?\n/);
+    a.startLine = Math.min(a.startLine, b.startLine);
+    a.endLine = Math.max(a.endLine, b.endLine);
+    a.lines = full.slice(a.startLine - 1, a.endLine);
+    a.savedLines = [...a.lines];
+  } else {
+    a.lines = a.lines.concat(b.lines);
+    a.savedLines = a.savedLines.concat(b.savedLines);
+    if (a.kind === "file") a.endLine = a.startLine + a.lines.length - 1;
+  }
+  a.label = "";
+  recomputeDirty(g.curBlock);
+  g.blocks.splice(g.curBlock + 1, 1);
+  g.status = "joined blocks";
+  saveManifest(true);
+  requestDraw();
+}
+
+function enterEdgeAdjust() {
+  if (!g.blocks.length || g.blocks[g.curBlock].kind !== "file") {
+    g.status = "edge: current block has no source file"; requestDraw(); return;
+  }
+  const b = g.blocks[g.curBlock];
+  if (b.dirty) {
+    g.status = "edge: save block first (⌘S) — resize reloads from disk"; requestDraw(); return;
+  }
+  b.folded = false;
+  g.edgeAdjust = 1;
+  g.curLine = b.lines.length - 1;
+  g.curCol = 0;
+  requestDraw();
+}
+
+function nudgeEdge(dir) {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (b.kind !== "file" || b.dirty || !g.files[b.source]) return;
+  const full = g.files[b.source].split(/\r?\n/);
+
+  let s = b.startLine, e = b.endLine;
+  if (g.edgeAdjust === 2) {
+    s += dir; if (s < 1) s = 1; if (s > e) s = e;
+  } else {
+    e += dir; if (e < s) e = s; if (e > full.length) e = full.length;
+  }
+
+  b.startLine = s;
+  b.endLine = e;
+  b.lines = full.slice(s - 1, e);
+  b.savedLines = [...b.lines];
+  g.curLine = (g.edgeAdjust === 2) ? 0 : b.lines.length - 1;
+  g.curCol = 0;
+  requestDraw();
+}
+
+function toggleFold() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (!b.folded) {
+    b.memLine = g.curLine;
+    b.memCol = g.curCol;
+    b.folded = true;
+  } else {
+    b.folded = false;
+    g.curLine = b.memLine || 0;
+    g.curCol = b.memCol || 0;
+  }
+  g.status = b.folded ? "folded block" : "unfolded block";
+  requestDraw();
+}
+
+function toggleFoldAll() {
+  if (!g.blocks.length) return;
+  const anyOpen = g.blocks.some(b => !b.folded);
+  if (anyOpen) {
+    const cur = g.blocks[g.curBlock];
+    cur.memLine = g.curLine;
+    cur.memCol = g.curCol;
+  }
+  for (const b of g.blocks) b.folded = anyOpen;
+  if (!anyOpen) {
+    const cur = g.blocks[g.curBlock];
+    g.curLine = cur.memLine || 0;
+    g.curCol = cur.memCol || 0;
+  }
+  g.status = anyOpen ? "folded all blocks" : "unfolded all blocks";
+  requestDraw();
+}
+
+function expandBlockToWholeFile() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (b.kind !== "file") { g.status = "expand: block has no source file"; requestDraw(); return; }
+  if (b.dirty) { g.status = "expand: save block first (⌘S) — expand reloads from disk"; requestDraw(); return; }
+  if (!g.files[b.source]) { g.status = "cannot re-read source file"; requestDraw(); return; }
+
+  const full = g.files[b.source].split(/\r?\n/);
+  b.startLine = 1;
+  b.endLine = full.length;
+  b.lines = [...full];
+  b.savedLines = [...full];
+  b.folded = false;
+  g.curLine = 0; g.curCol = 0;
+  g.status = `expanded block to whole file (1:${full.length})`;
+  saveManifest(true);
+  requestDraw();
+}
+
+function gotoBlockRemembering(targetIdx) {
+  if (!g.blocks.length) return;
+  const cur = g.blocks[g.curBlock];
+  if (cur) { cur.memLine = g.curLine; cur.memCol = g.curCol; }
+  g.curBlock = (targetIdx + g.blocks.length) % g.blocks.length;
+  g.curLine = g.blocks[g.curBlock].memLine || 0;
+  g.curCol = g.blocks[g.curBlock].memCol || 0;
+  ensureCursorSane();
+  g.followCursor = true;
+  requestDraw();
+}
+
+// ─── Visual Row & Word Motions ────────────────────────────────────────
+function isWordCh(c) { return /[a-zA-Z0-9_]/.test(c); }
+
+function moveVertByVisual(n) {
+  if (!g.visualRows.length) return;
+  let idx = 0;
+  for (let k = 0; k < g.visualRows.length; k++) {
+    const vr = g.visualRows[k];
+    if (vr.bi === g.curBlock && vr.li === g.curLine && vr.off <= g.curCol) {
+      idx = k;
+    }
+  }
+
+  if (g.goalCol < 0) {
+    g.goalCol = Math.max(0, g.curCol - g.visualRows[idx].off);
+  }
+
+  const targetIdx = Math.max(0, Math.min(g.visualRows.length - 1, idx + n));
+  const target = g.visualRows[targetIdx];
+  g.curBlock = target.bi;
+  g.curLine = target.li;
+
+  const b = g.blocks[g.curBlock];
+  if (b.folded) {
+    g.curLine = 0; g.curCol = 0;
+  } else {
+    g.curCol = Math.min(b.lines[g.curLine].length, target.off + g.goalCol);
+  }
+  g.followCursor = true;
+  requestDraw();
+}
+
+function pageVertBy(n) {
+  if (!g.visualRows.length) return;
+  let idx = 0;
+  for (let k = 0; k < g.visualRows.length; k++) {
+    const vr = g.visualRows[k];
+    if (vr.bi === g.curBlock && vr.li === g.curLine && vr.off <= g.curCol) {
+      idx = k;
+    }
+  }
+  let lo = idx, hi = idx;
+  while (lo > 0 && g.visualRows[lo - 1].bi === g.curBlock) lo--;
+  while (hi < g.visualRows.length - 1 && g.visualRows[hi + 1].bi === g.curBlock) hi++;
+  const target = Math.max(lo, Math.min(hi, idx + n));
+  moveVertByVisual(target - idx);
+}
+
+function moveHoriz(dir) {
+  if (!g.blocks.length) return;
+  ensureCursorSane();
+  const b = g.blocks[g.curBlock];
+  if (b.folded) return;
+  g.curCol += dir;
+  if (g.curCol < 0) {
+    if (g.curLine > 0) {
+      g.curLine--;
+      g.curCol = b.lines[g.curLine].length;
+    } else {
+      g.curCol = 0;
+    }
+  } else if (g.curCol > b.lines[g.curLine].length) {
+    if (g.curLine < b.lines.length - 1) {
+      g.curLine++;
+      g.curCol = 0;
+    } else {
+      g.curCol = b.lines[g.curLine].length;
+    }
+  }
+  g.goalCol = -1;
+  g.followCursor = true;
+  requestDraw();
+}
+
+function wordForward() {
+  if (!g.blocks.length) return;
+  const lines = g.blocks[g.curBlock].lines;
+  let L = g.curLine, C = g.curCol;
+  while (true) {
+    if (C >= lines[L].length) {
+      if (L < lines.length - 1) { L++; C = 0; } else break;
+    } else if (!isWordCh(lines[L][C])) C++;
+    else break;
+  }
+  while (C < lines[L].length && isWordCh(lines[L][C])) C++;
+  g.curLine = L; g.curCol = C;
+  g.followCursor = true;
+  requestDraw();
+}
+
+function wordBack() {
+  if (!g.blocks.length) return;
+  const lines = g.blocks[g.curBlock].lines;
+  let L = g.curLine, C = g.curCol;
+  while (true) {
+    if (C <= 0) {
+      if (L > 0) { L--; C = lines[L].length; } else break;
+    } else if (!isWordCh(lines[L][C - 1])) C--;
+    else break;
+  }
+  while (C > 0 && isWordCh(lines[L][C - 1])) C--;
+  g.curLine = L; g.curCol = C;
+  g.followCursor = true;
+  requestDraw();
+}
+
+function deleteWordForward() {
+  if (!g.blocks.length) return;
+  const sL = g.curLine, sC = g.curCol;
+  wordForward();
+  if (g.curLine === sL && g.curCol === sC) return;
+  pushUndo();
+  g.clipboard = selectionTextFromRange(sL, sC, g.curLine, g.curCol);
+  try { navigator.clipboard.writeText(g.clipboard); } catch {}
+  deleteSelectionFromRange(sL, sC, g.curLine, g.curCol);
+  recomputeDirty(g.curBlock);
+  requestDraw();
+}
+
+function deleteWordBack() {
+  if (!g.blocks.length) return;
+  const eL = g.curLine, eC = g.curCol;
+  wordBack();
+  if (g.curLine === eL && g.curCol === eC) return;
+  pushUndo();
+  g.clipboard = selectionTextFromRange(g.curLine, g.curCol, eL, eC);
+  try { navigator.clipboard.writeText(g.clipboard); } catch {}
+  deleteSelectionFromRange(g.curLine, g.curCol, eL, eC);
+  recomputeDirty(g.curBlock);
+  requestDraw();
+}
+
+function deleteSelectionFromRange(sL, sC, eL, eC) {
+  const b = g.blocks[g.curBlock];
+  if (sL === eL) {
+    b.lines[sL] = b.lines[sL].slice(0, sC) + b.lines[sL].slice(eC);
+  } else {
+    b.lines[sL] = b.lines[sL].slice(0, sC) + b.lines[eL].slice(eC);
+    b.lines.splice(sL + 1, eL - sL);
+  }
+  g.curLine = sL;
+  g.curCol = sC;
+}
+
+// ─── Incremental Search (Ctrl-H) & Text Grep (Ctrl-G) ─────────────────
+function searchMove(dir) {
+  if (!g.searchQuery || !g.blocks.length) return;
+  const needle = g.searchQuery.toLowerCase();
+  const nBlocks = g.blocks.length;
+
+  for (let bi = 0; bi < nBlocks; bi++) {
+    const bIdx = (g.curBlock + (dir > 0 ? bi : -bi) + nBlocks) % nBlocks;
+    const b = g.blocks[bIdx];
+    const nLines = b.lines.length;
+
+    const startL = (bIdx === g.curBlock) ? g.curLine : (dir > 0 ? 0 : nLines - 1);
+    for (let li = 0; li < nLines; li++) {
+      const lineIdx = (startL + (dir > 0 ? li : -li) + nLines) % nLines;
+      const hay = b.lines[lineIdx].toLowerCase();
+      let matchCol = -1;
+
+      if (bIdx === g.curBlock && lineIdx === g.curLine) {
+        matchCol = dir > 0 ? hay.indexOf(needle, g.curCol + 1) : hay.lastIndexOf(needle, g.curCol - 1);
+      } else {
+        matchCol = dir > 0 ? hay.indexOf(needle) : hay.lastIndexOf(needle);
+      }
+
+      if (matchCol !== -1) {
+        g.curBlock = bIdx;
+        g.curLine = lineIdx;
+        g.curCol = matchCol;
+        g.followCursor = true;
+        requestDraw();
+        return;
+      }
+    }
+  }
+}
+
+function openTextFinder(query = "") {
+  g.finder.mode = "TEXT";
+  g.finder.query = query;
+  updateTextFinderMatches();
+  g.status = "live text grep — type to filter across mounted files";
+  requestDraw();
+}
+
+function updateTextFinderMatches() {
+  const q = g.finder.query.toLowerCase();
+  g.finder.textMatches = [];
+  g.finder.sel = 0;
+  if (q.length < 2) return;
+
+  for (const [path, content] of Object.entries(g.files)) {
+    const lines = content.split(/\r?\n/);
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].toLowerCase().includes(q)) {
+        g.finder.textMatches.push({ path, line: i + 1, text: lines[i] });
+        if (g.finder.textMatches.length >= 500) return;
+      }
+    }
+  }
+}
+
+function openFileFinder() {
+  g.finder.mode = "FILE";
+  g.finder.query = "";
+  g.finder.files = Object.keys(g.files);
+  updateFinderMatches();
+  requestDraw();
+}
+
+function updateFinderMatches() {
+  const q = g.finder.query.toLowerCase();
+  g.finder.matches = [];
+  for (let i = 0; i < g.finder.files.length; i++) {
+    if (g.finder.files[i].toLowerCase().includes(q)) g.finder.matches.push(i);
+  }
+  g.finder.sel = 0;
+}
+
+// ─── Key Event Pipeline ───────────────────────────────────────────────
+window.addEventListener("keydown", async (e) => {
+  resetBlink();
+  await checkPendingDirPermission();
+
+  if (g.showHelp) {
+    e.preventDefault();
+    g.showHelp = false;
+    requestDraw();
+    return;
+  }
+
+  g.followCursor = true;
+
+  const isCtrl = e.ctrlKey;
+  const isMeta = e.metaKey;
+  const isOption = e.altKey;
+  const isShift = e.shiftKey;
+
+  // Sticky C-l cycle & goalCol reset (matches main.mm lines 1425-1432)
+  if (!(isCtrl && e.code === "KeyL")) g.recenterCycle = 0;
+  const isVertKey =
+    (!isCtrl && !isMeta && !isOption && (e.code === "ArrowDown" || e.code === "ArrowUp")) ||
+    (isCtrl && !g.cmdActive && (e.code === "KeyN" || e.code === "KeyP"));
+  if (!isVertKey) g.goalCol = -1;
+
+  // Quick Marks
+  if (g.settingMark || g.goingToMark) {
+    e.preventDefault();
+    if (/^[a-zA-Z]$/.test(e.key)) {
+      const k = e.key.toLowerCase();
+      if (g.settingMark) {
+        g.quickMarks[k] = { b: g.curBlock, l: g.curLine, c: g.curCol };
+        g.status = `mark '${k}' set`;
+      } else {
+        const m = g.quickMarks[k];
+        if (m && m.b < g.blocks.length) {
+          g.curBlock = m.b; g.curLine = m.l; g.curCol = m.c;
+          ensureCursorSane();
+          g.status = `jumped to mark '${k}'`;
+        } else {
+          g.status = `mark '${k}' not set`;
+        }
+      }
+    } else {
+      g.status = "mark cancelled";
+    }
+    g.settingMark = false;
+    g.goingToMark = false;
+    requestDraw();
+    return;
+  }
+
+  // Finder Mode Key Inputs
+  if (g.finder.mode !== "NONE") {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (g.finder.mode === "NEWPAGE") {
+        enterPagePicker();
+      } else {
+        g.finder.mode = "NONE";
+        g.status = "finder closed";
+      }
+      requestDraw();
+      return;
+    }
+
+    if (g.finder.mode === "PAGE") {
+      const count = g.finder.pagePaths.length + 2;
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(count - 1, g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(count - 1, g.finder.sel + 10);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 10);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (g.finder.sel === 0) {
+          g.finder.query = "";
+          g.finder.mode = "NEWPAGE";
+        } else if (g.finder.sel === 1) {
+          g.finder.mode = "NONE";
+          mountDirectory();
+        } else {
+          const p = g.finder.pagePaths[g.finder.sel - 2];
+          saveManifest(true);
+          if (g.files[p]) importManifest(g.files[p], p);
+          g.finder.mode = "NONE";
+        }
+        requestDraw();
+      }
+      return;
+    }
+
+    if (g.finder.mode === "NEWPAGE") {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const title = g.finder.query.trim();
+        if (title) {
+          createPage(title);
+          g.finder.mode = "NONE";
+        }
+        requestDraw();
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        g.finder.query = g.finder.query.slice(0, -1);
+        requestDraw();
+      } else if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+        e.preventDefault();
+        g.finder.query += e.key;
+        requestDraw();
+      }
+      return;
+    }
+
+    if (g.finder.mode === "FILE") {
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(Math.max(0, g.finder.matches.length - 1), g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(Math.max(0, g.finder.matches.length - 1), g.finder.sel + 10);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 10);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const file = g.finder.files[g.finder.matches[g.finder.sel]];
+        if (file && g.files[file] !== undefined) {
+          openRangeFinder(file, -1, -1);
+        }
+        requestDraw();
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        g.finder.query = g.finder.query.slice(0, -1);
+        updateFinderMatches();
+        requestDraw();
+      } else if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+        e.preventDefault();
+        g.finder.query += e.key;
+        updateFinderMatches();
+        requestDraw();
+      }
+      return;
+    }
+
+    if (g.finder.mode === "RANGE") {
+      const last = Math.max(0, g.finder.lines.length - 1);
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.cur = Math.min(last, g.finder.cur + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.cur = Math.max(0, g.finder.cur - 1);
+        requestDraw();
+      } else if (e.key === "PageDown" || (isOption && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.cur = Math.min(last, g.finder.cur + 20);
+        requestDraw();
+      } else if (e.key === "PageUp" || (isOption && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.cur = Math.max(0, g.finder.cur - 20);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (g.finder.markStart < 0) {
+          g.finder.markStart = g.finder.cur;
+          g.status = "Enter: pull range · move cursor to set end";
+        } else {
+          const s = Math.min(g.finder.markStart, g.finder.cur);
+          const en = Math.max(g.finder.markStart, g.finder.cur);
+          const slice = g.finder.lines.slice(s, en + 1);
+          if (g.finder.editBlock >= 0 && g.finder.editBlock < g.blocks.length) {
+            pushUndo(g.finder.editBlock);
+            const bl = g.blocks[g.finder.editBlock];
+            bl.source = g.finder.path;
+            bl.kind = "file"; bl.scratch = false;
+            bl.startLine = s + 1; bl.endLine = en + 1;
+            bl.lines = [...slice]; bl.savedLines = [...slice];
+            bl.dirty = false;
+            computeBlockLineDiffs(bl);
+            g.curBlock = g.finder.editBlock; g.curLine = 0; g.curCol = 0;
+            g.status = `range → ${s + 1}:${en + 1}`;
+          } else {
+            createBlock({
+              kind: "file",
+              source: g.finder.path,
+              startLine: s + 1,
+              endLine: en + 1,
+              lines: slice,
+              label: ""
+            });
+            g.status = `pulled ${g.finder.path} ${s + 1}:${en + 1}`;
+          }
+          g.finder.mode = "NONE";
+          saveManifest(true);
+        }
+        requestDraw();
+      }
+      return;
+    }
+
+    if (g.finder.mode === "TEXT") {
+      const last = Math.max(0, g.finder.textMatches.length - 1);
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 10);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 10);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const match = g.finder.textMatches[g.finder.sel];
+        if (match && g.files[match.path] !== undefined) {
+          openRangeFinder(match.path, match.line - 1, -1);
+        }
+        requestDraw();
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        g.finder.query = g.finder.query.slice(0, -1);
+        updateTextFinderMatches();
+        requestDraw();
+      } else if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+        e.preventDefault();
+        g.finder.query += e.key;
+        updateTextFinderMatches();
+        requestDraw();
+      }
+      return;
+    }
+  }
+
+  // Incremental Search Active (Ctrl-H)
+  if (g.searchActive) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      g.searchActive = false;
+      g.status = "search cancelled";
+      requestDraw();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      g.searchActive = false;
+      g.lastSearch = g.searchQuery;
+      g.status = `search kept: "${g.searchQuery}"`;
+      requestDraw();
+      return;
+    }
+    if (isCtrl && e.code === "KeyH") {
+      e.preventDefault();
+      if (!g.searchQuery && g.lastSearch) g.searchQuery = g.lastSearch;
+      if (g.searchQuery) g.lastSearch = g.searchQuery;
+      searchMove(isShift ? -1 : 1);
+      return;
+    }
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      g.searchQuery = g.searchQuery.slice(0, -1);
+      searchMove(1);
+      requestDraw();
+      return;
+    }
+    if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+      e.preventDefault();
+      g.searchQuery += e.key;
+      g.lastSearch = g.searchQuery;
+      searchMove(1);
+      requestDraw();
+      return;
+    }
+    g.searchActive = false;
+    if (g.searchQuery) g.lastSearch = g.searchQuery;
+  }
+
+  // Edge Adjust Navigation (Ctrl-O)
+  if (g.edgeAdjust !== 0) {
+    e.preventDefault();
+    if (e.key === "Escape" || e.key === "Enter") {
+      g.edgeAdjust = 0;
+      g.status = "edge set";
+    } else if (e.key === "Tab") {
+      g.edgeAdjust = g.edgeAdjust === 1 ? 2 : 1;
+      const b = g.blocks[g.curBlock];
+      if (b) {
+        g.curLine = (g.edgeAdjust === 2) ? 0 : b.lines.length - 1;
+        g.curCol = 0;
+      }
+    } else if (isCtrl && e.code === "KeyN") {
+      nudgeEdge(+1);
+    } else if (isCtrl && e.code === "KeyP") {
+      nudgeEdge(-1);
+    }
+    requestDraw();
+    return;
+  }
+
+  // ⌘ Meta Shortcuts
+  if (isMeta) {
+    if (e.key === "Enter") { e.preventDefault(); toggleFoldAll(); return; }
+    if (e.code === "KeyO") { e.preventDefault(); enterPagePicker(); return; }
+    if (e.code === "KeyP") { e.preventDefault(); openFileFinder(); return; }
+    if (e.code === "KeyF") { e.preventDefault(); openTextFinder(); return; }
+    if (e.code === "KeyS") { e.preventDefault(); saveAll(); return; }
+    if (e.code === "KeyR") {
+      e.preventDefault();
+      if (isShift) reloadAll(); else reloadBlock(g.curBlock);
+      return;
+    }
+    if (e.code === "KeyZ") {
+      e.preventDefault();
+      if (isShift) redo(); else undo();
+      return;
+    }
+    if (e.key === "=" || e.key === "+") {
+      e.preventDefault();
+      fontPt = Math.min(48, fontPt + 1);
+      updateMetrics();
+      requestDraw();
+      return;
+    }
+    if (e.key === "-") {
+      e.preventDefault();
+      fontPt = Math.max(8, fontPt - 1);
+      updateMetrics();
+      requestDraw();
+      return;
+    }
+    return;
+  }
+
+  // Option (Alt) Operations — Swallows all unbound Option keys to prevent macOS dead-keys ('ø', etc.)
+  if (isOption && !isCtrl && !g.cmdActive) {
+    e.preventDefault();
+    e.stopPropagation();
+    switch (e.code) {
+      case "KeyO":      enterPagePicker(); break;
+      case "KeyW":      openFileFinder(); break;
+      case "KeyG":      openTextFinder(); break;
+      case "KeyJ":      expandBlockToWholeFile(); break;
+      case "KeyQ":      dropBlock(); break;
+      case "KeyR":      if (isShift) reloadAll(); else reloadBlock(g.curBlock); break;
+      case "KeyT":
+        if (g.blocks.length) {
+          g.cmdActive = true;
+          g.cmd = "label " + g.blocks[g.curBlock].label;
+        }
+        break;
+      case "ArrowUp":   moveLineUp(); break;
+      case "ArrowDown": moveLineDown(); break;
+      case "KeyF":      wordForward(); break;
+      case "KeyB":      wordBack(); break;
+      case "KeyN":      pageVertBy(Math.max(1, g.visibleRows - 1)); break;
+      case "KeyP":      pageVertBy(-Math.max(1, g.visibleRows - 1)); break;
+      case "KeyD":      deleteWordForward(); break;
+      case "Backspace": deleteWordBack(); break;
+      default: break;
+    }
+    requestDraw();
+    return;
+  }
+
+  // Emacs-style Ctrl Keys (layout-stable via e.code)
+  if (isCtrl && !g.cmdActive) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === "Enter") { toggleFoldAll(); return; }
+    switch (e.code) {
+      case "KeyN": moveVertByVisual(+1); break;
+      case "KeyP": moveVertByVisual(-1); break;
+      case "KeyA": g.curCol = 0; g.goalCol = 0; break;
+      case "KeyE":
+        if (g.blocks[g.curBlock]) {
+          g.curCol = g.blocks[g.curBlock].lines[g.curLine].length;
+          g.goalCol = g.curCol;
+        }
+        break;
+      case "KeyF": moveHoriz(+1); break;
+      case "KeyB": moveHoriz(-1); break;
+      case "KeyD": deleteCharForward(); break;
+      case "KeyK": killToEndOfLine(); break;
+      case "KeyG": openTextFinder(); break;
+      case "KeyW": openFileFinder(); break;
+      case "KeyH":
+        g.searchActive = true;
+        g.searchQuery = "";
+        g.status = g.lastSearch
+          ? `search — type to find, or Ctrl-H to recall "${g.lastSearch}"`
+          : "search — type to find · Ctrl-H next · Ctrl-Shift-H prev · ↵ keep · Esc cancel";
+        break;
+      case "KeyQ": dropBlock(); break;
+      case "KeyU": if (isShift) redo(); else undo(); break;
+      case "Semicolon":
+        gotoBlockRemembering(isShift ? g.curBlock - 1 : g.curBlock + 1);
+        break;
+      case "KeyL":
+        g.recenterCycle = (g.recenterCycle % 3) + 1;
+        g.recenterTopRequested = true;
+        g.followCursor = false;
+        break;
+      case "Quote":
+        g.settingMark = true; g.goingToMark = false;
+        g.status = "mark ▸ set [a-z]";
+        break;
+      case "KeyM":
+        g.goingToMark = true; g.settingMark = false;
+        g.status = "mark ▸ jump [a-z]";
+        break;
+      case "KeyT":
+        if (g.blocks.length) {
+          g.cmdActive = true;
+          g.cmd = "label " + g.blocks[g.curBlock].label;
+        }
+        break;
+      case "Space": markOrCopy(); break;
+      case "KeyX":  cutSelection(); break;
+      case "KeyV":  break; // Handled via paste event
+      case "KeyJ":  toggleFold(); break;
+      case "BracketLeft":
+        if (g.curBlock > 0) {
+          const b = g.blocks.splice(g.curBlock, 1)[0];
+          g.blocks.splice(g.curBlock - 1, 0, b);
+          g.curBlock--;
+          g.status = "moved block up";
+          saveManifest(true);
+        }
+        break;
+      case "BracketRight":
+        if (g.curBlock < g.blocks.length - 1) {
+          const b = g.blocks.splice(g.curBlock, 1)[0];
+          g.blocks.splice(g.curBlock + 1, 0, b);
+          g.curBlock++;
+          g.status = "moved block down";
+          saveManifest(true);
+        }
+        break;
+      case "Slash":     splitBlock(); break;
+      case "Backslash": joinBlock(); break;
+      case "KeyO":      enterEdgeAdjust(); break;
+      case "KeyS": {
+        const now = Date.now();
+        if (now - g.lastCtrlS < 500) {
+          saveAll();
+          g.lastCtrlS = 0;
+        } else {
+          saveBlock(g.curBlock);
+          g.lastCtrlS = now;
+        }
+        break;
+      }
+      default: break;
+    }
+    requestDraw();
+    return;
+  }
+
+  // Esc -> Toggle Command Bar
+  if (e.key === "Escape") {
+    e.preventDefault();
+    g.cmdActive = !g.cmdActive;
+    if (g.cmdActive) g.cmd = "";
+    requestDraw();
+    return;
+  }
+
+  // Command Bar Input
+  if (g.cmdActive) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const c = g.cmd;
+      g.cmdActive = false;
+      g.cmd = "";
+      execCommand(c);
+      requestDraw();
+    } else if (e.key === "Backspace") {
+      e.preventDefault();
+      g.cmd = g.cmd.slice(0, -1);
+      requestDraw();
+    } else if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+      e.preventDefault();
+      g.cmd += e.key;
+      requestDraw();
+    }
+    return;
+  }
+
+  // Plain Text Navigation & Edits
+  if (e.key === "ArrowDown") { e.preventDefault(); moveVertByVisual(+1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); moveVertByVisual(-1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); moveHoriz(-1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); moveHoriz(+1); }
+  else if (e.key === "PageUp") { e.preventDefault(); pageVertBy(-Math.max(1, g.visibleRows - 1)); }
+  else if (e.key === "PageDown") { e.preventDefault(); pageVertBy(Math.max(1, g.visibleRows - 1)); }
+  else if (e.key === "Backspace") { e.preventDefault(); deleteCharBack(); }
+  else if (e.key === "Enter") { e.preventDefault(); insertNewline(); }
+  else if (e.key === "Tab") {
+    e.preventDefault();
+    const spaces = " ".repeat(4 - (g.curCol % 4));
+    insertChar(spaces);
+  }
+  else if (e.key.length === 1 && !isMeta && !isOption && !isCtrl) {
+    e.preventDefault();
+    insertChar(e.key);
+  }
+});
+
+// Clear keySink to avoid dead-key accumulation
+keySink.addEventListener("input", () => {
+  keySink.value = "";
+});
+
+function insertChar(ch) {
+  if (!g.blocks.length) createBlock({ kind: "scratch" });
+  pushUndo();
+  if (g.markActive && g.markBlock === g.curBlock) deleteSelection();
+
+  const b = g.blocks[g.curBlock];
+  if (b.folded) b.folded = false;
+  const ln = b.lines[g.curLine];
+  b.lines[g.curLine] = ln.slice(0, g.curCol) + ch + ln.slice(g.curCol);
+  g.curCol += ch.length;
+  g.goalCol = -1;
+  recomputeDirty(g.curBlock);
+  g.followCursor = true;
+  requestDraw();
+}
+
+function insertNewline() {
+  if (!g.blocks.length) createBlock({ kind: "scratch" });
+  pushUndo();
+  if (g.markActive && g.markBlock === g.curBlock) deleteSelection();
+
+  const b = g.blocks[g.curBlock];
+  if (b.folded) b.folded = false;
+  const ln = b.lines[g.curLine];
+  const indent = ln.match(/^\s*/)[0];
+  const before = ln.slice(0, g.curCol);
+  const after = ln.slice(g.curCol);
+  b.lines[g.curLine] = before;
+  b.lines.splice(g.curLine + 1, 0, indent + after);
+  g.curLine++;
+  g.curCol = indent.length;
+  g.goalCol = -1;
+  recomputeDirty(g.curBlock);
+  g.followCursor = true;
+  requestDraw();
+}
+
+function deleteCharBack() {
+  if (!g.blocks.length) return;
+  if (g.markActive && g.markBlock === g.curBlock) {
+    pushUndo(); deleteSelection(); requestDraw(); return;
+  }
+  pushUndo();
+  const b = g.blocks[g.curBlock];
+  if (g.curCol > 0) {
+    const ln = b.lines[g.curLine];
+    b.lines[g.curLine] = ln.slice(0, g.curCol - 1) + ln.slice(g.curCol);
+    g.curCol--;
+  } else if (g.curLine > 0) {
+    const prevLn = b.lines[g.curLine - 1];
+    g.curCol = prevLn.length;
+    b.lines[g.curLine - 1] = prevLn + b.lines[g.curLine];
+    b.lines.splice(g.curLine, 1);
+    g.curLine--;
+  }
+  g.goalCol = -1;
+  recomputeDirty(g.curBlock);
+  g.followCursor = true;
+  requestDraw();
+}
+
+function deleteCharForward() {
+  if (!g.blocks.length) return;
+  if (g.markActive && g.markBlock === g.curBlock) {
+    pushUndo(); deleteSelection(); requestDraw(); return;
+  }
+  pushUndo();
+  const b = g.blocks[g.curBlock];
+  const ln = b.lines[g.curLine];
+  if (g.curCol < ln.length) {
+    b.lines[g.curLine] = ln.slice(0, g.curCol) + ln.slice(g.curCol + 1);
+  } else if (g.curLine < b.lines.length - 1) {
+    b.lines[g.curLine] = ln + b.lines[g.curLine + 1];
+    b.lines.splice(g.curLine + 1, 1);
+  }
+  g.goalCol = -1;
+  recomputeDirty(g.curBlock);
+  requestDraw();
+}
+
+function killToEndOfLine() {
+  if (!g.blocks.length) return;
+  pushUndo();
+  const b = g.blocks[g.curBlock];
+  if (b.folded) b.folded = false;
+  const ln = b.lines[g.curLine];
+  if (g.curCol < ln.length) {
+    b.lines[g.curLine] = ln.slice(0, g.curCol);
+  } else if (g.curLine < b.lines.length - 1) {
+    b.lines[g.curLine] = ln + b.lines[g.curLine + 1];
+    b.lines.splice(g.curLine + 1, 1);
+  }
+  g.goalCol = -1;
+  recomputeDirty(g.curBlock);
+  requestDraw();
+}
+
+function moveLineUp() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (g.curLine <= 0) return;
+  pushUndo();
+  const tmp = b.lines[g.curLine];
+  b.lines[g.curLine] = b.lines[g.curLine - 1];
+  b.lines[g.curLine - 1] = tmp;
+  g.curLine--;
+  recomputeDirty(g.curBlock);
+  g.status = "moved line up";
+  requestDraw();
+}
+
+function moveLineDown() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (g.curLine >= b.lines.length - 1) return;
+  pushUndo();
+  const tmp = b.lines[g.curLine];
+  b.lines[g.curLine] = b.lines[g.curLine + 1];
+  b.lines[g.curLine + 1] = tmp;
+  g.curLine++;
+  recomputeDirty(g.curBlock);
+  g.status = "moved line down";
+  requestDraw();
+}
+
+function dropBlock() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  const hasText = b.lines.some(ln => ln.trim().length > 0);
+  const risky = (b.kind === "scratch" ? hasText : b.dirty);
+  const now = Date.now();
+
+  if (risky && !(now - g.lastCtrlQ < 1500 && g.lastCtrlQBlock === g.curBlock)) {
+    g.lastCtrlQ = now;
+    g.lastCtrlQBlock = g.curBlock;
+    g.status = b.kind === "scratch"
+      ? "note lives only on page — Ctrl-Q again to drop"
+      : "block has unsaved edits — Ctrl-Q again to drop";
+    requestDraw();
+    return;
+  }
+  g.lastCtrlQ = 0;
+  g.blocks.splice(g.curBlock, 1);
+  g.curBlock = Math.max(0, Math.min(g.curBlock, g.blocks.length - 1));
+  g.curLine = 0; g.curCol = 0;
+  ensureCursorSane();
+  g.status = "dropped block";
+  saveManifest(true);
+  requestDraw();
+}
+
+function openRangeFinder(path, curLine0, editBlock) {
+  if (g.files[path] === undefined) {
+    g.status = `range: cannot read ${path}`;
+    requestDraw();
+    return;
+  }
+  g.finder.path = path;
+  g.finder.lines = g.files[path].split(/\r?\n/);
+  const last = Math.max(0, g.finder.lines.length - 1);
+  if (editBlock >= 0 && editBlock < g.blocks.length && g.blocks[editBlock].kind === "file") {
+    g.finder.markStart = Math.max(0, Math.min(last, g.blocks[editBlock].startLine - 1));
+    g.finder.cur = Math.max(0, Math.min(last, g.blocks[editBlock].endLine - 1));
+  } else if (curLine0 < 0) {
+    g.finder.markStart = 0;
+    g.finder.cur = last;
+  } else {
+    g.finder.cur = Math.max(0, Math.min(last, curLine0));
+    g.finder.markStart = -1;
+  }
+  g.finder.top = Math.max(0, g.finder.cur - 5);
+  g.finder.editBlock = editBlock;
+  g.finder.mode = "RANGE";
+  requestDraw();
+}
+
+function gotoLine(N) {
+  if (!g.blocks.length) { g.status = "no blocks"; return; }
+  const land = (bi, li) => {
+    g.blocks[bi].folded = false;
+    g.curBlock = bi; g.curLine = li; g.curCol = 0;
+    g.markActive = false; g.followCursor = true;
+    g.status = `→ line ${N}`;
+  };
+  const cb = g.blocks[g.curBlock];
+  if (cb.kind === "file") {
+    if (N >= cb.startLine && N <= cb.endLine) { land(g.curBlock, N - cb.startLine); return; }
+  } else {
+    land(g.curBlock, Math.min(Math.max(1, N), cb.lines.length) - 1);
+    return;
+  }
+  for (let bi = 0; bi < g.blocks.length; bi++) {
+    const b = g.blocks[bi];
+    if (b.kind === "file" && N >= b.startLine && N <= b.endLine) {
+      land(bi, N - b.startLine);
+      return;
+    }
+  }
+  g.status = `line ${N} not loaded — pull it first`;
+}
+
+function execCommand(cmdStr) {
+  const trimmed = cmdStr.trim();
+  if (!trimmed) return;
+  const parts = trimmed.split(/\s+/);
+  const verb = parts[0].toLowerCase();
+  const args = parts.slice(1);
+
+  if (/^\d+$/.test(verb)) {
+    gotoLine(parseInt(verb, 10));
+    return;
+  }
+  if (verb.startsWith("/") && verb.length > 1) {
+    const term = trimmed.slice(1);
+    g.lastSearch = term;
+    g.searchQuery = term;
+    searchMove(1);
+    return;
+  }
+
+  if (verb === "pull") {
+    const path = args[0], range = args[1] || "";
+    if (!path || !range.includes(":")) {
+      g.status = "usage: pull <path> <start>:<end>";
+      return;
+    }
+    const [sStr, eStr] = range.split(":");
+    const s = parseInt(sStr, 10) || 1, e = parseInt(eStr, 10) || s;
+    if (g.files[path] === undefined) {
+      g.status = `pull: cannot read ${path}`;
+      return;
+    }
+    const all = g.files[path].split(/\r?\n/);
+    const clS = Math.max(1, s), clE = Math.min(all.length, e);
+    if (clS > clE) { g.status = "pull: empty range"; return; }
+    createBlock({ kind: "file", source: path, startLine: clS, endLine: clE, lines: all.slice(clS - 1, clE) });
+    g.status = `pulled ${path} ${clS}:${clE}`;
+    saveManifest(true);
+  } else if (verb === "scratch") {
+    createBlock({ kind: "scratch", lines: [args.join(" ") || ""] });
+    saveManifest(true);
+  } else if (verb === "drop" || verb === "close") {
+    dropBlock();
+  } else if (verb === "split") {
+    splitBlock();
+  } else if (verb === "join") {
+    joinBlock();
+  } else if (verb === "edge" || verb === "edges") {
+    enterEdgeAdjust();
+  } else if (verb === "goto") {
+    const targetLine = parseInt(args[0], 10);
+    if (!isNaN(targetLine)) gotoLine(targetLine);
+    else g.status = "usage: goto <line>";
+  } else if (verb === "grep") {
+    openTextFinder(args.join(" "));
+  } else if (verb === "search" || verb === "find") {
+    const term = args.join(" ");
+    if (term) { g.lastSearch = term; g.searchQuery = term; }
+    else g.searchQuery = g.lastSearch;
+    searchMove(1);
+  } else if (verb === "reload" || verb === "revert") {
+    if (args[0] === "all") reloadAll();
+    else reloadBlock(g.curBlock);
+  } else if (verb === "open") {
+    const p = args[0];
+    if (p && g.files[p] !== undefined) {
+      saveManifest(true);
+      importManifest(g.files[p], p);
+    } else {
+      enterPagePicker();
+    }
+  } else if (verb === "page" || verb === "saveas") {
+    const title = args.join(" ");
+    if (!title) {
+      g.status = g.pagePath
+        ? `page: ${g.pageTitle}  (${g.pagePath})`
+        : "no page yet — :page <title> saves these blocks as one";
+    } else {
+      adoptPage(title);
+    }
+  } else if (verb === "range") {
+    if (g.blocks.length && g.blocks[g.curBlock].kind === "file") {
+      const b = g.blocks[g.curBlock];
+      if (args[0] && args[0].includes(":")) {
+        const [sStr, eStr] = args[0].split(":");
+        const s = parseInt(sStr, 10), e = parseInt(eStr, 10);
+        if (!isNaN(s) && !isNaN(e) && g.files[b.source] !== undefined) {
+          const full = g.files[b.source].split(/\r?\n/);
+          b.startLine = Math.max(1, s);
+          b.endLine = Math.min(full.length, e);
+          b.lines = full.slice(b.startLine - 1, b.endLine);
+          b.savedLines = [...b.lines];
+          g.curLine = 0; g.curCol = 0;
+          recomputeDirty(g.curBlock);
+          g.status = `range → ${b.startLine}:${b.endLine}`;
+        }
+      } else {
+        openRangeFinder(b.source, b.startLine - 1, g.curBlock);
+      }
+    } else {
+      g.status = "range: current block has no source";
+    }
+  } else if (verb === "md" || verb === "markdown") {
+    if (args[0] === "all") {
+      g.showMarkdown = !g.showMarkdown;
+      g.status = g.showMarkdown ? "markdown styling on everywhere" : "markdown styling off everywhere";
+    } else if (g.blocks[g.curBlock]) {
+      const b = g.blocks[g.curBlock];
+      const now = g.showMarkdown && isMarkdownBlock(b);
+      b.mdMode = now ? -1 : 1;
+      if (!g.showMarkdown && !now) g.showMarkdown = true;
+      g.status = now ? "markdown off for this block" : "markdown on for this block  (:md all toggles everywhere)";
+    }
+  } else if (verb === "w" || verb === "write" || verb === "save") {
+    if (args[0]) g.pagePath = args[0];
+    saveAll();
+  } else if (verb === "nums" || verb === "numbers") {
+    g.showLineNos = !g.showLineNos;
+    g.status = g.showLineNos ? "line numbers on" : "line numbers off";
+  } else if (verb === "label" || verb === "name") {
+    if (g.blocks[g.curBlock]) {
+      g.blocks[g.curBlock].label = args.join(" ");
+      saveManifest(true);
+      g.status = g.blocks[g.curBlock].label ? `labelled: ${g.blocks[g.curBlock].label}` : "label cleared";
+    }
+  } else if (verb === "organize" || verb === "sort") {
+    g.blocks.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "file" ? -1 : 1;
+      if (a.source !== b.source) return a.source.localeCompare(b.source);
+      return a.startLine - b.startLine;
+    });
+    g.status = "organized — grouped by file, ordered by line";
+    saveManifest(true);
+  } else if (verb === "?" || verb === "help") {
+    g.showHelp = true;
+    g.scrollY = 0;
+  } else {
+    g.status = `unknown command: ${verb}`;
+  }
+}
+
+// ─── Native Wheel / Trackpad Scroll (Finder Aware) ────────────────────
+window.addEventListener("wheel", (e) => {
+  if (g.finder.mode !== "NONE") {
+    const dir = e.deltaY > 0 ? 1 : -1;
+    const steps = Math.max(1, Math.floor(Math.abs(e.deltaY) / 24));
+    if (g.finder.mode === "RANGE") {
+      g.finder.cur = Math.max(0, Math.min(g.finder.lines.length - 1, g.finder.cur + dir * steps));
+    } else {
+      const count =
+        g.finder.mode === "PAGE" ? g.finder.pagePaths.length + 2 :
+        g.finder.mode === "TEXT" ? g.finder.textMatches.length :
+        g.finder.matches.length;
+      g.finder.sel = Math.max(0, Math.min(Math.max(0, count - 1), g.finder.sel + dir * steps));
+    }
+    requestDraw();
+    return;
+  }
+  g.scrollY += e.deltaY;
+  g.followCursor = false;
+  requestDraw();
+}, { passive: true });
+
+document.getElementById("folder-picker").addEventListener("change", async (e) => {
+  const files = e.target.files;
+  for (const f of files) {
+    const rel = f.webkitRelativePath || f.name;
+    const text = await f.text();
+    g.files[rel] = text;
+    g.files[f.name] = text;
+  }
+  refreshLoadedFileBlocks();
+  g.status = `mounted folder (${files.length} files) · Alt-W / ⌘P to pull`;
+  enterPagePicker();
+});
+
+window.addEventListener("resize", () => {
+  updateMetrics();
+  requestDraw();
+});
+
+// Focus Key Sink
+window.addEventListener("click", () => keySink.focus());
+
+// ─── Initial Startup ──────────────────────────────────────────────────
+updateMetrics();
+resetBlink();
+
+// Demo Setup
+g.files["samples/alpha.txt"] = "port: 8080\nhost: 0.0.0.0\nworkers: 4\ntimeout: 30\nlog_level: info\nretries: 3";
+g.files["samples/beta.txt"] = "buffer_size: 1024\ncache_enabled: true\nmax_connections: 500\nkeepalive: 60";
+
+// Check local storage backup
+const backup = localStorage.getItem("educed_manifest_backup");
+const savedPath = localStorage.getItem("educed_page_path") || ".educed/main.page";
+if (backup) {
+  importManifest(backup, savedPath);
+} else {
+  createBlock({
+    kind: "file",
+    source: "samples/alpha.txt",
+    startLine: 1,
+    endLine: 4,
+    lines: ["port: 8080", "host: 0.0.0.0", "workers: 4", "timeout: 30"]
+  });
+
+  createBlock({
+    kind: "scratch",
+    label: "daily driver notes",
+    lines: [
+      "# educed (Complete Web Port)",
+      "- **Mouse**: Click-to-place, drag selection, double-click word select",
+      "- **Opt-O / ⌘O**: Project & page picker (.educed/*.page manifests)",
+      "- **⌘S / Ctrl-S**: Splice blocks home to disk files (double-tap saves all)",
+      "- **Ctrl-G / ⌘F**: Project-wide live text grep",
+      "- **Ctrl-H**: Incremental in-page search (Ctrl-H next · ↵ keep)",
+      "- **Ctrl-O**: Interactive edge resize (Ctrl-N/P move · Tab switch)",
+      "- **Alt-W / ⌘P**: Browser-safe file pull finder",
+      "- **:help / :?**: Full in-app key reference overlay"
+    ]
+  });
+}
+
+// Restore handle asynchronously and rehydrate blocks
+restoreDirHandle();
+requestDraw();
+</script>
+
 </body>
 </html>
