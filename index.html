@@ -2871,10 +2871,6 @@ window.addEventListener("click", () => keySink.focus());
 updateMetrics();
 resetBlink();
 
-// Demo Setup
-g.files["samples/alpha.txt"] = "port: 8080\nhost: 0.0.0.0\nworkers: 4\ntimeout: 30\nlog_level: info\nretries: 3";
-g.files["samples/beta.txt"] = "buffer_size: 1024\ncache_enabled: true\nmax_connections: 500\nkeepalive: 60";
-
 // Check local storage backup
 const backup = localStorage.getItem("educed_manifest_backup");
 const savedPath = localStorage.getItem("educed_page_path") || ".educed/main.page";
@@ -2882,26 +2878,47 @@ if (backup) {
   importManifest(backup, savedPath);
 } else {
   createBlock({
-    kind: "file",
-    source: "samples/alpha.txt",
-    startLine: 1,
-    endLine: 4,
-    lines: ["port: 8080", "host: 0.0.0.0", "workers: 4", "timeout: 30"]
+    kind: "scratch",
+    label: "about me",
+    lines: [
+      "# Tristen MacPherson",
+      "Independent game developer & games researcher · Saskatoon, Canada.",
+      "Pursuing a master's in games research.",
+      "",
+      "Links:",
+      "- Discord:   https://discord.com/invite/E6ky7d5cMq",
+      "- Instagram: https://www.instagram.com/educedmoment/",
+      "- GitHub:    https://github.com/TmacP",
+      "- Contact:   tristenmac@gmail.com"
+    ]
   });
 
   createBlock({
     kind: "scratch",
-    label: "daily driver notes",
+    label: "educed editor",
     lines: [
-      "# educed (Complete Web Port)",
-      "- **Mouse**: Click-to-place, drag selection, double-click word select",
-      "- **Opt-O / ⌘O**: Project & page picker (.educed/*.page manifests)",
-      "- **⌘S / Ctrl-S**: Splice blocks home to disk files (double-tap saves all)",
-      "- **Ctrl-G / ⌘F**: Project-wide live text grep",
-      "- **Ctrl-H**: Incremental in-page search (Ctrl-H next · ↵ keep)",
-      "- **Ctrl-O**: Interactive edge resize (Ctrl-N/P move · Tab switch)",
-      "- **Alt-W / ⌘P**: Browser-safe file pull finder",
-      "- **:help / :?**: Full in-app key reference overlay"
+      "# edùced (Web Port)",
+      "This site is itself a client-side, block-oriented text editor.",
+      "Pure static HTML5 Canvas. Zero tracking, zero telemetry, zero server backend.",
+      "",
+      "Controls:",
+      "- ⌘O / Opt-O: Mount local project folder (File System Access API)",
+      "- ⌘P / Alt-W: Pull file slices into active workspace",
+      "- ⌘S / Ctrl-S: Splice edited blocks back into original source files",
+      "- :help / :?:  Show full keybinding reference"
+    ]
+  });
+
+  createBlock({
+    kind: "scratch",
+    label: "portfolio",
+    lines: [
+      "# Games & Projects",
+      "- Educe (Steam):",
+      "  https://store.steampowered.com/app/4486530/Educe/",
+      "",
+      "- Project Gatherwood (CrazyGames):",
+      "  https://www.crazygames.com/game/project-gatherwood-gou"
     ]
   });
 }
