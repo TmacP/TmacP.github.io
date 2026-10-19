@@ -787,18 +787,23 @@ async function saveAll() {
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+  a.style.display = "none";
   a.href = url;
   a.download = filename;
+  a.setAttribute("download", filename);
+  a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1000);
 }
 
 async function exportCurrentFile() {
   if (!g.blocks.length) return;
   const b = g.blocks[g.curBlock];
-  const filename = b.kind === "file" ? b.source.split("/").pop() : `${b.label || "scratch"}.txt`;
+  const filename = b.kind === "file" ? b.source.split("/").pop() : `${b.label || "scratch"}.ts`;
   const content = b.lines.join("\n") + "\n";
 
   if ("showSaveFilePicker" in window) {
@@ -815,8 +820,8 @@ async function exportCurrentFile() {
     }
   }
 
-  // Universal download fallback
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  // Use application/octet-stream so Safari / iOS does NOT append .txt to unknown extensions
+  const blob = new Blob([content], { type: "application/octet-stream" });
   downloadBlob(blob, filename);
   g.status = `downloaded ${filename} to device`;
   requestDraw();
@@ -855,7 +860,8 @@ async function exportAllModified() {
       }
     }
 
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    // application/octet-stream preserves exact file extension in WebKit / Safari
+    const blob = new Blob([content], { type: "application/octet-stream" });
     downloadBlob(blob, filename);
     count++;
     // Small pause between multiple file triggers so browser downloads queue smoothly
