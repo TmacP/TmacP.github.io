@@ -2046,7 +2046,67 @@ canvas.addEventListener("mousedown", async (e) => {
   keySink.focus();
   await checkPendingDirPermission();
 
-  if (g.finder.mode !== "NONE") return;
+  if (g.finder.mode !== "NONE") {
+    const rect = canvas.getBoundingClientRect();
+    const yPx = (e.clientY - rect.top) * dpr;
+    const hy = marginTop;
+    const listTop = hy + lineH * 1.4;
+    if (yPx >= listTop && yPx < H - barH) {
+      const rowIdx = Math.floor((yPx - listTop) / lineH);
+      const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+      const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+      const targetIdx = off + rowIdx;
+
+      if (g.finder.mode === "SYMBOLS") {
+        const filtered = getFilteredSymbols();
+        if (targetIdx >= 0 && targetIdx < filtered.length) {
+          g.finder.sel = targetIdx;
+          gotoLine(filtered[targetIdx].line);
+          g.finder.mode = "NONE";
+          requestDraw();
+        }
+      } else if (g.finder.mode === "QUICKFIX") {
+        if (targetIdx >= 0 && targetIdx < g.finder.fixActions.length) {
+          g.finder.sel = targetIdx;
+          applyQuickFixAction(g.finder.fixActions[targetIdx]);
+        }
+      } else if (g.finder.mode === "TEXT") {
+        if (targetIdx >= 0 && targetIdx < g.finder.textMatches.length) {
+          g.finder.sel = targetIdx;
+          const match = g.finder.textMatches[targetIdx];
+          if (match && g.files[match.path] !== undefined) {
+            openRangeFinder(match.path, match.line - 1, -1);
+          }
+          requestDraw();
+        }
+      } else if (g.finder.mode === "FILE") {
+        if (targetIdx >= 0 && targetIdx < g.finder.matches.length) {
+          g.finder.sel = targetIdx;
+          const file = g.finder.files[g.finder.matches[targetIdx]];
+          if (file && g.files[file] !== undefined) {
+            openRangeFinder(file, -1, -1);
+          }
+          requestDraw();
+        }
+      } else if (g.finder.mode === "PAGE") {
+        const count = g.finder.pagePaths.length + 1;
+        if (targetIdx >= 0 && targetIdx < count) {
+          g.finder.sel = targetIdx;
+          if (targetIdx === 0) {
+            g.finder.query = "";
+            g.finder.mode = "NEWPAGE";
+          } else {
+            const p = g.finder.pagePaths[targetIdx - 1];
+            saveManifest(true);
+            if (g.files[p]) importManifest(g.files[p], p);
+            g.finder.mode = "NONE";
+          }
+          requestDraw();
+        }
+      }
+    }
+    return;
+  }
   const hit = resolveHit(e.clientX, e.clientY);
   if (!hit) return;
 
@@ -4237,8 +4297,11 @@ window.addEventListener("wheel", (e) => {
       g.finder.cur = Math.max(0, Math.min(g.finder.lines.length - 1, g.finder.cur + dir * steps));
     } else {
       const count =
-        g.finder.mode === "PAGE" ? g.finder.pagePaths.length + 2 :
+        g.finder.mode === "PAGE" ? g.finder.pagePaths.length + 1 :
         g.finder.mode === "TEXT" ? g.finder.textMatches.length :
+        g.finder.mode === "SYMBOLS" ? getFilteredSymbols().length :
+        g.finder.mode === "QUICKFIX" ? g.finder.fixActions.length :
+        g.finder.mode === "PROJECT" ? g.finder.projects.length + 1 :
         g.finder.matches.length;
       g.finder.sel = Math.max(0, Math.min(Math.max(0, count - 1), g.finder.sel + dir * steps));
     }
