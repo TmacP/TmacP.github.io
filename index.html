@@ -307,14 +307,17 @@ async function checkPendingDirPermission() {
 }
 
 function refreshLoadedFileBlocks() {
-  for (const b of g.blocks) {
+  for (let i = 0; i < g.blocks.length; i++) {
+    const b = g.blocks[i];
     if (b.kind === "file" && !b.dirty && g.files[b.source] !== undefined) {
       const full = g.files[b.source].split(/\r?\n/);
       b.lines = full.slice(Math.max(0, b.startLine - 1), b.endLine);
       b.savedLines = [...b.lines];
       computeBlockLineDiffs(b);
+      requestTsDiagnostics(i);
     }
   }
+  syncAllFilesToTs();
   requestDraw();
 }
 
@@ -760,10 +763,23 @@ async function saveAll() {
       .sort((a, b) => g.blocks[a].startLine - g.blocks[b].startLine);
 
     let delta = 0;
+    let lastOrigEnd = 0;
     for (const bi of indices) {
       const b = g.blocks[bi];
+      if (!b.dirty) {
+        b.startLine += delta;
+        b.endLine += delta;
+        continue;
+      }
+      if (b.startLine <= lastOrigEnd) {
+        g.status = `save error: overlapping dirty blocks in ${path}`;
+        requestDraw();
+        return;
+      }
+      lastOrigEnd = b.endLine;
+      const origEnd = b.endLine;
       const s = Math.max(0, Math.min(fileLines.length, b.startLine - 1 + delta));
-      const e = Math.max(s - 1, Math.min(fileLines.length - 1, b.endLine - 1 + delta));
+      const e = Math.max(s - 1, Math.min(fileLines.length - 1, origEnd - 1 + delta));
       const oldCount = e - s + 1;
       fileLines.splice(s, oldCount, ...b.lines);
       const newCount = b.lines.length;
@@ -833,7 +849,7 @@ async function exportCurrentFile() {
 }
 
 async function exportAllModified() {
-  saveAll();
+  await saveAll();
   const modifiedPaths = [...new Set(g.blocks.filter(b => b.kind === "file").map(b => b.source))];
   if (g.pagePath && !modifiedPaths.includes(g.pagePath)) {
     modifiedPaths.push(g.pagePath);
@@ -1042,6 +1058,7 @@ function undo() {
   g.curLine = snap.curLine;
   g.curCol = snap.curCol;
   recomputeDirty(g.curBlock);
+  g.markActive = false;
   ensureCursorSane();
   g.status = `undo (${b.undo.length} left · Ctrl-Shift-U redo)`;
   g.followCursor = true;
@@ -1057,6 +1074,7 @@ function redo() {
   g.curLine = snap.curLine;
   g.curCol = snap.curCol;
   recomputeDirty(g.curBlock);
+  g.markActive = false;
   ensureCursorSane();
   g.status = `redo (${b.redo.length} left)`;
   g.followCursor = true;
@@ -1128,6 +1146,10 @@ function cutSelection() {
 
 window.addEventListener("paste", (e) => {
   if (g.finder.mode !== "NONE") return;
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   const text = e.clipboardData?.getData("text/plain");
   if (!text) return;
   e.preventDefault();
@@ -1357,8 +1379,11 @@ function computeLayout(W, H) {
   g.textX = textX;
 
   if (g.blocks.length && g.curBlock >= 0 && g.curBlock < g.blocks.length) {
-    g.blocks[g.curBlock].memLine = g.curLine;
-    g.blocks[g.curBlock].memCol = g.curCol;
+    const curB = g.blocks[g.curBlock];
+    if (!curB.folded) {
+      curB.memLine = g.curLine;
+      curB.memCol = g.curCol;
+    }
   }
 
   let y = marginTop;
@@ -2047,6 +2072,7 @@ canvas.addEventListener("mousedown", async (e) => {
   await checkPendingDirPermission();
 
   if (g.finder.mode !== "NONE") {
+    const H = canvas.height;
     const rect = canvas.getBoundingClientRect();
     const yPx = (e.clientY - rect.top) * dpr;
     const hy = marginTop;
@@ -2057,7 +2083,21 @@ canvas.addEventListener("mousedown", async (e) => {
       const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
       const targetIdx = off + rowIdx;
 
-      if (g.finder.mode === "SYMBOLS") {
+      if (g.finder.mode === "PROJECT") {
+        const count = g.finder.projects.length + 1;
+        if (targetIdx >= 0 && targetIdx < count) {
+          g.finder.sel = targetIdx;
+          if (targetIdx === 0) mountDirectory();
+          else openProjectByName(g.finder.projects[targetIdx - 1]);
+          requestDraw();
+        }
+      } else if (g.finder.mode === "RANGE") {
+        const targetLine = g.finder.top + rowIdx;
+        if (targetLine >= 0 && targetLine < g.finder.lines.length) {
+          g.finder.cur = targetLine;
+          requestDraw();
+        }
+      } else if (g.finder.mode === "SYMBOLS") {
         const filtered = getFilteredSymbols();
         if (targetIdx >= 0 && targetIdx < filtered.length) {
           g.finder.sel = targetIdx;
@@ -2225,6 +2265,11 @@ window.addEventListener("mouseup", () => {
 function splitBlock() {
   if (!g.blocks.length) return;
   const b = g.blocks[g.curBlock];
+  if (b.dirty) {
+    g.status = "split: save block first (⌘S) before splitting";
+    requestDraw();
+    return;
+  }
   if (b.folded) { g.status = "split: unfold first (Ctrl-J)"; requestDraw(); return; }
   const at = g.curLine;
   if (at <= 0 || at >= b.lines.length) {
@@ -2274,6 +2319,11 @@ function joinBlock() {
   }
   const a = g.blocks[g.curBlock];
   const b = g.blocks[g.curBlock + 1];
+  if (a.dirty || b.dirty) {
+    g.status = "join: save both blocks first (⌘S) before joining";
+    requestDraw();
+    return;
+  }
 
   if (a.kind === "file" && b.kind === "file" && a.source === b.source && g.files[a.source]) {
     const full = g.files[a.source].split(/\r?\n/);
@@ -2503,6 +2553,10 @@ function wordBack() {
 }
 
 function deleteWordForward() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   const sL = g.curLine, sC = g.curCol;
   wordForward();
@@ -2516,6 +2570,10 @@ function deleteWordForward() {
 }
 
 function deleteWordBack() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   const eL = g.curLine, eC = g.curCol;
   wordBack();
@@ -2550,15 +2608,20 @@ function searchMove(dir) {
     const bIdx = (g.curBlock + (dir > 0 ? bi : -bi) + nBlocks) % nBlocks;
     const b = g.blocks[bIdx];
     const nLines = b.lines.length;
-
     const startL = (bIdx === g.curBlock) ? g.curLine : (dir > 0 ? 0 : nLines - 1);
-    for (let li = 0; li < nLines; li++) {
+
+    for (let li = 0; li <= nLines; li++) {
+      if (li === nLines && bIdx !== g.curBlock) break;
       const lineIdx = (startL + (dir > 0 ? li : -li) + nLines) % nLines;
       const hay = b.lines[lineIdx].toLowerCase();
       let matchCol = -1;
 
-      if (bIdx === g.curBlock && lineIdx === g.curLine) {
-        matchCol = dir > 0 ? hay.indexOf(needle, g.curCol + 1) : hay.lastIndexOf(needle, g.curCol - 1);
+      if (bIdx === g.curBlock && lineIdx === g.curLine && li === 0) {
+        if (dir > 0) {
+          matchCol = hay.indexOf(needle, g.curCol + 1);
+        } else {
+          matchCol = g.curCol > 0 ? hay.lastIndexOf(needle, g.curCol - 1) : -1;
+        }
       } else {
         matchCol = dir > 0 ? hay.indexOf(needle) : hay.lastIndexOf(needle);
       }
@@ -2904,8 +2967,8 @@ function getBlockFileContent(b) {
 function syncAllFilesToTs() {
   if (!g.tsWorker) return;
   for (const [p, c] of Object.entries(g.files)) {
-    if (p.endsWith(".ts") || p.endsWith(".js") || p.endsWith(".mjs") || p.endsWith(".json")) {
-      sendTsWorker({ type: "SYNC", file: p, content: c });
+    if (p.endsWith(".ts") || p.endsWith(".tsx") || p.endsWith(".js") || p.endsWith(".jsx") || p.endsWith(".mjs") || p.endsWith(".json")) {
+      sendTsWorker({ type: "SYNC", file: p, content: c.replace(/\r\n/g, "\n") });
     }
   }
 }
@@ -3032,7 +3095,7 @@ async function requestTsDiagnostics(bi) {
   const diagList = await sendTsWorker({ type: "DIAGNOSTICS", file: fileName, content });
   if (Array.isArray(diagList)) {
     const fileStart = b.kind === "file" ? b.startLine - 1 : 0;
-    const fileEnd = b.kind === "file" ? b.endLine - 1 : b.lines.length - 1;
+    const fileEnd = fileStart + b.lines.length - 1;
     // Map file-relative line back to block-local line index
     b.diagnostics = diagList
       .filter(d => d.line >= fileStart && d.line <= fileEnd)
@@ -3104,39 +3167,27 @@ function applyQuickFixAction(fix) {
 
   for (const change of fix.changes) {
     const targetFile = change.fileName.replace(/^\//, "");
-    // Locate block or mounted file
     let targetBlock = g.blocks.find(blk => blk.kind === "file" && blk.source === targetFile);
     if (!targetBlock && targetFile === "scratch.ts") {
       targetBlock = g.blocks[g.curBlock];
     }
 
     if (targetBlock) {
-      // Modify block lines directly
-      const curContent = getBlockFileContent(targetBlock);
-      let updated = curContent;
-      // Sort textChanges descending so character offsets remain valid
+      const full = (targetBlock.kind === "file" && g.files[targetBlock.source])
+        ? g.files[targetBlock.source].split(/\r?\n/)
+        : [];
+      const beforeCount = targetBlock.kind === "file" ? Math.max(0, targetBlock.startLine - 1) : 0;
+      const afterCount = targetBlock.kind === "file" ? Math.max(0, full.length - targetBlock.endLine) : 0;
+
+      let updated = getBlockFileContent(targetBlock);
       const sortedChanges = [...change.textChanges].sort((x, y) => y.span.start - x.span.start);
       for (const tc of sortedChanges) {
         updated = updated.slice(0, tc.span.start) + tc.newText + updated.slice(tc.span.start + tc.span.length);
       }
 
-      if (targetBlock.kind === "file") {
-        g.files[targetBlock.source] = updated;
-        const allLines = updated.split(/\r?\n/);
-        targetBlock.lines = allLines.slice(targetBlock.startLine - 1, targetBlock.endLine);
-      } else {
-        targetBlock.lines = updated.split(/\r?\n/);
-      }
+      const allLines = updated.split(/\r?\n/);
+      targetBlock.lines = allLines.slice(beforeCount, allLines.length - afterCount);
       recomputeDirty(g.blocks.indexOf(targetBlock));
-      syncAllFilesToTs();
-    } else if (g.files[targetFile] !== undefined) {
-      let updated = g.files[targetFile];
-      const sortedChanges = [...change.textChanges].sort((x, y) => y.span.start - x.span.start);
-      for (const tc of sortedChanges) {
-        updated = updated.slice(0, tc.span.start) + tc.newText + updated.slice(tc.span.start + tc.span.length);
-      }
-      g.files[targetFile] = updated;
-      syncAllFilesToTs();
     }
   }
 
@@ -3687,6 +3738,8 @@ window.addEventListener("keydown", async (e) => {
     if (e.key === "Escape" || e.key === "Enter") {
       g.edgeAdjust = 0;
       g.status = "edge set";
+      saveManifest(true);
+      requestTsDiagnostics(g.curBlock);
     } else if (e.key === "Tab") {
       g.edgeAdjust = g.edgeAdjust === 1 ? 2 : 1;
       const b = g.blocks[g.curBlock];
@@ -3980,6 +4033,10 @@ function insertNewline() {
 }
 
 function deleteCharBack() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   if (g.markActive && g.markBlock === g.curBlock) {
     pushUndo(); deleteSelection(); requestDraw(); return;
@@ -4004,6 +4061,10 @@ function deleteCharBack() {
 }
 
 function deleteCharForward() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   if (g.markActive && g.markBlock === g.curBlock) {
     pushUndo(); deleteSelection(); requestDraw(); return;
@@ -4040,6 +4101,10 @@ function killToEndOfLine() {
 }
 
 function moveLineUp() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   const b = g.blocks[g.curBlock];
   if (g.curLine <= 0) return;
@@ -4054,6 +4119,10 @@ function moveLineUp() {
 }
 
 function moveLineDown() {
+  if (g.blocks[g.curBlock]?.folded) {
+    toggleFold();
+    return;
+  }
   if (!g.blocks.length) return;
   const b = g.blocks[g.curBlock];
   if (g.curLine >= b.lines.length - 1) return;
@@ -4225,6 +4294,10 @@ function execCommand(cmdStr) {
   } else if (verb === "range") {
     if (g.blocks.length && g.blocks[g.curBlock].kind === "file") {
       const b = g.blocks[g.curBlock];
+      if (b.dirty) {
+        g.status = "range: save block first (⌘S) — resize reloads from disk";
+        return;
+      }
       if (args[0] && args[0].includes(":")) {
         const [sStr, eStr] = args[0].split(":");
         const s = parseInt(sStr, 10), e = parseInt(eStr, 10);
@@ -4232,10 +4305,12 @@ function execCommand(cmdStr) {
           const full = g.files[b.source].split(/\r?\n/);
           b.startLine = Math.max(1, s);
           b.endLine = Math.min(full.length, e);
+          if (b.startLine > b.endLine) { g.status = "range: invalid bounds"; return; }
           b.lines = full.slice(b.startLine - 1, b.endLine);
           b.savedLines = [...b.lines];
           g.curLine = 0; g.curCol = 0;
           recomputeDirty(g.curBlock);
+          saveManifest(true);
           g.status = `range → ${b.startLine}:${b.endLine}`;
         }
       } else {
@@ -4273,11 +4348,16 @@ function execCommand(cmdStr) {
       g.status = g.blocks[g.curBlock].label ? `labelled: ${g.blocks[g.curBlock].label}` : "label cleared";
     }
   } else if (verb === "organize" || verb === "sort") {
+    const activeBlock = g.blocks[g.curBlock];
     g.blocks.sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === "file" ? -1 : 1;
       if (a.source !== b.source) return a.source.localeCompare(b.source);
       return a.startLine - b.startLine;
     });
+    if (activeBlock) g.curBlock = Math.max(0, g.blocks.indexOf(activeBlock));
+    g.markActive = false;
+    g.quickMarks = {};
+    ensureCursorSane();
     g.status = "organized — grouped by file, ordered by line";
     saveManifest(true);
   } else if (verb === "?" || verb === "help") {
