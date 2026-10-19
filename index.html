@@ -119,6 +119,7 @@ const kHelp = [
   "    Ctrl-Click        go to definition (TypeScript / JavaScript)",
   "    Tab / ↵ / Esc     accept / cancel autocomplete popup",
   "    Cmd-. / Opt-↵     quick-fix code actions for diagnostic error",
+  "    Cmd-T / :symbols  document symbol outline (jump to function/class/interface)",
   "",
   "  app",
   "    Opt-O / Cmd-O     projects list (Enter open · + open folder · Esc cancel)",
@@ -177,7 +178,7 @@ const g = {
   lastCtrlQBlock: -1,
   lastCtrlS: 0,
   finder: {
-    mode: "NONE", // NONE, FILE, RANGE, TEXT, PAGE, NEWPAGE, PROJECT, QUICKFIX
+    mode: "NONE", // NONE, FILE, RANGE, TEXT, PAGE, NEWPAGE, PROJECT, QUICKFIX, SYMBOLS
     query: "",
     sel: 0,
     matches: [],
@@ -187,6 +188,7 @@ const g = {
     pageTitles: [],
     projects: [],
     fixActions: [],
+    symbols: [],
     path: "",
     lines: [],
     cur: 0,
@@ -1466,6 +1468,8 @@ function draw() {
     drawNewPageFinder(W, H);
   } else if (g.finder.mode === "QUICKFIX") {
     drawQuickFixFinder(W, H);
+  } else if (g.finder.mode === "SYMBOLS") {
+    drawSymbolsFinder(W, H);
   } else {
     drawEditor(W, H);
   }
@@ -1960,6 +1964,45 @@ function drawQuickFixFinder(W, H) {
     const fx = fixes[mi];
     ctx.fillText(`⚡  ${fx.description}`, marginX * 0.5, ry + gAscent);
   }
+}
+
+function drawSymbolsFinder(W, H) {
+  const hy = marginTop;
+  const filtered = getFilteredSymbols();
+  const title = `symbols · ${g.finder.path}:  ${g.finder.query} (${filtered.length} symbols)`;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(153, 214, 255)";
+  ctx.fillText(title, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+
+  for (let i = 0; i < visible && off + i < filtered.length; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    const sym = filtered[mi];
+    const kindTag = sym.kind ? `[${sym.kind[0].toUpperCase()}]`.padEnd(4, " ") : "[S] ";
+    const parentTag = sym.parent ? `${sym.parent}.` : "";
+    const loc = `:${sym.line}`.padEnd(8, " ");
+    ctx.fillText(`${loc} ${kindTag} ${parentTag}${sym.name}`, marginX * 0.5, ry + gAscent);
+  }
+}
+
+function getFilteredSymbols() {
+  const q = (g.finder.query || "").toLowerCase();
+  const list = g.finder.symbols || [];
+  if (!q) return list;
+  return list.filter(s => s.name.toLowerCase().includes(q) || (s.parent && s.parent.toLowerCase().includes(q)));
 }
 
 // ─── Mouse Hit Testing & Selection ────────────────────────────────────
@@ -2743,6 +2786,35 @@ self.onmessage = (e) => {
         if (doc) text += "  ·  " + doc.trim();
       }
       self.postMessage({ id, type, info: text });
+    } else if (type === "NAV_TREE") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const tree = langService.getNavigationTree(file);
+      const targetContent = files[file] ? files[file].content : "";
+      const results = [];
+
+      function flatten(node, parent = "") {
+        if (node.text && node.kind !== "script" && node.kind !== "module") {
+          const start = (node.spans && node.spans[0]) ? node.spans[0].start : 0;
+          const before = targetContent.slice(0, start).split("\\n");
+          const line = before.length;
+          results.push({
+            name: node.text,
+            kind: node.kind,
+            parent,
+            line
+          });
+        }
+        if (node.childItems) {
+          for (const c of node.childItems) {
+            flatten(c, node.text);
+          }
+        }
+      }
+      if (tree) flatten(tree);
+      self.postMessage({ id, type, symbols: results });
     }
   } catch (err) {
     self.postMessage({ id, type, error: err.message });
@@ -2760,11 +2832,11 @@ function initTsWorker() {
     const url = URL.createObjectURL(blob);
     g.tsWorker = new Worker(url);
     g.tsWorker.onmessage = (e) => {
-      const { id, entries, def, diagnostics, fixes, references, info } = e.data;
+      const { id, entries, def, diagnostics, fixes, references, info, symbols } = e.data;
       const cb = tsCallbacks.get(id);
       if (cb) {
         tsCallbacks.delete(id);
-        cb(info !== undefined ? info : (references || fixes || diagnostics || entries || def || e.data));
+        cb(symbols || (info !== undefined ? info : (references || fixes || diagnostics || entries || def || e.data)));
       }
     };
     g.tsReady = true;
@@ -3094,6 +3166,38 @@ async function requestTsHoverInfo() {
 function triggerHoverDebounced() {
   clearTimeout(tsHoverDebounce);
   tsHoverDebounce = setTimeout(requestTsHoverInfo, 180);
+}
+
+async function openSymbolsFinder() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (!b) return;
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const ext = fileName.split(".").pop().toLowerCase();
+  const isTsJs = ["ts","tsx","js","jsx","mjs"].includes(ext);
+
+  if (!isTsJs) {
+    g.status = "symbols outline available for TypeScript / JavaScript";
+    requestDraw();
+    return;
+  }
+
+  const content = getBlockFileContent(b);
+  g.status = `indexing symbols in ${fileName}...`;
+  requestDraw();
+
+  const syms = await sendTsWorker({ type: "NAV_TREE", file: fileName, content });
+  if (Array.isArray(syms) && syms.length) {
+    g.finder.mode = "SYMBOLS";
+    g.finder.path = fileName;
+    g.finder.symbols = syms;
+    g.finder.query = "";
+    g.finder.sel = 0;
+    g.status = `${syms.length} symbols in ${fileName}   ↵ jump   Esc back`;
+  } else {
+    g.status = `no symbols found in ${fileName}`;
+  }
+  requestDraw();
 }
 
 // ─── Key Event Pipeline ───────────────────────────────────────────────
@@ -3462,6 +3566,47 @@ window.addEventListener("keydown", async (e) => {
       }
       return;
     }
+
+    if (g.finder.mode === "SYMBOLS") {
+      const filtered = getFilteredSymbols();
+      const last = Math.max(0, filtered.length - 1);
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 10);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 10);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const sym = filtered[g.finder.sel];
+        if (sym) {
+          gotoLine(sym.line);
+        }
+        g.finder.mode = "NONE";
+        requestDraw();
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        g.finder.query = g.finder.query.slice(0, -1);
+        g.finder.sel = 0;
+        requestDraw();
+      } else if (e.key.length === 1 && !isCtrl && !isMeta && !isOption) {
+        e.preventDefault();
+        g.finder.query += e.key;
+        g.finder.sel = 0;
+        requestDraw();
+      }
+      return;
+    }
   }
 
   // Incremental Search Active (Ctrl-H)
@@ -3535,6 +3680,7 @@ window.addEventListener("keydown", async (e) => {
     if (e.code === "KeyO") { e.preventDefault(); openProjectPicker(); return; }
     if (e.code === "KeyP") { e.preventDefault(); openFileFinder(); return; }
     if (e.code === "KeyF") { e.preventDefault(); openTextFinder(); return; }
+    if (e.code === "KeyT") { e.preventDefault(); openSymbolsFinder(); return; }
     if (e.code === "KeyS") { e.preventDefault(); saveAll(); return; }
     if (e.code === "KeyR") {
       e.preventDefault();
@@ -4086,6 +4232,8 @@ function execCommand(cmdStr) {
   } else if (verb === "export" || verb === "download" || verb === "zip") {
     if (args[0] === "file") exportCurrentFile();
     else exportAllModified();
+  } else if (verb === "symbols" || verb === "outline") {
+    openSymbolsFinder();
   } else if (verb === "nums" || verb === "numbers") {
     g.showLineNos = !g.showLineNos;
     g.status = g.showLineNos ? "line numbers on" : "line numbers off";
