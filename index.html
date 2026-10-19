@@ -171,6 +171,7 @@ const g = {
   tsReady: false,
   tsWorker: null,
   tsCompletions: null, // { items: [], sel: 0, bi: 0, li: 0, col: 0, replaceLen: 0 }
+  tsHoverInfo: null, // string | null
   recenterTopRequested: false,
   lastCtrlQ: 0,
   lastCtrlQBlock: -1,
@@ -1502,6 +1503,9 @@ function draw() {
     if (cursorErr) {
       ctx.fillStyle = cursorErr.category === 0 ? "rgb(242, 107, 102)" : "rgb(242, 204, 76)";
       ctx.fillText(`! ${cursorErr.message}`, marginX * 0.5, baseline);
+    } else if (g.tsHoverInfo) {
+      ctx.fillStyle = "rgb(153, 214, 255)";
+      ctx.fillText(g.tsHoverInfo, marginX * 0.5, baseline);
     } else {
       ctx.fillStyle = "rgb(128, 140, 158)";
       ctx.fillText(g.status, marginX * 0.5, baseline);
@@ -2022,6 +2026,7 @@ canvas.addEventListener("mousedown", async (e) => {
   g.curLine = hit.li;
   g.curCol = hit.col;
   g.followCursor = false;
+  triggerHoverDebounced();
 
   // Ctrl-Click / Cmd-Click: Go to Definition
   if (e.ctrlKey || e.metaKey) {
@@ -2725,6 +2730,19 @@ self.onmessage = (e) => {
         });
       }
       self.postMessage({ id, type, references: results });
+    } else if (type === "QUICK_INFO") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const info = langService.getQuickInfoAtPosition(file, pos);
+      let text = null;
+      if (info && info.displayParts) {
+        text = ts.displayPartsToString(info.displayParts);
+        const doc = ts.displayPartsToString(info.documentation);
+        if (doc) text += "  ·  " + doc.trim();
+      }
+      self.postMessage({ id, type, info: text });
     }
   } catch (err) {
     self.postMessage({ id, type, error: err.message });
@@ -2742,11 +2760,11 @@ function initTsWorker() {
     const url = URL.createObjectURL(blob);
     g.tsWorker = new Worker(url);
     g.tsWorker.onmessage = (e) => {
-      const { id, entries, def, diagnostics, fixes, references } = e.data;
+      const { id, entries, def, diagnostics, fixes, references, info } = e.data;
       const cb = tsCallbacks.get(id);
       if (cb) {
         tsCallbacks.delete(id);
-        cb(references || fixes || diagnostics || entries || def || e.data);
+        cb(info !== undefined ? info : (references || fixes || diagnostics || entries || def || e.data));
       }
     };
     g.tsReady = true;
@@ -3024,6 +3042,58 @@ function applyQuickFixAction(fix) {
   g.finder.mode = "NONE";
   g.status = `applied: ${fix.description}`;
   requestDraw();
+}
+
+let tsHoverDebounce = null;
+async function requestTsHoverInfo() {
+  if (!g.blocks.length || g.cmdActive || g.searchActive || g.finder.mode !== "NONE") {
+    if (g.tsHoverInfo) { g.tsHoverInfo = null; requestDraw(); }
+    return;
+  }
+  const b = g.blocks[g.curBlock];
+  if (!b) return;
+  const ext = b.source.split(".").pop().toLowerCase();
+  const isTsJs = b.kind === "file" ? ["ts","tsx","js","jsx","mjs"].includes(ext) : true;
+  if (!isTsJs) {
+    if (g.tsHoverInfo) { g.tsHoverInfo = null; requestDraw(); }
+    return;
+  }
+
+  const curLineStr = b.lines[g.curLine] || "";
+  let start = g.curCol;
+  while (start > 0 && /[a-zA-Z0-9_$]/.test(curLineStr[start - 1])) start--;
+  let end = g.curCol;
+  while (end < curLineStr.length && /[a-zA-Z0-9_$]/.test(curLineStr[end])) end++;
+  const word = curLineStr.slice(start, end);
+
+  if (!word || !/[a-zA-Z_$]/.test(word[0])) {
+    if (g.tsHoverInfo) { g.tsHoverInfo = null; requestDraw(); }
+    return;
+  }
+
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const content = getBlockFileContent(b);
+  const fullLines = content.split("\n");
+  const targetLine = (b.kind === "file" ? b.startLine - 1 : 0) + g.curLine;
+  let charPos = 0;
+  for (let i = 0; i < targetLine && i < fullLines.length; i++) {
+    charPos += fullLines[i].length + 1;
+  }
+  charPos += Math.min(fullLines[targetLine] ? fullLines[targetLine].length : 0, start);
+
+  const hoverText = await sendTsWorker({ type: "QUICK_INFO", file: fileName, content, pos: charPos });
+  if (hoverText && hoverText !== g.tsHoverInfo) {
+    g.tsHoverInfo = hoverText;
+    requestDraw();
+  } else if (!hoverText && g.tsHoverInfo) {
+    g.tsHoverInfo = null;
+    requestDraw();
+  }
+}
+
+function triggerHoverDebounced() {
+  clearTimeout(tsHoverDebounce);
+  tsHoverDebounce = setTimeout(requestTsHoverInfo, 180);
 }
 
 // ─── Key Event Pipeline ───────────────────────────────────────────────
@@ -3678,6 +3748,8 @@ window.addEventListener("keydown", async (e) => {
     e.preventDefault();
     insertChar(e.key);
   }
+
+  triggerHoverDebounced();
 });
 
 // Clear keySink to avoid dead-key accumulation
