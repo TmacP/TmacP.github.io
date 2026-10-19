@@ -115,11 +115,16 @@ const kHelp = [
   "    Ctrl-D  Ctrl-K    delete forward / kill to end of line",
   "    Ctrl-Space        set mark; again copies  (Ctrl-X cut, Ctrl-V/Cmd-V paste)",
   "",
+  "  intellisense",
+  "    Ctrl-Click        go to definition (TypeScript / JavaScript)",
+  "    Tab / ↵ / Esc     accept / cancel autocomplete popup",
+  "    Cmd-. / Opt-↵     quick-fix code actions for diagnostic error",
+  "",
   "  app",
-  "    Opt-O / Cmd-O     pages list (Enter open · + new page · mount folder)",
+  "    Opt-O / Cmd-O     projects list (Enter open · + open folder · Esc cancel)",
   "    Cmd-+ / Cmd--     zoom in / out",
   "    Esc               command bar: pull scratch drop range split join edge reload",
-  "                                   goto search nums md page open organize w ?"
+  "                                   goto search nums md page open organize export download w ?"
 ];
 
 // ─── Global State (Direct struct State replica from main.mm) ───────────
@@ -137,7 +142,7 @@ const g = {
   showLineNos: true,
   showMarkdown: true,
   showHelp: false,
-  status: "educed · Opt-O pages · Alt-W pull · Ctrl-G grep · Ctrl-; next · ⌘S save · Esc cmd",
+  status: "educed · Opt-O projects · Alt-W pull · Ctrl-G grep · Ctrl-; next · ⌘S save · Esc cmd",
   cmdActive: false,
   cmd: "",
   searchActive: false,
@@ -163,12 +168,15 @@ const g = {
   wrapCols: 80,
   textX: 0,
   recenterCycle: 0,
+  tsReady: false,
+  tsWorker: null,
+  tsCompletions: null, // { items: [], sel: 0, bi: 0, li: 0, col: 0, replaceLen: 0 }
   recenterTopRequested: false,
   lastCtrlQ: 0,
   lastCtrlQBlock: -1,
   lastCtrlS: 0,
   finder: {
-    mode: "NONE", // NONE, FILE, RANGE, TEXT, PAGE, NEWPAGE
+    mode: "NONE", // NONE, FILE, RANGE, TEXT, PAGE, NEWPAGE, PROJECT, QUICKFIX
     query: "",
     sel: 0,
     matches: [],
@@ -176,6 +184,8 @@ const g = {
     textMatches: [],
     pagePaths: [],
     pageTitles: [],
+    projects: [],
+    fixActions: [],
     path: "",
     lines: [],
     cur: 0,
@@ -226,7 +236,28 @@ async function persistDirHandle(handle) {
     const db = await openDB();
     const tx = db.transaction(STORE_NAME, "readwrite");
     tx.objectStore(STORE_NAME).put(handle, "projectRoot");
+    // Also save handle in projects list
+    tx.objectStore(STORE_NAME).put(handle, `project_${handle.name}`);
+    addRecentProject(handle.name);
   } catch {}
+}
+
+function addRecentProject(name) {
+  try {
+    let projs = JSON.parse(localStorage.getItem("educed_recent_projects") || "[]");
+    projs = projs.filter(p => p !== name);
+    projs.unshift(name);
+    if (projs.length > 20) projs = projs.slice(0, 20);
+    localStorage.setItem("educed_recent_projects", JSON.stringify(projs));
+  } catch {}
+}
+
+function getRecentProjects() {
+  try {
+    return JSON.parse(localStorage.getItem("educed_recent_projects") || "[]");
+  } catch {
+    return [];
+  }
 }
 
 async function restoreDirHandle() {
@@ -238,6 +269,7 @@ async function restoreDirHandle() {
       if (req.result) {
         g.dirHandle = req.result;
         g.projectRoot = g.dirHandle.name;
+        addRecentProject(g.dirHandle.name);
         const perm = await g.dirHandle.queryPermission({ mode: "readwrite" });
         if (perm === "granted") {
           await scanDirHandle(g.dirHandle, "");
@@ -246,7 +278,7 @@ async function restoreDirHandle() {
           requestDraw();
         } else {
           g.dirHandlePendingPrompt = true;
-          g.status = `Project handle found (${g.dirHandle.name}) — press Opt-O or click to restore disk access`;
+          g.status = `Project handle found (${g.dirHandle.name}) — press ⌘O or click to restore disk access`;
           requestDraw();
         }
       }
@@ -507,8 +539,57 @@ function enterPagePicker() {
   g.finder.pageTitles = found.map(f => f.title);
   g.finder.mode = "PAGE";
   g.finder.sel = 0;
-  g.status = `${g.finder.pagePaths.length} pages   Enter open   + new page / mount folder   Esc cancel`;
+  g.status = `${g.finder.pagePaths.length} pages   Enter open   Esc back`;
   requestDraw();
+}
+
+function openProjectPicker() {
+  saveManifest(true);
+  const recents = getRecentProjects();
+  if (g.projectRoot && !recents.includes(g.projectRoot) && g.projectRoot !== "workspace") {
+    recents.unshift(g.projectRoot);
+  }
+  g.finder.projects = recents;
+  g.finder.mode = "PROJECT";
+  g.finder.sel = 0;
+  g.status = `${g.finder.projects.length} recent   Enter open   Esc cancel`;
+  requestDraw();
+}
+
+async function openProjectByName(name) {
+  if (g.dirHandle && g.dirHandle.name === name) {
+    enterPagePicker();
+    return;
+  }
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(`project_${name}`);
+    req.onsuccess = async () => {
+      if (req.result) {
+        g.dirHandle = req.result;
+        g.projectRoot = name;
+        addRecentProject(name);
+        const perm = await g.dirHandle.queryPermission({ mode: "readwrite" });
+        if (perm === "granted") {
+          g.files = {};
+          g.fileHandles = {};
+          await scanDirHandle(g.dirHandle, "");
+          refreshLoadedFileBlocks();
+          enterPagePicker();
+        } else {
+          g.dirHandlePendingPrompt = true;
+          g.status = `Project handle found (${name}) — press ⌘O or click to restore disk access`;
+          requestDraw();
+        }
+      } else {
+        // Fallback: prompt directory picker
+        mountDirectory();
+      }
+    };
+  } catch {
+    mountDirectory();
+  }
 }
 
 function createPage(title) {
@@ -589,7 +670,34 @@ async function scanDirHandle(dirHandle, prefix) {
 async function saveBlock(idx) {
   if (idx < 0 || idx >= g.blocks.length) return;
   const b = g.blocks[idx];
-  if (b.kind !== "file") { await saveManifest(); return; }
+
+  // Scratch block: prompt for filename and save as a real file
+  if (b.scratch || b.kind !== "file") {
+    let defaultName = b.label ? b.label.replace(/[^a-zA-Z0-9._-]/g, "_") : "untitled.txt";
+    if (!defaultName.includes(".")) defaultName += ".txt";
+    const chosen = prompt("Save Scratch Block As (relative to project root):", defaultName);
+    if (!chosen) {
+      g.status = "save scratch cancelled";
+      requestDraw();
+      return;
+    }
+    const cleanPath = chosen.trim().replace(/^\/+/, "");
+    const content = b.lines.join("\n") + "\n";
+    const onDisk = await writeFileToDisk(cleanPath, content);
+
+    b.kind = "file";
+    b.scratch = false;
+    b.source = cleanPath;
+    b.startLine = 1;
+    b.endLine = b.lines.length;
+    b.dirty = false;
+    b.savedLines = [...b.lines];
+    computeBlockLineDiffs(b);
+    await saveManifest(true);
+    g.status = onDisk ? `saved scratch block to ${cleanPath} (disk)` : `saved scratch block to ${cleanPath}`;
+    requestDraw();
+    return;
+  }
 
   // Read latest disk state first so external changes outside the block range aren't clobbered
   let raw = await readFileFromDisk(b.source);
@@ -665,9 +773,98 @@ async function saveAll() {
     if (ok) wroteDisk++; else wroteMem++;
   }
   await saveManifest(true);
-  g.status = wroteMem > 0
-    ? `saved ${wroteDisk} to disk, ${wroteMem} in-memory only (no write handle)`
-    : `saved all blocks home (${wroteDisk} files to disk)`;
+  if (wroteMem > 0 && wroteDisk === 0 && !("showDirectoryPicker" in window)) {
+    g.status = `saved ${wroteMem} in-memory · type :export or :download to save to iPad Files`;
+  } else {
+    g.status = wroteMem > 0
+      ? `saved ${wroteDisk} to disk, ${wroteMem} in-memory only (no write handle)`
+      : `saved all blocks home (${wroteDisk} files to disk)`;
+  }
+  requestDraw();
+}
+
+// ─── Safari & iPadOS Multi-File Export / Download Fallback ────────────
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+async function exportCurrentFile() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  const filename = b.kind === "file" ? b.source.split("/").pop() : `${b.label || "scratch"}.txt`;
+  const content = b.lines.join("\n") + "\n";
+
+  if ("showSaveFilePicker" in window) {
+    try {
+      const handle = await window.showSaveFilePicker({ suggestedName: filename });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      g.status = `exported ${filename} via Save Picker`;
+      requestDraw();
+      return;
+    } catch (err) {
+      if (err.name === "AbortError") return;
+    }
+  }
+
+  // Universal download fallback
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  downloadBlob(blob, filename);
+  g.status = `downloaded ${filename} to device`;
+  requestDraw();
+}
+
+async function exportAllModified() {
+  saveAll();
+  const modifiedPaths = [...new Set(g.blocks.filter(b => b.kind === "file").map(b => b.source))];
+  if (g.pagePath && !modifiedPaths.includes(g.pagePath)) {
+    modifiedPaths.push(g.pagePath);
+  }
+
+  if (!modifiedPaths.length) {
+    g.status = "no modified files to export";
+    requestDraw();
+    return;
+  }
+
+  // Trigger individual file downloads so iPad Files / system prompts "Replace"
+  let count = 0;
+  for (const path of modifiedPaths) {
+    const content = g.files[path];
+    if (content === undefined || content === null) continue;
+    const filename = path.split("/").pop();
+
+    if ("showSaveFilePicker" in window) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: filename });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        count++;
+        continue;
+      } catch (err) {
+        if (err.name === "AbortError") continue;
+      }
+    }
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    downloadBlob(blob, filename);
+    count++;
+    // Small pause between multiple file triggers so browser downloads queue smoothly
+    if (modifiedPaths.length > 1) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+  }
+
+  g.status = `exported ${count} file(s) to device (click Replace in Files)`;
   requestDraw();
 }
 
@@ -765,8 +962,14 @@ function computeBlockLineDiffs(b) {
 function recomputeDirty(idx) {
   const b = g.blocks[idx];
   if (!b) return;
+  b._commentSpansDirty = true;
   b.dirty = b.lines.length !== b.savedLines.length || b.lines.some((ln, i) => ln !== b.savedLines[i]);
   computeBlockLineDiffs(b);
+
+  clearTimeout(g.tsDiagDebounce);
+  g.tsDiagDebounce = setTimeout(() => {
+    requestTsDiagnostics(idx);
+  }, 400);
 }
 
 // ─── Block Struct & Factory ───────────────────────────────────────────
@@ -1036,6 +1239,95 @@ function getMdColor(tagVal) {
   }
 }
 
+// ─── Comment Coloring (Direct Port from educed main.mm lines 3034-3105) ──
+function commentStyleFor(b) {
+  if (b.kind !== "file" || b.scratch) return null;
+  const slash = b.source.lastIndexOf("/");
+  const base = slash === -1 ? b.source : b.source.substring(slash + 1);
+  const dot = base.lastIndexOf(".");
+  const ext = dot === -1 ? "" : base.substring(dot + 1).toLowerCase();
+
+  const cFamily = new Set(["c","cc","cpp","cxx","h","hpp","hxx","m","mm","js","jsx","ts","tsx","java","go","rs","swift","kt","kts","cs","php","scala","dart","glsl","metal"]);
+  if (cFamily.has(ext)) return { line: "//", blockOpen: "/*", blockClose: "*/", hasString: true };
+
+  const hashFamily = new Set(["py","sh","bash","zsh","rb","pl","pm","r","yaml","yml","toml","mk","cmake","tcl","ps1","ini","conf"]);
+  if (hashFamily.has(ext)) return { line: "#", blockOpen: "", blockClose: "", hasString: true };
+
+  if (ext === "lua") return { line: "--", blockOpen: "", blockClose: "", hasString: true };
+  if (ext === "sql") return { line: "--", blockOpen: "/*", blockClose: "*/", hasString: true };
+  if (["el","scm","clj","cljs","lisp","cl","rkt"].includes(ext)) return { line: ";", blockOpen: "", blockClose: "", hasString: true };
+  if (["css","scss","less"].includes(ext)) return { line: "", blockOpen: "/*", blockClose: "*/", hasString: true };
+  if (["html","htm","xml","svg","vue"].includes(ext)) return { line: "", blockOpen: "<!--", blockClose: "-->", hasString: false };
+  if (["Makefile","makefile","GNUmakefile","Dockerfile"].includes(base)) return { line: "#", blockOpen: "", blockClose: "", hasString: true };
+  return null;
+}
+
+function computeCommentSpans(b) {
+  const cs = commentStyleFor(b);
+  const out = [];
+  for (let li = 0; li < b.lines.length; li++) out.push([]);
+  if (!cs || (!cs.line && !cs.blockOpen)) return out;
+
+  let inBlock = false;
+  for (let li = 0; li < b.lines.length; li++) {
+    const T = b.lines[li];
+    const n = T.length;
+    let i = 0;
+    let blockStart = inBlock ? 0 : -1;
+
+    while (i < n) {
+      if (inBlock) {
+        if (cs.blockClose && T.startsWith(cs.blockClose, i)) {
+          i += cs.blockClose.length;
+          out[li].push([blockStart, i]);
+          inBlock = false;
+          blockStart = -1;
+        } else {
+          i++;
+        }
+        continue;
+      }
+      const c = T[i];
+      if (cs.hasString && (c === '"' || c === "'")) {
+        const q = c;
+        i++;
+        while (i < n) {
+          if (T[i] === "\\") { i += 2; continue; }
+          if (T[i] === q) { i++; break; }
+          i++;
+        }
+        continue;
+      }
+      if (cs.line && T.startsWith(cs.line, i)) {
+        out[li].push([i, n]);
+        i = n;
+        break;
+      }
+      if (cs.blockOpen && T.startsWith(cs.blockOpen, i)) {
+        blockStart = i;
+        i += cs.blockOpen.length;
+        inBlock = true;
+        continue;
+      }
+      i++;
+    }
+    if (inBlock && blockStart >= 0) {
+      out[li].push([blockStart, n]);
+    }
+  }
+  return out;
+}
+
+function spansFor(bi) {
+  const b = g.blocks[bi];
+  if (!b) return null;
+  if (!b._commentSpans || b._commentSpansDirty) {
+    b._commentSpans = computeCommentSpans(b);
+    b._commentSpansDirty = false;
+  }
+  return b._commentSpans;
+}
+
 // ─── Decoupled Layout & Render Passes ─────────────────────────────────
 function computeLayout(W, H) {
   g.visibleRows = Math.max(1, Math.floor((H - barH - marginTop) / lineH));
@@ -1109,14 +1401,31 @@ function computeLayout(W, H) {
     y += lineH * 0.4;
   }
 
+  let hasPinnedHdr = false;
+  for (let k = 0; k < layout.length; k++) {
+    const row = layout[k];
+    if (row.isHeader && row.bi === g.curBlock) {
+      const ry = row.y - g.scrollY;
+      let nextHeaderY = layout[layout.length - 1].y;
+      for (let m = k + 1; m < layout.length; m++) {
+        if (layout[m].isHeader) { nextHeaderY = layout[m].y; break; }
+      }
+      if (ry < 0 && (nextHeaderY - g.scrollY) > lineH) {
+        hasPinnedHdr = true;
+      }
+      break;
+    }
+  }
+
   if (g.recenterTopRequested) {
     const viewH = H - barH - marginTop;
-    if (g.recenterCycle === 2) g.scrollY = cursorY - marginTop;
+    if (g.recenterCycle === 2) g.scrollY = cursorY - (hasPinnedHdr ? lineH + 4 * pps : marginTop);
     else if (g.recenterCycle === 3) g.scrollY = cursorY - marginTop - (viewH - lineH);
     else g.scrollY = cursorY - marginTop - (viewH - lineH) * 0.5;
     g.recenterTopRequested = false;
   } else if (g.followCursor) {
-    const viewTop = marginTop, viewBot = H - barH - lineH;
+    const viewTop = (hasPinnedHdr ? lineH + 4 * pps : marginTop);
+    const viewBot = H - barH - lineH;
     if (cursorY - g.scrollY < viewTop) g.scrollY = cursorY - viewTop;
     if (cursorY - g.scrollY > viewBot) g.scrollY = cursorY - viewBot;
   }
@@ -1142,10 +1451,14 @@ function draw() {
     drawRangeFinder(W, H);
   } else if (g.finder.mode === "TEXT") {
     drawTextFinder(W, H);
+  } else if (g.finder.mode === "PROJECT") {
+    drawProjectFinder(W, H);
   } else if (g.finder.mode === "PAGE") {
     drawPageFinder(W, H);
   } else if (g.finder.mode === "NEWPAGE") {
     drawNewPageFinder(W, H);
+  } else if (g.finder.mode === "QUICKFIX") {
+    drawQuickFixFinder(W, H);
   } else {
     drawEditor(W, H);
   }
@@ -1175,8 +1488,18 @@ function draw() {
     const sText = `edge ▸ ${which}  ${b.startLine}:${b.endLine}   Ctrl-N/P move · Tab switch · ↵/Esc done`;
     ctx.fillText(sText, marginX * 0.5, baseline);
   } else {
-    ctx.fillStyle = "rgb(128, 140, 158)";
-    ctx.fillText(g.status, marginX * 0.5, baseline);
+    let cursorErr = null;
+    const curB = g.blocks[g.curBlock];
+    if (curB && curB.diagnostics && curB.diagnostics.length) {
+      cursorErr = curB.diagnostics.find(d => d.li === g.curLine && g.curCol >= d.col && g.curCol <= d.col + Math.max(1, d.length));
+    }
+    if (cursorErr) {
+      ctx.fillStyle = cursorErr.category === 0 ? "rgb(242, 107, 102)" : "rgb(242, 204, 76)";
+      ctx.fillText(`! ${cursorErr.message}`, marginX * 0.5, baseline);
+    } else {
+      ctx.fillStyle = "rgb(128, 140, 158)";
+      ctx.fillText(g.status, marginX * 0.5, baseline);
+    }
   }
 }
 
@@ -1196,17 +1519,16 @@ function drawHelp(W, H) {
   g.status = "help — scroll to see all commands · press any key to close";
 }
 
-function drawPageFinder(W, H) {
+function drawProjectFinder(W, H) {
   ctx.textBaseline = "alphabetic";
   const hy = marginTop;
-  const repo = g.dirHandle ? g.dirHandle.name : g.projectRoot;
   ctx.fillStyle = "rgb(41, 43, 54)";
   ctx.fillRect(0, hy - 2 * pps, W, lineH);
   ctx.fillStyle = "rgb(153, 184, 224)";
-  ctx.fillText(`pages · ${repo}`, marginX * 0.5, hy + gAscent);
+  ctx.fillText("projects", marginX * 0.5, hy + gAscent);
 
   const listTop = hy + lineH * 1.4;
-  const count = g.finder.pagePaths.length + 2;
+  const count = g.finder.projects.length + 1;
   const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
   const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
 
@@ -1221,11 +1543,37 @@ function drawPageFinder(W, H) {
     } else {
       ctx.fillStyle = "rgb(204, 209, 219)";
     }
-    const label = mi === 0
-      ? "+  new page"
-      : mi === 1
-      ? "+  open a project folder..."
-      : g.finder.pageTitles[mi - 2];
+    const label = (mi === 0) ? "+  open a folder..." : g.finder.projects[mi - 1];
+    ctx.fillText(label, marginX, ry + gAscent);
+  }
+}
+
+function drawPageFinder(W, H) {
+  ctx.textBaseline = "alphabetic";
+  const hy = marginTop;
+  const repo = g.dirHandle ? g.dirHandle.name : g.projectRoot;
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(153, 184, 224)";
+  ctx.fillText(`pages · ${repo}`, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const count = g.finder.pagePaths.length + 1;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+
+  for (let i = 0; i < visible && off + i < count; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    const label = mi === 0 ? "+  new page" : g.finder.pageTitles[mi - 1];
     ctx.fillText(label, marginX, ry + gAscent);
   }
 }
@@ -1355,8 +1703,51 @@ function drawEditor(W, H) {
           segStart = j;
         }
       } else {
-        ctx.fillStyle = "rgb(219, 222, 230)";
-        ctx.fillText(row.text, textX, textBaselineY);
+        const bspans = spansFor(row.bi);
+        const lspans = bspans ? bspans[row.li] : null;
+        if (!lspans || !lspans.length) {
+          ctx.fillStyle = "rgb(219, 222, 230)";
+          ctx.fillText(row.text, textX, textBaselineY);
+        } else {
+          const cs0 = row.off, clen = row.text.length;
+          const inCmt = (col) => {
+            for (let s = 0; s < lspans.length; s++) {
+              if (col >= lspans[s][0] && col < lspans[s][1]) return true;
+            }
+            return false;
+          };
+          let seg = 0;
+          while (seg < clen) {
+            const isComment = inCmt(cs0 + seg);
+            let j = seg + 1;
+            while (j < clen && inCmt(cs0 + j) === isComment) j++;
+            // Native educed comment color: (0.46f, 0.62f, 0.42f) -> rgb(117, 158, 107)
+            ctx.fillStyle = isComment ? "rgb(117, 158, 107)" : "rgb(219, 222, 230)";
+            ctx.fillText(row.text.substring(seg, j), textX + seg * advPx, textBaselineY);
+            seg = j;
+          }
+        }
+      }
+
+      // Render TypeScript Diagnostics / Error Underlines
+      if (b.diagnostics && b.diagnostics.length) {
+        for (const diag of b.diagnostics) {
+          if (diag.li === row.li) {
+            const diagStart = diag.col;
+            const diagEnd = diag.col + Math.max(1, diag.length);
+            const rowStart = row.off;
+            const rowEnd = row.off + row.text.length;
+            const a = Math.max(diagStart, rowStart);
+            const z = Math.min(diagEnd, rowEnd);
+            if (z > a) {
+              const uX = textX + (a - rowStart) * advPx;
+              const uW = (z - a) * advPx;
+              const uY = ry + lineH - 2 * pps;
+              ctx.fillStyle = diag.category === 0 ? "rgb(242, 92, 92)" : "rgb(242, 178, 51)";
+              ctx.fillRect(uX, uY, uW, 2 * pps);
+            }
+          }
+        }
       }
     }
   }
@@ -1382,6 +1773,55 @@ function drawEditor(W, H) {
       ctx.fillRect(0, ry - 2 * pps, 4 * pps, lineH);
     } else {
       ctx.fillRect(cursorX, ry, 2 * pps, lineH);
+    }
+  }
+
+  // TypeScript / Autocomplete Popup Overlay
+  if (g.tsCompletions && g.tsCompletions.items.length) {
+    const comp = g.tsCompletions;
+    const items = comp.items;
+    const itemH = lineH;
+    const visibleCount = Math.min(items.length, 7);
+    const boxW = Math.max(160 * pps, Math.min(360 * pps, W * 0.4));
+    const boxH = visibleCount * itemH + 6 * pps;
+
+    let popX = cursorX;
+    if (popX + boxW > W - 10 * pps) popX = Math.max(10 * pps, W - boxW - 10 * pps);
+    let popY = (cursorY - g.scrollY) + lineH + 2 * pps;
+    if (popY + boxH > H - barH) {
+      popY = (cursorY - g.scrollY) - boxH - 2 * pps;
+    }
+
+    // Shadow & background
+    ctx.fillStyle = "rgba(18, 19, 23, 0.96)";
+    ctx.fillRect(popX, popY, boxW, boxH);
+    ctx.strokeStyle = "rgb(74, 82, 102)";
+    ctx.lineWidth = 1 * pps;
+    ctx.strokeRect(popX, popY, boxW, boxH);
+
+    const scrollOff = Math.max(0, Math.min(items.length - visibleCount, comp.sel - Math.floor(visibleCount / 2)));
+    for (let i = 0; i < visibleCount; i++) {
+      const idx = scrollOff + i;
+      const item = items[idx];
+      const iy = popY + 3 * pps + i * itemH;
+      const isSel = idx === comp.sel;
+
+      if (isSel) {
+        ctx.fillStyle = "rgb(46, 76, 122)";
+        ctx.fillRect(popX + 2 * pps, iy, boxW - 4 * pps, itemH);
+        ctx.fillStyle = "rgb(255, 255, 255)";
+      } else {
+        ctx.fillStyle = "rgb(204, 212, 230)";
+      }
+
+      ctx.textBaseline = "alphabetic";
+      // Kind icon tag
+      const kindLetter = (item.kind ? item.kind[0].toUpperCase() : "v");
+      ctx.fillStyle = isSel ? "rgb(242, 204, 76)" : "rgb(140, 158, 199)";
+      ctx.fillText(kindLetter, popX + 6 * pps, iy + gAscent);
+
+      ctx.fillStyle = isSel ? "rgb(255, 255, 255)" : "rgb(219, 222, 230)";
+      ctx.fillText(item.name, popX + 22 * pps, iy + gAscent);
     }
   }
 }
@@ -1452,10 +1892,13 @@ function drawRangeFinder(W, H) {
 
 function drawTextFinder(W, H) {
   const hy = marginTop;
-  const title = "search text:  " + g.finder.query;
+  const isRef = Boolean(g.finder.symbolRef);
+  const title = isRef
+    ? `references: ${g.finder.query} (${g.finder.textMatches.length} found)`
+    : "search text:  " + g.finder.query;
   ctx.fillStyle = "rgb(41, 43, 54)";
   ctx.fillRect(0, hy - 2 * pps, W, lineH);
-  ctx.fillStyle = "rgb(242, 204, 76)";
+  ctx.fillStyle = isRef ? "rgb(153, 214, 255)" : "rgb(242, 204, 76)";
   ctx.fillText(title, marginX * 0.5, hy + gAscent);
 
   const listTop = hy + lineH * 1.4;
@@ -1480,12 +1923,49 @@ function drawTextFinder(W, H) {
   }
 }
 
+function drawQuickFixFinder(W, H) {
+  const hy = marginTop;
+  const title = "quick fix:  " + (g.finder.fixActions.length ? `${g.finder.fixActions.length} available` : "no quick fixes available");
+  ctx.fillStyle = "rgb(41, 43, 54)";
+  ctx.fillRect(0, hy - 2 * pps, W, lineH);
+  ctx.fillStyle = "rgb(242, 204, 76)";
+  ctx.fillText(title, marginX * 0.5, hy + gAscent);
+
+  const listTop = hy + lineH * 1.4;
+  const visible = Math.max(1, Math.floor((H - barH - listTop) / lineH));
+  const off = g.finder.sel >= visible ? g.finder.sel - visible + 1 : 0;
+  const fixes = g.finder.fixActions;
+
+  for (let i = 0; i < visible && off + i < fixes.length; i++) {
+    const mi = off + i;
+    const ry = listTop + i * lineH;
+    const isSel = (mi === g.finder.sel);
+    if (isSel) {
+      ctx.fillStyle = "rgb(51, 56, 76)";
+      ctx.fillRect(0, ry - 2 * pps, W, lineH);
+      ctx.fillStyle = "rgb(247, 242, 204)";
+    } else {
+      ctx.fillStyle = "rgb(204, 209, 219)";
+    }
+    const fx = fixes[mi];
+    ctx.fillText(`⚡  ${fx.description}`, marginX * 0.5, ry + gAscent);
+  }
+}
+
 // ─── Mouse Hit Testing & Selection ────────────────────────────────────
 function resolveHit(clientX, clientY) {
   if (!g.hitRows.length) return null;
   const rect = canvas.getBoundingClientRect();
   const xPx = (clientX - rect.left) * dpr;
   const yPx = (clientY - rect.top) * dpr;
+
+  // Check if click hits a pinned header at the top
+  if (yPx >= 0 && yPx < lineH && g.hitRows.length) {
+    const curHdr = g.hitRows.find(r => r.isHeader && r.bi === g.curBlock);
+    if (curHdr && curHdr.y - g.scrollY < 0) {
+      return { bi: g.curBlock, li: 0, col: 0, isHeader: true };
+    }
+  }
 
   let best = -1, bestDist = 1e9;
   for (let i = 0; i < g.hitRows.length; i++) {
@@ -1537,6 +2017,17 @@ canvas.addEventListener("mousedown", async (e) => {
   g.curCol = hit.col;
   g.followCursor = false;
 
+  // Ctrl-Click / Cmd-Click: Go to Definition
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    dragState.armed = false;
+    handleCtrlClickGoToDef(hit);
+    return;
+  }
+
+  // Dismiss any open completion popup on outside click
+  g.tsCompletions = null;
+
   if (e.detail === 2) {
     const ln = b.lines[hit.li];
     let s = hit.col, en = hit.col;
@@ -1561,22 +2052,45 @@ canvas.addEventListener("mousedown", async (e) => {
 window.addEventListener("mousemove", (e) => {
   if (!dragState.armed || g.finder.mode !== "NONE") return;
   const hit = resolveHit(e.clientX, e.clientY);
-  if (!hit || hit.isHeader) return;
+  const ab = g.blocks[dragState.bi];
+  if (!ab || ab.folded) return;
 
-  let { bi, li, col } = hit;
-  if (bi !== dragState.bi) {
-    const ab = g.blocks[dragState.bi];
-    if (bi < dragState.bi) { li = 0; col = 0; }
-    else { li = ab.lines.length - 1; col = ab.lines[li].length; }
-    bi = dragState.bi;
+  let li, col;
+  if (!hit || hit.isHeader || hit.bi !== dragState.bi) {
+    // When dragging beyond current block bounds or over headers, clamp within original block
+    if (hit && hit.bi < dragState.bi) {
+      li = 0; col = 0;
+    } else if (hit && hit.bi > dragState.bi) {
+      li = ab.lines.length - 1; col = ab.lines[li].length;
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const yPx = (e.clientY - rect.top) * dpr;
+      const firstRow = g.hitRows.find(r => r.bi === dragState.bi && !r.isHeader);
+      const lastRow = [...g.hitRows].reverse().find(r => r.bi === dragState.bi && !r.isHeader);
+      if (firstRow && yPx < firstRow.y - g.scrollY) {
+        li = 0; col = 0;
+      } else if (lastRow && yPx > lastRow.y - g.scrollY + lineH) {
+        li = ab.lines.length - 1; col = ab.lines[li].length;
+      } else {
+        return;
+      }
+    }
+  } else {
+    li = hit.li;
+    col = hit.col;
   }
+
   if (!dragState.selecting && (li !== dragState.li || col !== dragState.col)) {
     dragState.selecting = true;
     g.markActive = true;
-    g.markBlock = dragState.bi; g.markLine = dragState.li; g.markCol = dragState.col;
+    g.markBlock = dragState.bi;
+    g.markLine = dragState.li;
+    g.markCol = dragState.col;
   }
   if (dragState.selecting) {
-    g.curBlock = bi; g.curLine = li; g.curCol = col;
+    g.curBlock = dragState.bi;
+    g.curLine = li;
+    g.curCol = col;
     g.followCursor = false;
     requestDraw();
   }
@@ -1945,8 +2459,54 @@ function searchMove(dir) {
   }
 }
 
-function openTextFinder(query = "") {
+async function openTextFinder(query = "") {
   g.finder.mode = "TEXT";
+  g.finder.symbolRef = null;
+
+  // If no explicit query was supplied, check if cursor is on an identifier in TS/JS
+  if (!query && g.blocks.length && g.blocks[g.curBlock]) {
+    const b = g.blocks[g.curBlock];
+    const ext = b.source.split(".").pop().toLowerCase();
+    const isTsJs = b.kind === "file" ? ["ts","tsx","js","jsx","mjs"].includes(ext) : true;
+    const curLineStr = b.lines[g.curLine] || "";
+
+    // Extract word at cursor
+    let start = g.curCol;
+    while (start > 0 && /[a-zA-Z0-9_$]/.test(curLineStr[start - 1])) start--;
+    let end = g.curCol;
+    while (end < curLineStr.length && /[a-zA-Z0-9_$]/.test(curLineStr[end])) end++;
+    const wordAtCursor = curLineStr.slice(start, end);
+
+    if (isTsJs && wordAtCursor.length >= 1) {
+      const fileName = b.kind === "file" ? b.source : "scratch.ts";
+      const content = getBlockFileContent(b);
+      const fullLines = content.split("\n");
+      const targetLine = (b.kind === "file" ? b.startLine - 1 : 0) + g.curLine;
+      let charPos = 0;
+      for (let i = 0; i < targetLine && i < fullLines.length; i++) {
+        charPos += fullLines[i].length + 1;
+      }
+      charPos += Math.min(fullLines[targetLine] ? fullLines[targetLine].length : 0, start);
+
+      g.status = `finding symbol references for '${wordAtCursor}'...`;
+      requestDraw();
+
+      const refs = await sendTsWorker({ type: "REFERENCES", file: fileName, content, pos: charPos });
+      if (Array.isArray(refs) && refs.length > 0) {
+        g.finder.query = wordAtCursor;
+        g.finder.symbolRef = wordAtCursor;
+        g.finder.textMatches = refs;
+        g.finder.sel = 0;
+        g.status = `found ${refs.length} references for '${wordAtCursor}' (↵ jump · Esc back)`;
+        requestDraw();
+        return;
+      }
+      query = wordAtCursor;
+    } else if (wordAtCursor.length >= 1) {
+      query = wordAtCursor;
+    }
+  }
+
   g.finder.query = query;
   updateTextFinderMatches();
   g.status = "live text grep — type to filter across mounted files";
@@ -1954,6 +2514,7 @@ function openTextFinder(query = "") {
 }
 
 function updateTextFinderMatches() {
+  g.finder.symbolRef = null;
   const q = g.finder.query.toLowerCase();
   g.finder.textMatches = [];
   g.finder.sel = 0;
@@ -1993,6 +2554,472 @@ function updateFinderMatches() {
   g.finder.sel = 0;
 }
 
+// ─── In-Browser TypeScript Language Service Worker ─────────────────────
+const tsWorkerCode = `
+importScripts("https://cdnjs.cloudflare.com/ajax/libs/typescript/5.3.3/typescript.min.js");
+
+const files = {};
+let docRegistry = null;
+let langService = null;
+
+const defaultLib = \`
+interface Boolean {}
+interface Function {}
+interface IArguments {}
+interface Number {}
+interface Object {}
+interface RegExp {}
+interface String {
+  length: number;
+  charAt(pos: number): string;
+  charCodeAt(index: number): number;
+  concat(...strings: string[]): string;
+  indexOf(searchString: string, position?: number): number;
+  lastIndexOf(searchString: string, position?: number): number;
+  localeCompare(that: string): number;
+  match(regexp: string | RegExp): RegExpMatchArray | null;
+  replace(searchValue: string | RegExp, replaceValue: string): string;
+  slice(start?: number, end?: number): string;
+  split(separator: string | RegExp, limit?: number): string[];
+  substring(start: number, end?: number): string;
+  toLowerCase(): string;
+  toUpperCase(): string;
+  trim(): string;
+}
+interface Array<T> {
+  length: number;
+  push(...items: T[]): number;
+  pop(): T | undefined;
+  map<U>(callbackfn: (value: T, index: number, array: T[]) => U): U[];
+  filter(predicate: (value: T, index: number, array: T[]) => unknown): T[];
+  forEach(callbackfn: (value: T, index: number, array: T[]) => void): void;
+  includes(searchElement: T, fromIndex?: number): boolean;
+  join(separator?: string): string;
+  slice(start?: number, end?: number): T[];
+}
+declare var console: { log(...data: any[]): void; error(...data: any[]): void; warn(...data: any[]): void; };
+\`;
+
+files["lib.d.ts"] = { ver: 1, content: defaultLib };
+
+const host = {
+  getScriptFileNames: () => Object.keys(files),
+  getScriptVersion: (f) => files[f] ? String(files[f].ver) : "0",
+  getScriptSnapshot: (f) => files[f] ? ts.ScriptSnapshot.fromString(files[f].content) : undefined,
+  getCurrentDirectory: () => "/",
+  getCompilationSettings: () => ({
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.ESNext,
+    moduleDetection: ts.ModuleDetectionKind ? ts.ModuleDetectionKind.Force : 3,
+    allowJs: true,
+    checkJs: true,
+    noUnusedLocals: true,
+    noUnusedParameters: true
+  }),
+  getDefaultLibFileName: () => "lib.d.ts",
+  fileExists: (f) => Boolean(files[f]),
+  readFile: (f) => files[f] ? files[f].content : ""
+};
+
+docRegistry = ts.createDocumentRegistry();
+langService = ts.createLanguageService(host, docRegistry);
+
+self.onmessage = (e) => {
+  const { id, type, file, content, pos } = e.data;
+  try {
+    if (type === "SYNC") {
+      if (!files[file]) files[file] = { ver: 1, content };
+      else { files[file].ver++; files[file].content = content; }
+      self.postMessage({ id, type, success: true });
+    } else if (type === "COMPLETIONS") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const comps = langService.getCompletionsAtPosition(file, pos, {
+        includeExternalSymbolMembers: true,
+        includeInsertTextCompletions: true
+      });
+      const entries = (comps && comps.entries) ? comps.entries.slice(0, 30).map(x => ({
+        name: x.name,
+        kind: x.kind || "property",
+        sortText: x.sortText
+      })) : [];
+      self.postMessage({ id, type, entries });
+    } else if (type === "DEFINITION") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const defs = langService.getDefinitionAtPosition(file, pos);
+      let res = null;
+      if (defs && defs.length > 0) {
+        const d = defs[0];
+        const targetContent = files[d.fileName] ? files[d.fileName].content : "";
+        const linesBefore = targetContent.slice(0, d.textSpan.start).split("\\n");
+        const line = linesBefore.length;
+        const col = linesBefore[linesBefore.length - 1].length;
+        res = { fileName: d.fileName, line, col };
+      }
+      self.postMessage({ id, type, def: res });
+    } else if (type === "DIAGNOSTICS") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const syn = langService.getSyntacticDiagnostics(file);
+      const sem = langService.getSemanticDiagnostics(file);
+      const sug = langService.getSuggestionDiagnostics ? langService.getSuggestionDiagnostics(file) : [];
+      const all = [...syn, ...sem, ...sug];
+      const targetContent = files[file] ? files[file].content : "";
+      const results = all.map(d => {
+        const start = d.start || 0;
+        const length = d.length || 1;
+        const before = targetContent.slice(0, start).split("\\n");
+        const line = before.length - 1;
+        const col = before[before.length - 1].length;
+        const msg = typeof d.messageText === "string" ? d.messageText : (d.messageText && d.messageText.messageText) || "error";
+        return { line, col, length, message: msg, category: d.category, code: d.code, start };
+      });
+      self.postMessage({ id, type, diagnostics: results });
+    } else if (type === "CODE_FIXES") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const start = pos || 0;
+      const length = e.data.length || 1;
+      const errorCodes = e.data.errorCodes || [];
+      const fixes = langService.getCodeFixesAtPosition(file, start, start + length, errorCodes, {}, {});
+      const list = (fixes || []).map(fix => ({
+        description: fix.description,
+        fixName: fix.fixName,
+        changes: fix.changes
+      }));
+      self.postMessage({ id, type, fixes: list });
+    } else if (type === "REFERENCES") {
+      if (content !== undefined) {
+        if (!files[file]) files[file] = { ver: 1, content };
+        else { files[file].ver++; files[file].content = content; }
+      }
+      const rawRefs = langService.getReferencesAtPosition(file, pos) || [];
+      const results = [];
+      for (const r of rawRefs) {
+        const targetContent = files[r.fileName] ? files[r.fileName].content : "";
+        const linesBefore = targetContent.slice(0, r.textSpan.start).split("\\n");
+        const line = linesBefore.length;
+        const allLines = targetContent.split("\\n");
+        const lineText = allLines[line - 1] || "";
+        const cleanPath = r.fileName.replace(/^\\//, "");
+        results.push({
+          path: cleanPath,
+          line,
+          text: lineText.trim(),
+          isDefinition: Boolean(r.isDefinition)
+        });
+      }
+      self.postMessage({ id, type, references: results });
+    }
+  } catch (err) {
+    self.postMessage({ id, type, error: err.message });
+  }
+};
+`;
+
+let tsReqId = 0;
+const tsCallbacks = new Map();
+
+function initTsWorker() {
+  if (g.tsWorker || typeof Worker === "undefined") return;
+  try {
+    const blob = new Blob([tsWorkerCode], { type: "application/javascript" });
+    const url = URL.createObjectURL(blob);
+    g.tsWorker = new Worker(url);
+    g.tsWorker.onmessage = (e) => {
+      const { id, entries, def, diagnostics, fixes, references } = e.data;
+      const cb = tsCallbacks.get(id);
+      if (cb) {
+        tsCallbacks.delete(id);
+        cb(references || fixes || diagnostics || entries || def || e.data);
+      }
+    };
+    g.tsReady = true;
+    syncAllFilesToTs();
+  } catch (err) {
+    console.warn("TypeScript language worker unavailable:", err);
+  }
+}
+
+function sendTsWorker(msg) {
+  if (!g.tsWorker) initTsWorker();
+  if (!g.tsWorker) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const id = ++tsReqId;
+    tsCallbacks.set(id, resolve);
+    g.tsWorker.postMessage({ id, ...msg });
+    setTimeout(() => {
+      if (tsCallbacks.has(id)) {
+        tsCallbacks.delete(id);
+        resolve(null);
+      }
+    }, 1500);
+  });
+}
+
+function getBlockFileContent(b) {
+  if (b.kind === "file" && g.files[b.source]) {
+    const full = g.files[b.source].split(/\r?\n/);
+    const before = full.slice(0, Math.max(0, b.startLine - 1));
+    const after = full.slice(b.endLine);
+    return [...before, ...b.lines, ...after].join("\n");
+  }
+  return b.lines.join("\n");
+}
+
+function syncAllFilesToTs() {
+  if (!g.tsWorker) return;
+  for (const [p, c] of Object.entries(g.files)) {
+    if (p.endsWith(".ts") || p.endsWith(".js") || p.endsWith(".mjs") || p.endsWith(".json")) {
+      sendTsWorker({ type: "SYNC", file: p, content: c });
+    }
+  }
+}
+
+async function requestTsCompletions() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const content = getBlockFileContent(b);
+
+  const fullLines = content.split("\n");
+  const targetLine = (b.kind === "file" ? b.startLine - 1 : 0) + g.curLine;
+  let charPos = 0;
+  for (let i = 0; i < targetLine && i < fullLines.length; i++) {
+    charPos += fullLines[i].length + 1;
+  }
+  charPos += Math.min(fullLines[targetLine] ? fullLines[targetLine].length : 0, g.curCol);
+
+  const curLineStr = b.lines[g.curLine] || "";
+  let wordStart = g.curCol;
+  while (wordStart > 0 && /[a-zA-Z0-9_$]/.test(curLineStr[wordStart - 1])) wordStart--;
+  const prefix = curLineStr.slice(wordStart, g.curCol).toLowerCase();
+
+  const res = await sendTsWorker({ type: "COMPLETIONS", file: fileName, content, pos: charPos });
+  if (res && Array.isArray(res) && res.length) {
+    let filtered = res;
+    if (prefix) {
+      filtered = res.filter(x => x.name.toLowerCase().includes(prefix));
+    }
+    if (filtered.length) {
+      g.tsCompletions = {
+        items: filtered,
+        sel: 0,
+        bi: g.curBlock,
+        li: g.curLine,
+        col: g.curCol,
+        replaceLen: g.curCol - wordStart
+      };
+      requestDraw();
+      return;
+    }
+  }
+  g.tsCompletions = null;
+  requestDraw();
+}
+
+async function handleCtrlClickGoToDef(hit) {
+  if (!hit || hit.isHeader) return;
+  const b = g.blocks[hit.bi];
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const content = getBlockFileContent(b);
+
+  const fullLines = content.split("\n");
+  const targetLine = (b.kind === "file" ? b.startLine - 1 : 0) + hit.li;
+  let charPos = 0;
+  for (let i = 0; i < targetLine && i < fullLines.length; i++) {
+    charPos += fullLines[i].length + 1;
+  }
+  charPos += Math.min(fullLines[targetLine] ? fullLines[targetLine].length : 0, hit.col);
+
+  g.status = "resolving definition...";
+  requestDraw();
+
+  const def = await sendTsWorker({ type: "DEFINITION", file: fileName, content, pos: charPos });
+  if (def && def.fileName) {
+    const targetFile = def.fileName.replace(/^\//, "");
+    const targetLineNum = def.line;
+
+    // Check if target already in active blocks
+    for (let bi = 0; bi < g.blocks.length; bi++) {
+      const blk = g.blocks[bi];
+      if (blk.kind === "file" && blk.source === targetFile && targetLineNum >= blk.startLine && targetLineNum <= blk.endLine) {
+        g.curBlock = bi;
+        g.curLine = targetLineNum - blk.startLine;
+        g.curCol = def.col || 0;
+        g.followCursor = true;
+        g.status = `jumped to ${targetFile}:${targetLineNum}`;
+        requestDraw();
+        return;
+      }
+    }
+
+    // Pull or resize block from g.files
+    if (g.files[targetFile] !== undefined) {
+      const all = g.files[targetFile].split(/\r?\n/);
+      const s = Math.max(1, targetLineNum - 10);
+      const e = Math.min(all.length, targetLineNum + 15);
+      createBlock({
+        kind: "file",
+        source: targetFile,
+        startLine: s,
+        endLine: e,
+        lines: all.slice(s - 1, e)
+      });
+      g.curBlock = g.blocks.length - 1;
+      g.curLine = targetLineNum - s;
+      g.curCol = def.col || 0;
+      g.followCursor = true;
+      g.status = `opened definition ${targetFile}:${targetLineNum}`;
+      saveManifest(true);
+      requestDraw();
+    } else {
+      g.status = `definition in ${targetFile}:${targetLineNum} (file not in mounted files)`;
+      requestDraw();
+    }
+  } else {
+    g.status = "no definition found";
+    requestDraw();
+  }
+}
+
+async function requestTsDiagnostics(bi) {
+  if (bi < 0 || bi >= g.blocks.length) return;
+  const b = g.blocks[bi];
+  if (!b) return;
+  const ext = b.source.split(".").pop().toLowerCase();
+  const isTsJs = b.kind === "file" ? ["ts","tsx","js","jsx","mjs"].includes(ext) : true;
+  if (!isTsJs) {
+    b.diagnostics = [];
+    return;
+  }
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const content = getBlockFileContent(b);
+  const diagList = await sendTsWorker({ type: "DIAGNOSTICS", file: fileName, content });
+  if (Array.isArray(diagList)) {
+    const fileStart = b.kind === "file" ? b.startLine - 1 : 0;
+    const fileEnd = b.kind === "file" ? b.endLine - 1 : b.lines.length - 1;
+    // Map file-relative line back to block-local line index
+    b.diagnostics = diagList
+      .filter(d => d.line >= fileStart && d.line <= fileEnd)
+      .map(d => ({
+        li: d.line - fileStart,
+        col: d.col,
+        length: d.length,
+        message: d.message,
+        category: d.category,
+        code: d.code,
+        start: d.start
+      }));
+    requestDraw();
+  }
+}
+
+async function openQuickFixFinder() {
+  if (!g.blocks.length) return;
+  const b = g.blocks[g.curBlock];
+  if (!b) return;
+  const ext = b.source.split(".").pop().toLowerCase();
+  const isTsJs = b.kind === "file" ? ["ts","tsx","js","jsx","mjs"].includes(ext) : true;
+  if (!isTsJs) {
+    g.status = "quick-fix available only in TypeScript / JavaScript";
+    requestDraw();
+    return;
+  }
+
+  // Find diagnostic at current cursor or on current line
+  const diags = (b.diagnostics || []).filter(d => d.li === g.curLine);
+  if (!diags.length) {
+    g.status = "no diagnostic error on current line";
+    requestDraw();
+    return;
+  }
+
+  const atCursor = diags.find(d => g.curCol >= d.col && g.curCol <= d.col + Math.max(1, d.length));
+  const targetDiag = atCursor || diags[0];
+
+  const fileName = b.kind === "file" ? b.source : "scratch.ts";
+  const content = getBlockFileContent(b);
+
+  g.status = "querying quick fixes...";
+  requestDraw();
+
+  const fixes = await sendTsWorker({
+    type: "CODE_FIXES",
+    file: fileName,
+    content,
+    pos: targetDiag.start,
+    length: targetDiag.length,
+    errorCodes: targetDiag.code ? [targetDiag.code] : []
+  });
+
+  if (Array.isArray(fixes) && fixes.length) {
+    g.finder.mode = "QUICKFIX";
+    g.finder.fixActions = fixes;
+    g.finder.sel = 0;
+    g.status = `found ${fixes.length} quick fix(es) — Enter to apply · Esc cancel`;
+  } else {
+    g.status = "no quick fixes suggested by TypeScript for this error";
+  }
+  requestDraw();
+}
+
+function applyQuickFixAction(fix) {
+  if (!fix || !fix.changes || !fix.changes.length) return;
+  pushUndo();
+
+  for (const change of fix.changes) {
+    const targetFile = change.fileName.replace(/^\//, "");
+    // Locate block or mounted file
+    let targetBlock = g.blocks.find(blk => blk.kind === "file" && blk.source === targetFile);
+    if (!targetBlock && targetFile === "scratch.ts") {
+      targetBlock = g.blocks[g.curBlock];
+    }
+
+    if (targetBlock) {
+      // Modify block lines directly
+      const curContent = getBlockFileContent(targetBlock);
+      let updated = curContent;
+      // Sort textChanges descending so character offsets remain valid
+      const sortedChanges = [...change.textChanges].sort((x, y) => y.span.start - x.span.start);
+      for (const tc of sortedChanges) {
+        updated = updated.slice(0, tc.span.start) + tc.newText + updated.slice(tc.span.start + tc.span.length);
+      }
+
+      if (targetBlock.kind === "file") {
+        g.files[targetBlock.source] = updated;
+        const allLines = updated.split(/\r?\n/);
+        targetBlock.lines = allLines.slice(targetBlock.startLine - 1, targetBlock.endLine);
+      } else {
+        targetBlock.lines = updated.split(/\r?\n/);
+      }
+      recomputeDirty(g.blocks.indexOf(targetBlock));
+      syncAllFilesToTs();
+    } else if (g.files[targetFile] !== undefined) {
+      let updated = g.files[targetFile];
+      const sortedChanges = [...change.textChanges].sort((x, y) => y.span.start - x.span.start);
+      for (const tc of sortedChanges) {
+        updated = updated.slice(0, tc.span.start) + tc.newText + updated.slice(tc.span.start + tc.span.length);
+      }
+      g.files[targetFile] = updated;
+      syncAllFilesToTs();
+    }
+  }
+
+  g.finder.mode = "NONE";
+  g.status = `applied: ${fix.description}`;
+  requestDraw();
+}
+
 // ─── Key Event Pipeline ───────────────────────────────────────────────
 window.addEventListener("keydown", async (e) => {
   resetBlink();
@@ -2019,6 +3046,45 @@ window.addEventListener("keydown", async (e) => {
   const isMeta = e.metaKey;
   const isOption = e.altKey;
   const isShift = e.shiftKey;
+
+  // Autocomplete Popup Navigation
+  if (g.tsCompletions && g.tsCompletions.items.length) {
+    if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+      e.preventDefault();
+      g.tsCompletions.sel = (g.tsCompletions.sel + 1) % g.tsCompletions.items.length;
+      requestDraw();
+      return;
+    } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+      e.preventDefault();
+      g.tsCompletions.sel = (g.tsCompletions.sel - 1 + g.tsCompletions.items.length) % g.tsCompletions.items.length;
+      requestDraw();
+      return;
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      const comp = g.tsCompletions;
+      const chosen = comp.items[comp.sel];
+      if (chosen) {
+        const b = g.blocks[comp.bi];
+        if (b) {
+          pushUndo();
+          const ln = b.lines[comp.li];
+          const startCol = comp.col - comp.replaceLen;
+          b.lines[comp.li] = ln.slice(0, startCol) + chosen.name + ln.slice(comp.col);
+          g.curCol = startCol + chosen.name.length;
+          recomputeDirty(comp.bi);
+          g.status = `completed: ${chosen.name}`;
+        }
+      }
+      g.tsCompletions = null;
+      requestDraw();
+      return;
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      g.tsCompletions = null;
+      requestDraw();
+      return;
+    }
+  }
 
   // Sticky C-l cycle & goalCol reset (matches main.mm lines 1425-1432)
   if (!(isCtrl && e.code === "KeyL")) g.recenterCycle = 0;
@@ -2058,7 +3124,9 @@ window.addEventListener("keydown", async (e) => {
   if (g.finder.mode !== "NONE") {
     if (e.key === "Escape") {
       e.preventDefault();
-      if (g.finder.mode === "NEWPAGE") {
+      if (g.finder.mode === "PAGE") {
+        openProjectPicker();
+      } else if (g.finder.mode === "NEWPAGE") {
         enterPagePicker();
       } else {
         g.finder.mode = "NONE";
@@ -2068,8 +3136,39 @@ window.addEventListener("keydown", async (e) => {
       return;
     }
 
+    if (g.finder.mode === "PROJECT") {
+      const count = g.finder.projects.length + 1;
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(count - 1, g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(count - 1, g.finder.sel + 10);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 10);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (g.finder.sel === 0) {
+          mountDirectory();
+        } else {
+          const name = g.finder.projects[g.finder.sel - 1];
+          openProjectByName(name);
+        }
+        requestDraw();
+      }
+      return;
+    }
+
     if (g.finder.mode === "PAGE") {
-      const count = g.finder.pagePaths.length + 2;
+      const count = g.finder.pagePaths.length + 1;
       if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
         e.preventDefault();
         g.finder.sel = Math.min(count - 1, g.finder.sel + 1);
@@ -2091,11 +3190,8 @@ window.addEventListener("keydown", async (e) => {
         if (g.finder.sel === 0) {
           g.finder.query = "";
           g.finder.mode = "NEWPAGE";
-        } else if (g.finder.sel === 1) {
-          g.finder.mode = "NONE";
-          mountDirectory();
         } else {
-          const p = g.finder.pagePaths[g.finder.sel - 2];
+          const p = g.finder.pagePaths[g.finder.sel - 1];
           saveManifest(true);
           if (g.files[p]) importManifest(g.files[p], p);
           g.finder.mode = "NONE";
@@ -2259,6 +3355,37 @@ window.addEventListener("keydown", async (e) => {
       }
       return;
     }
+
+    if (g.finder.mode === "QUICKFIX") {
+      const last = Math.max(0, g.finder.fixActions.length - 1);
+      if (e.key === "ArrowDown" || (isCtrl && e.code === "KeyN")) {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 1);
+        requestDraw();
+      } else if (e.key === "ArrowUp" || (isCtrl && e.code === "KeyP")) {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 1);
+        requestDraw();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        g.finder.sel = Math.min(last, g.finder.sel + 5);
+        requestDraw();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        g.finder.sel = Math.max(0, g.finder.sel - 5);
+        requestDraw();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const chosen = g.finder.fixActions[g.finder.sel];
+        if (chosen) {
+          applyQuickFixAction(chosen);
+        } else {
+          g.finder.mode = "NONE";
+          requestDraw();
+        }
+      }
+      return;
+    }
   }
 
   // Incremental Search Active (Ctrl-H)
@@ -2329,7 +3456,7 @@ window.addEventListener("keydown", async (e) => {
   // ⌘ Meta Shortcuts
   if (isMeta) {
     if (e.key === "Enter") { e.preventDefault(); toggleFoldAll(); return; }
-    if (e.code === "KeyO") { e.preventDefault(); enterPagePicker(); return; }
+    if (e.code === "KeyO") { e.preventDefault(); openProjectPicker(); return; }
     if (e.code === "KeyP") { e.preventDefault(); openFileFinder(); return; }
     if (e.code === "KeyF") { e.preventDefault(); openTextFinder(); return; }
     if (e.code === "KeyS") { e.preventDefault(); saveAll(); return; }
@@ -2341,6 +3468,11 @@ window.addEventListener("keydown", async (e) => {
     if (e.code === "KeyZ") {
       e.preventDefault();
       if (isShift) redo(); else undo();
+      return;
+    }
+    if (e.code === "Period") {
+      e.preventDefault();
+      openQuickFixFinder();
       return;
     }
     if (e.key === "=" || e.key === "+") {
@@ -2364,8 +3496,13 @@ window.addEventListener("keydown", async (e) => {
   if (isOption && !isCtrl && !g.cmdActive) {
     e.preventDefault();
     e.stopPropagation();
+    if (e.key === "Enter") {
+      openQuickFixFinder();
+      return;
+    }
     switch (e.code) {
-      case "KeyO":      enterPagePicker(); break;
+      case "Period":    openQuickFixFinder(); break;
+      case "KeyO":      openProjectPicker(); break;
       case "KeyW":      openFileFinder(); break;
       case "KeyG":      openTextFinder(); break;
       case "KeyJ":      expandBlockToWholeFile(); break;
@@ -2556,6 +3693,16 @@ function insertChar(ch) {
   recomputeDirty(g.curBlock);
   g.followCursor = true;
   requestDraw();
+
+  // Trigger TypeScript completion query when typing dot or word chars
+  if (ch === "." || /[a-zA-Z0-9_$]/.test(ch)) {
+    clearTimeout(g.tsDebounce);
+    g.tsDebounce = setTimeout(() => {
+      requestTsCompletions();
+    }, 120);
+  } else {
+    g.tsCompletions = null;
+  }
 }
 
 function insertNewline() {
@@ -2858,6 +4005,9 @@ function execCommand(cmdStr) {
   } else if (verb === "w" || verb === "write" || verb === "save") {
     if (args[0]) g.pagePath = args[0];
     saveAll();
+  } else if (verb === "export" || verb === "download" || verb === "zip") {
+    if (args[0] === "file") exportCurrentFile();
+    else exportAllModified();
   } else if (verb === "nums" || verb === "numbers") {
     g.showLineNos = !g.showLineNos;
     g.status = g.showLineNos ? "line numbers on" : "line numbers off";
@@ -3002,6 +4152,7 @@ if (backup) {
 
 // Restore handle asynchronously and rehydrate blocks
 restoreDirHandle();
+initTsWorker();
 requestDraw();
 </script>
 
