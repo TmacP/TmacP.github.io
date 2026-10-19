@@ -117,15 +117,17 @@ const kHelp = [
   "",
   "  intellisense",
   "    Ctrl-Click        go to definition (TypeScript / JavaScript)",
+  "    Ctrl-I / :symbols document symbol outline (jump to function/class/interface)",
   "    Tab / ↵ / Esc     accept / cancel autocomplete popup",
   "    Cmd-. / Opt-↵     quick-fix code actions for diagnostic error",
-  "    Cmd-T / :symbols  document symbol outline (jump to function/class/interface)",
   "",
   "  app",
+  "    Ctrl-H / Cmd-F    search in open blocks (in-page)",
+  "    Ctrl-G            search through the project (grep across files)",
   "    Opt-O / Cmd-O     projects list (Enter open · + open folder · Esc cancel)",
   "    Cmd-+ / Cmd--     zoom in / out",
   "    Esc               command bar: pull scratch drop range split join edge reload",
-  "                                   goto search nums md page open organize export download w ?"
+  "                                   goto search nums md page open organize symbols export download w ?"
 ];
 
 // ─── Global State (Direct struct State replica from main.mm) ───────────
@@ -2513,57 +2515,24 @@ function searchMove(dir) {
   }
 }
 
-async function openTextFinder(query = "") {
+function openTextFinder(query = "") {
   g.finder.mode = "TEXT";
   g.finder.symbolRef = null;
 
-  // If no explicit query was supplied, check if cursor is on an identifier in TS/JS
   if (!query && g.blocks.length && g.blocks[g.curBlock]) {
     const b = g.blocks[g.curBlock];
-    const ext = b.source.split(".").pop().toLowerCase();
-    const isTsJs = b.kind === "file" ? ["ts","tsx","js","jsx","mjs"].includes(ext) : true;
     const curLineStr = b.lines[g.curLine] || "";
-
-    // Extract word at cursor
     let start = g.curCol;
     while (start > 0 && /[a-zA-Z0-9_$]/.test(curLineStr[start - 1])) start--;
     let end = g.curCol;
     while (end < curLineStr.length && /[a-zA-Z0-9_$]/.test(curLineStr[end])) end++;
     const wordAtCursor = curLineStr.slice(start, end);
-
-    if (isTsJs && wordAtCursor.length >= 1) {
-      const fileName = b.kind === "file" ? b.source : "scratch.ts";
-      const content = getBlockFileContent(b);
-      const fullLines = content.split("\n");
-      const targetLine = (b.kind === "file" ? b.startLine - 1 : 0) + g.curLine;
-      let charPos = 0;
-      for (let i = 0; i < targetLine && i < fullLines.length; i++) {
-        charPos += fullLines[i].length + 1;
-      }
-      charPos += Math.min(fullLines[targetLine] ? fullLines[targetLine].length : 0, start);
-
-      g.status = `finding symbol references for '${wordAtCursor}'...`;
-      requestDraw();
-
-      const refs = await sendTsWorker({ type: "REFERENCES", file: fileName, content, pos: charPos });
-      if (Array.isArray(refs) && refs.length > 0) {
-        g.finder.query = wordAtCursor;
-        g.finder.symbolRef = wordAtCursor;
-        g.finder.textMatches = refs;
-        g.finder.sel = 0;
-        g.status = `found ${refs.length} references for '${wordAtCursor}' (↵ jump · Esc back)`;
-        requestDraw();
-        return;
-      }
-      query = wordAtCursor;
-    } else if (wordAtCursor.length >= 1) {
-      query = wordAtCursor;
-    }
+    if (wordAtCursor.length >= 1) query = wordAtCursor;
   }
 
   g.finder.query = query;
   updateTextFinderMatches();
-  g.status = "live text grep — type to filter across mounted files";
+  g.status = "project search (grep) — type to filter across mounted files";
   requestDraw();
 }
 
@@ -3680,7 +3649,6 @@ window.addEventListener("keydown", async (e) => {
     if (e.code === "KeyO") { e.preventDefault(); openProjectPicker(); return; }
     if (e.code === "KeyP") { e.preventDefault(); openFileFinder(); return; }
     if (e.code === "KeyF") { e.preventDefault(); openTextFinder(); return; }
-    if (e.code === "KeyT") { e.preventDefault(); openSymbolsFinder(); return; }
     if (e.code === "KeyS") { e.preventDefault(); saveAll(); return; }
     if (e.code === "KeyR") {
       e.preventDefault();
@@ -3772,6 +3740,7 @@ window.addEventListener("keydown", async (e) => {
       case "KeyD": deleteCharForward(); break;
       case "KeyK": killToEndOfLine(); break;
       case "KeyG": openTextFinder(); break;
+      case "KeyI": openSymbolsFinder(); break;
       case "KeyW": openFileFinder(); break;
       case "KeyH":
         g.searchActive = true;
